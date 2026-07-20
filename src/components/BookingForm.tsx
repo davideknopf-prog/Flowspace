@@ -100,22 +100,25 @@ export function BookingForm({
             />
           </div>
 
-          {/* Stubbed payment step */}
-          <div className="rounded-lg border border-dashed border-border bg-brand-tint/40 p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Total</span>
-              <span className="text-sm font-semibold">
-                {formatPrice(priceCents)}
-              </span>
+          {priceCents > 0 && (
+            <div className="rounded-lg border border-border bg-brand-tint/40 p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Total</span>
+                <span className="text-sm font-semibold">
+                  {formatPrice(priceCents)}
+                </span>
+              </div>
+              <p className="text-xs text-muted mt-2">
+                🔒 You&apos;ll pay securely via Stripe on the next step. Your
+                spot is held for 30 minutes while you check out.
+              </p>
             </div>
-            <p className="text-xs text-muted mt-2">
-              💳 Payment is not collected yet — this is a preview. Stripe
-              checkout drops in here next, so students pay when they book.
-            </p>
-          </div>
+          )}
 
           <button type="submit" className="btn-primary w-full">
-            {priceCents === 0 ? "Confirm booking" : `Confirm booking · ${formatPrice(priceCents)}`}
+            {priceCents === 0
+              ? "Confirm booking"
+              : `Continue to payment · ${formatPrice(priceCents)}`}
           </button>
         </form>
       )}

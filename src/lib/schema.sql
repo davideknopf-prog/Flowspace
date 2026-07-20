@@ -58,7 +58,26 @@ create table if not exists bookings (
   location_note text not null default '',
   payment_status text not null default 'stubbed',
   status text not null default 'confirmed',
+  created_at timestamptz not null default now(),
+  stripe_checkout_session_id text unique,
+  platform_fee_cents integer not null default 0,
+  stripe_fee_cents integer not null default 0
+);
+
+alter table bookings add column if not exists stripe_checkout_session_id text unique;
+alter table bookings add column if not exists platform_fee_cents integer not null default 0;
+alter table bookings add column if not exists stripe_fee_cents integer not null default 0;
+
+create index if not exists bookings_teacher_id_idx on bookings(teacher_id);
+
+-- Manual record of a payout the founder sent a teacher (bank transfer, Venmo,
+-- Stripe Payout, whatever). No automation yet — see repo.ts / scripts/payout.mjs.
+create table if not exists payouts (
+  id text primary key,
+  teacher_id text not null references teachers(id) on delete cascade,
+  amount_cents integer not null,
+  note text not null default '',
   created_at timestamptz not null default now()
 );
 
-create index if not exists bookings_teacher_id_idx on bookings(teacher_id);
+create index if not exists payouts_teacher_id_idx on payouts(teacher_id);

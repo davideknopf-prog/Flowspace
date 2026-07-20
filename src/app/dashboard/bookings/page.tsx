@@ -118,7 +118,11 @@ function Section({
             <div className="text-right">
               <p className="text-sm font-medium">{formatPrice(b.priceCents)}</p>
               <span className="pill">
-                {b.paymentStatus === "stubbed" ? "unpaid (demo)" : b.paymentStatus}
+                {b.paymentStatus === "paid"
+                  ? "Paid ✓"
+                  : b.paymentStatus === "free"
+                    ? "Free"
+                    : "Payment pending"}
               </span>
             </div>
           </li>

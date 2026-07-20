@@ -154,7 +154,10 @@ export async function sendBookingEmails({
       ${booking.note ? `<tr><td style="color:#7c736a;padding-right:16px;vertical-align:top">Note</td><td>${booking.note}</td></tr>` : ""}
     </table>`);
 
-  await Promise.all([
+  // allSettled, not all: the two emails are independent, and a bad address on
+  // one side (e.g. a test account's fake domain) must never look like it also
+  // swallowed or blocked the other, genuinely important one.
+  const results = await Promise.allSettled([
     send({
       to: booking.clientEmail,
       subject: `Booking confirmed: ${sessionType.name} with ${teacher.name}`,
@@ -170,4 +173,12 @@ export async function sendBookingEmails({
       replyTo: booking.clientEmail,
     }),
   ]);
+
+  const [studentResult, teacherResult] = results;
+  if (studentResult.status === "rejected") {
+    console.error("[email] student confirmation failed", studentResult.reason);
+  }
+  if (teacherResult.status === "rejected") {
+    console.error("[email] teacher notification failed", teacherResult.reason);
+  }
 }

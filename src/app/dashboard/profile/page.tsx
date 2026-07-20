@@ -1,7 +1,7 @@
 import { getCurrentTeacher } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { saveProfileAction } from "../actions";
-import { Avatar } from "@/components/Avatar";
+import { AvatarUpload } from "@/components/AvatarUpload";
 
 export default async function ProfilePage({
   searchParams,
@@ -26,22 +26,7 @@ export default async function ProfilePage({
       )}
 
       <form action={saveProfileAction} className="card space-y-5">
-        <div className="flex items-center gap-4">
-          <Avatar name={teacher.name} src={teacher.avatarUrl} size={64} />
-          <div className="flex-1">
-            <label className="label" htmlFor="avatarUrl">
-              Photo URL
-            </label>
-            <input
-              id="avatarUrl"
-              name="avatarUrl"
-              type="url"
-              defaultValue={teacher.avatarUrl}
-              placeholder="https://…  (image upload coming soon)"
-              className="input"
-            />
-          </div>
-        </div>
+        <AvatarUpload name={teacher.name} initialUrl={teacher.avatarUrl} />
 
         <div>
           <label className="label" htmlFor="name">

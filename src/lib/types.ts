@@ -48,6 +48,10 @@ export interface AvailabilityRule {
 
 export type BookingStatus = "confirmed" | "cancelled";
 
+// "pending" = Stripe Checkout created but not yet paid (holds the slot until
+// the checkout completes or expires). "free" = no payment needed at all.
+export type PaymentStatus = "free" | "pending" | "paid";
+
 export interface Booking {
   id: string;
   teacherId: string;
@@ -63,10 +67,29 @@ export interface Booking {
   locationType: LocationType;
   meetingUrl: string;
   locationNote: string;
-  // Payment is stubbed for now. When Stripe Connect lands, this becomes a real
-  // status driven by webhooks (requires_payment | paid | refunded …).
-  paymentStatus: "stubbed" | "paid" | "unpaid";
+  paymentStatus: PaymentStatus;
   status: BookingStatus;
+  createdAt: string;
+  // Set once a Stripe Checkout Session is created for this booking; null for
+  // free bookings.
+  stripeCheckoutSessionId: string | null;
+  // Platform's cut of priceCents, captured at booking time so a later fee
+  // change never rewrites history.
+  platformFeeCents: number;
+  // Stripe's actual processing fee for this charge (pulled from Stripe's
+  // balance transaction, not estimated — varies by card type). The teacher
+  // absorbs this, same as platformFeeCents: payout = priceCents -
+  // platformFeeCents - stripeFeeCents. 0 until payment confirms.
+  stripeFeeCents: number;
+}
+
+// A manual record that the founder paid a teacher out (bank transfer, Venmo,
+// etc). No automated payout rail yet — see scripts/payout.mjs.
+export interface Payout {
+  id: string;
+  teacherId: string;
+  amountCents: number;
+  note: string;
   createdAt: string;
 }
 
@@ -75,4 +98,5 @@ export interface Database {
   sessionTypes: SessionType[];
   availability: AvailabilityRule[];
   bookings: Booking[];
+  payouts: Payout[];
 }
