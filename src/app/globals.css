@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/* -------------------------------------------------------------------------- */
+/* Design tokens — a calm, warm "studio" palette.                             */
+/* -------------------------------------------------------------------------- */
+:root {
+  --background: #faf8f5;
+  --surface: #ffffff;
+  --foreground: #26211c;
+  --muted: #7c736a;
+  --border: #ece7e0;
+  --brand: #5b7c6f; /* sage green */
+  --brand-dark: #47645a;
+  --brand-tint: #edf2ef;
+  --accent: #c98a5e; /* terracotta */
+  --danger: #b4544a;
+  --ring: rgba(91, 124, 111, 0.35);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-tint: var(--brand-tint);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Reusable component classes (Tailwind v4 @layer).                           */
+/* -------------------------------------------------------------------------- */
+@layer components {
+  /* Shared button base — grouped so variants don't need to @apply a custom class */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5
+      text-sm font-medium transition-colors cursor-pointer;
+  }
+  .btn:disabled,
+  .btn-primary:disabled,
+  .btn-secondary:disabled,
+  .btn-ghost:disabled,
+  .btn-danger:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-brand text-white;
+  }
+  .btn-primary:hover {
+    @apply bg-brand-dark;
+  }
+  .btn-secondary {
+    @apply border border-border bg-surface text-foreground;
+  }
+  .btn-secondary:hover {
+    @apply bg-brand-tint;
+  }
+  .btn-ghost {
+    @apply text-muted;
+  }
+  .btn-ghost:hover {
+    @apply text-foreground bg-brand-tint;
+  }
+  .btn-danger {
+    @apply text-danger;
+  }
+  .btn-danger:hover {
+    @apply bg-red-50;
+  }
+
+  .card {
+    @apply rounded-2xl border border-border bg-surface p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)];
+  }
+
+  .label {
+    @apply block text-sm font-medium text-foreground mb-1.5;
+  }
+
+  /* Shared input base — grouped so .textarea doesn't need to @apply .input */
+  .input,
+  .textarea {
+    @apply w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm
+      text-foreground placeholder:text-muted outline-none transition;
+  }
+  .input:focus,
+  .textarea:focus {
+    @apply border-brand ring-2;
+    --tw-ring-color: var(--ring);
+  }
+  .textarea {
+    @apply min-h-24 resize-y;
+  }
+
+  .hint {
+    @apply text-xs text-muted mt-1;
+  }
+  .pill {
+    @apply inline-flex items-center rounded-full bg-brand-tint px-2.5 py-1
+      text-xs font-medium text-brand-dark;
+  }
+}
