@@ -12,8 +12,11 @@ create table if not exists teachers (
   specialties jsonb not null default '[]',
   avatar_url text not null default '',
   timezone text not null default 'America/New_York',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  clerk_user_id text unique
 );
+
+alter table teachers add column if not exists clerk_user_id text unique;
 
 create table if not exists session_types (
   id text primary key,

@@ -14,6 +14,7 @@ export interface Teacher {
   avatarUrl: string; // may be empty; we render initials fallback
   timezone: string; // IANA, e.g. "America/New_York"
   createdAt: string;
+  clerkUserId: string | null; // links this profile to a real Clerk account
 }
 
 export type LocationType = "online" | "in_person";

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { SignOutButton } from "@clerk/nextjs";
 import { getCurrentTeacher } from "@/lib/session";
-import { logoutAction } from "../(auth)/actions";
 import { Avatar } from "@/components/Avatar";
 import { DashboardNav } from "@/components/DashboardNav";
 
@@ -37,11 +37,11 @@ export default async function DashboardLayout({
                 {teacher.name}
               </span>
             </div>
-            <form action={logoutAction}>
-              <button className="btn-ghost text-xs" type="submit">
+            <SignOutButton redirectUrl="/">
+              <button className="btn-ghost text-xs" type="button">
                 Log out
               </button>
-            </form>
+            </SignOutButton>
           </div>
         </div>
       </header>

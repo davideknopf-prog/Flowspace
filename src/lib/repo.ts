@@ -42,6 +42,7 @@ function rowToTeacher(row: Record<string, unknown>): Teacher {
     avatarUrl: row.avatar_url as string,
     timezone: row.timezone as string,
     createdAt: toISO(row.created_at),
+    clerkUserId: (row.clerk_user_id as string | null) ?? null,
   };
 }
 
@@ -108,6 +109,14 @@ export async function getTeacherByEmail(email: string): Promise<Teacher | null> 
   return rows[0] ? rowToTeacher(rows[0]) : null;
 }
 
+export async function getTeacherByClerkUserId(
+  clerkUserId: string,
+): Promise<Teacher | null> {
+  const rows =
+    await sql`select * from teachers where clerk_user_id = ${clerkUserId}`;
+  return rows[0] ? rowToTeacher(rows[0]) : null;
+}
+
 async function uniqueSlug(base: string): Promise<string> {
   const root = slugify(base) || "teacher";
   let candidate = root;
@@ -124,6 +133,7 @@ async function uniqueSlug(base: string): Promise<string> {
 export async function createTeacher(
   email: string,
   name: string,
+  clerkUserId: string,
 ): Promise<Teacher> {
   const id = newId("tch");
   const slug = await uniqueSlug(name || email.split("@")[0]);
@@ -132,8 +142,8 @@ export async function createTeacher(
     Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
 
   const rows = await sql`
-    insert into teachers (id, slug, email, name, headline, bio, location, specialties, avatar_url, timezone)
-    values (${id}, ${slug}, ${email}, ${displayName}, 'Yoga teacher', '', '', '[]'::jsonb, '', ${timezone})
+    insert into teachers (id, slug, email, name, headline, bio, location, specialties, avatar_url, timezone, clerk_user_id)
+    values (${id}, ${slug}, ${email}, ${displayName}, 'Yoga teacher', '', '', '[]'::jsonb, '', ${timezone}, ${clerkUserId})
     returning *
   `;
   return rowToTeacher(rows[0]);

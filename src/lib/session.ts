@@ -1,38 +1,36 @@
-import { cookies } from "next/headers";
-import { getTeacherById } from "./repo";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { getTeacherByClerkUserId, createTeacher } from "./repo";
 import type { Teacher } from "./types";
 
-// -----------------------------------------------------------------------------
-// Stubbed auth.
-//
-// A signed-in teacher is represented by a single cookie holding their id. There
-// is NO password check — this is a demo login so you can show the product to
-// your first teachers today. When you're ready for real auth, swap this module
-// for Clerk: `getCurrentTeacher()` becomes "read Clerk user -> map to Teacher",
-// and login/logout move to Clerk's hosted UI. Nothing else in the app calls
-// cookies() directly.
-// -----------------------------------------------------------------------------
-
-const COOKIE = "yoga_teacher_id";
-
-export async function setSession(teacherId: string): Promise<void> {
-  const store = await cookies();
-  store.set(COOKIE, teacherId, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-  });
-}
-
-export async function clearSession(): Promise<void> {
-  const store = await cookies();
-  store.delete(COOKIE);
-}
-
+// Real auth via Clerk. Clerk owns the session cookie and login/signup UI;
+// this module's only job is mapping a signed-in Clerk user to our Teacher row,
+// auto-creating one the first time a given Clerk account reaches the app.
 export async function getCurrentTeacher(): Promise<Teacher | null> {
-  const store = await cookies();
-  const id = store.get(COOKIE)?.value;
-  if (!id) return null;
-  return getTeacherById(id);
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  const existing = await getTeacherByClerkUserId(userId);
+  if (existing) return existing;
+
+  const user = await currentUser();
+  if (!user) return null;
+  const email = user.emailAddresses[0]?.emailAddress ?? "";
+  const name =
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+    email.split("@")[0] ||
+    "Teacher";
+
+  // Next.js can invoke this from more than one place (middleware + layout)
+  // for the same request burst, so two calls can race to create the same
+  // brand-new user's row. If our insert fails, re-check by clerk_user_id
+  // first (the other call may have just won) before giving up.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await createTeacher(email, name, userId);
+    } catch {
+      const wonByOther = await getTeacherByClerkUserId(userId);
+      if (wonByOther) return wonByOther;
+    }
+  }
+  return null;
 }
