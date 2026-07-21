@@ -114,6 +114,13 @@ export default async function PublicProfile({
           </p>
         )}
 
+        {teacher.bio && (
+          <section>
+            <h2 className="text-sm font-semibold text-muted mb-2">About</h2>
+            <p className="whitespace-pre-line leading-relaxed">{teacher.bio}</p>
+          </section>
+        )}
+
         {/* Coming up — the soonest bookable times, front and center */}
         {upcoming.length > 0 && (
           <section>
@@ -155,40 +162,6 @@ export default async function PublicProfile({
               })}
             </ul>
             <p className="hint mt-2">Times shown in {teacher.timezone}.</p>
-          </section>
-        )}
-
-        {teacher.bio && (
-          <section>
-            <h2 className="text-sm font-semibold text-muted mb-2">About</h2>
-            <p className="whitespace-pre-line leading-relaxed">{teacher.bio}</p>
-          </section>
-        )}
-
-        {reviews.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <h2 className="text-lg font-semibold">What students say</h2>
-              <span className="flex items-center gap-1 text-sm">
-                <Stars rating={reviewStats.average} className="text-sm" />
-                <span className="text-muted">
-                  {reviewStats.average.toFixed(1)}
-                </span>
-              </span>
-            </div>
-            <ul className="space-y-3">
-              {reviews.map((r) => (
-                <li key={r.id} className="card !py-4">
-                  <Stars rating={r.rating} className="text-sm" />
-                  <p className="mt-2 leading-relaxed whitespace-pre-line">
-                    “{r.body}”
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-muted">
-                    — {r.authorName}
-                  </p>
-                </li>
-              ))}
-            </ul>
           </section>
         )}
 
@@ -290,6 +263,33 @@ export default async function PublicProfile({
                       booking classes.
                     </p>
                   </details>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {reviews.length > 0 && (
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="text-lg font-semibold">What students say</h2>
+              <span className="flex items-center gap-1 text-sm">
+                <Stars rating={reviewStats.average} className="text-sm" />
+                <span className="text-muted">
+                  {reviewStats.average.toFixed(1)}
+                </span>
+              </span>
+            </div>
+            <ul className="space-y-3">
+              {reviews.map((r) => (
+                <li key={r.id} className="card !py-4">
+                  <Stars rating={r.rating} className="text-sm" />
+                  <p className="mt-2 leading-relaxed whitespace-pre-line">
+                    “{r.body}”
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-muted">
+                    — {r.authorName}
+                  </p>
                 </li>
               ))}
             </ul>
