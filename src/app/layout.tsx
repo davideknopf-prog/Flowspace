@@ -9,9 +9,9 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Kuleo — the business OS for yoga teachers",
+  title: "Kuleo — bookings, payments & scheduling for yoga teachers",
   description:
-    "Your profile, schedule, and payments in one place. Share one link; students book and pay.",
+    "Kuleo helps yoga teachers run their online yoga business from one link — bookings, payments, yoga scheduling, class passes, and student relationships. Teach yoga; we'll handle the rest.",
 };
 
 export default function RootLayout({
