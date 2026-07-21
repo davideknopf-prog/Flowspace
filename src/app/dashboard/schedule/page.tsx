@@ -73,11 +73,19 @@ export default async function SchedulePage({
                     {formatDuration(s.durationMinutes)} · {formatPrice(s.priceCents)}
                     {s.description ? ` · ${s.description}` : ""}
                   </p>
-                  {s.locationType === "online" && !s.meetingUrl && (
-                    <p className="text-xs text-danger mt-1">
-                      ⚠ No meeting link yet — add one so students can join.
-                    </p>
-                  )}
+                  {s.locationType === "online" &&
+                    !s.meetingUrl &&
+                    (teacher.defaultMeetingUrl ? (
+                      <p className="text-xs text-muted mt-1">
+                        💻 Uses your default studio room from your Profile.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-danger mt-1">
+                        ⚠ No meeting link — set your studio room link once on
+                        your <a href="/dashboard/profile" className="underline">Profile</a> and
+                        all online classes will use it.
+                      </p>
+                    ))}
                 </div>
                 <form action={deleteSessionTypeAction}>
                   <input type="hidden" name="id" value={s.id} />

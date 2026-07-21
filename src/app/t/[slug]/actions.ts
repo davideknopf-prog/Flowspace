@@ -101,9 +101,14 @@ export async function bookAction(formData: FormData) {
     startISO,
     durationMinutes: sessionType!.durationMinutes,
     priceCents: sessionType!.priceCents,
-    // Snapshot delivery details so the student's link never changes under them.
+    // Snapshot delivery details so the student's link never changes under
+    // them. Online sessions without their own link use the teacher's default
+    // "virtual studio room" from their profile.
     locationType: sessionType!.locationType,
-    meetingUrl: sessionType!.meetingUrl,
+    meetingUrl:
+      sessionType!.locationType === "online"
+        ? sessionType!.meetingUrl || teacher!.defaultMeetingUrl
+        : sessionType!.meetingUrl,
     locationNote: sessionType!.locationNote,
     paymentStatus: isFree ? "free" : paidByPass ? "pass" : "pending",
     stripeCheckoutSessionId: null,

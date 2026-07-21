@@ -95,6 +95,25 @@ export default async function ProfilePage({
           </div>
         </div>
 
+        <div className="border-t border-border pt-5">
+          <label className="label" htmlFor="defaultMeetingUrl">
+            💻 Your virtual studio room (Zoom / Google Meet link)
+          </label>
+          <input
+            id="defaultMeetingUrl"
+            name="defaultMeetingUrl"
+            type="url"
+            defaultValue={teacher.defaultMeetingUrl}
+            placeholder="https://us02web.zoom.us/j/1234567890"
+            className="input"
+          />
+          <p className="hint">
+            Set it once here and every online class uses it automatically —
+            students get it in their confirmation. (A class can still override
+            it with its own link.)
+          </p>
+        </div>
+
         <div>
           <label className="label" htmlFor="specialties">
             Specialties

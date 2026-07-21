@@ -32,27 +32,37 @@ export function AvatarUpload({
 
     setStatus("uploading");
     setError("");
+
+    // The blob SDK can retry network failures internally for a long time; a
+    // hard timeout guarantees the user always gets an answer, never an
+    // infinite spinner.
+    const uploadOnce = () =>
+      Promise.race([
+        upload(file.name, file, {
+          access: "public",
+          handleUploadUrl: "/api/avatar/upload",
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Upload timed out")), 30_000),
+        ),
+      ]);
+
     try {
       // Clerk's short-lived session token occasionally rotates mid-flight,
       // which can fail the very first token request — one silent retry
       // covers that without bothering the user.
       let blob;
       try {
-        blob = await upload(file.name, file, {
-          access: "public",
-          handleUploadUrl: "/api/avatar/upload",
-        });
+        blob = await uploadOnce();
       } catch {
-        blob = await upload(file.name, file, {
-          access: "public",
-          handleUploadUrl: "/api/avatar/upload",
-        });
+        blob = await uploadOnce();
       }
       setUrl(blob.url);
       setStatus("idle");
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setError("Upload failed — please try again.");
+      const detail = err instanceof Error && err.message ? ` (${err.message})` : "";
+      setError(`Upload failed${detail} — please try again or use a different image.`);
     }
   }
 

@@ -58,6 +58,7 @@ function rowToTeacher(row: Record<string, unknown>): Teacher {
     specialties: asStringArray(row.specialties),
     avatarUrl: row.avatar_url as string,
     timezone: row.timezone as string,
+    defaultMeetingUrl: (row.default_meeting_url as string) ?? "",
     createdAt: toISO(row.created_at),
     clerkUserId: (row.clerk_user_id as string | null) ?? null,
     stripeCustomerId: (row.stripe_customer_id as string | null) ?? null,
@@ -276,7 +277,8 @@ export async function updateTeacher(
       location = ${merged.location},
       specialties = ${JSON.stringify(merged.specialties)}::jsonb,
       avatar_url = ${merged.avatarUrl},
-      timezone = ${merged.timezone}
+      timezone = ${merged.timezone},
+      default_meeting_url = ${merged.defaultMeetingUrl}
     where id = ${id}
     returning *
   `;

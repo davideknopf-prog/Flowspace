@@ -25,6 +25,10 @@ alter table teachers add column if not exists subscription_status text not null 
 alter table teachers add column if not exists subscription_plan text not null default '';
 alter table teachers add column if not exists subscription_period_end timestamptz;
 
+-- The teacher's reusable "virtual studio room" (Zoom/Meet). Online sessions
+-- without their own meeting link fall back to this at booking time.
+alter table teachers add column if not exists default_meeting_url text not null default '';
+
 create table if not exists session_types (
   id text primary key,
   teacher_id text not null references teachers(id) on delete cascade,

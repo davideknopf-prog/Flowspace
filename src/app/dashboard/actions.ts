@@ -46,6 +46,7 @@ export async function saveProfileAction(formData: FormData) {
     location: String(formData.get("location") ?? "").trim(),
     avatarUrl: String(formData.get("avatarUrl") ?? "").trim(),
     timezone: String(formData.get("timezone") ?? "").trim() || teacher.timezone,
+    defaultMeetingUrl: String(formData.get("defaultMeetingUrl") ?? "").trim(),
     specialties,
   });
 

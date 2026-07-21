@@ -13,6 +13,9 @@ export interface Teacher {
   specialties: string[];
   avatarUrl: string; // may be empty; we render initials fallback
   timezone: string; // IANA, e.g. "America/New_York"
+  // The teacher's reusable "virtual studio room" (Zoom/Meet link). Online
+  // sessions without their own link fall back to this at booking time.
+  defaultMeetingUrl: string;
   createdAt: string;
   clerkUserId: string | null; // links this profile to a real Clerk account
   // Teacher's own Kuleo subscription (Stripe Billing). Status mirrors

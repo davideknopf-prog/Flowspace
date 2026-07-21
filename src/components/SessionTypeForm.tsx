@@ -97,8 +97,8 @@ export function SessionTypeForm() {
               className="input"
             />
             <p className="hint">
-              Paste your personal Zoom or Google Meet room. Students get it in
-              their confirmation email.
+              Optional — leave empty to use your default studio room from your
+              Profile. Students get the link in their confirmation email.
             </p>
           </div>
           <MeetingLinkHelp />
