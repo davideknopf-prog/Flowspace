@@ -18,6 +18,13 @@ create table if not exists teachers (
 
 alter table teachers add column if not exists clerk_user_id text unique;
 
+-- Teacher subscription (Stripe Billing). Status mirrors Stripe's subscription
+-- status string. Dashboard access requires 'active' or 'trialing'.
+alter table teachers add column if not exists stripe_customer_id text unique;
+alter table teachers add column if not exists subscription_status text not null default 'none';
+alter table teachers add column if not exists subscription_plan text not null default '';
+alter table teachers add column if not exists subscription_period_end timestamptz;
+
 create table if not exists session_types (
   id text primary key,
   teacher_id text not null references teachers(id) on delete cascade,

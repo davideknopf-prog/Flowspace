@@ -1,8 +1,9 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Everything under /dashboard requires a signed-in teacher. Public booking
-// pages (/t/[slug]/...) and the landing/login/signup pages stay open.
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)"]);
+// Everything under /dashboard and /subscribe requires a signed-in teacher.
+// Public booking pages (/t/[slug]/...) and the landing/login/signup pages
+// stay open.
+const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/subscribe(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {

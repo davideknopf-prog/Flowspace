@@ -57,6 +57,12 @@ function rowToTeacher(row: Record<string, unknown>): Teacher {
     timezone: row.timezone as string,
     createdAt: toISO(row.created_at),
     clerkUserId: (row.clerk_user_id as string | null) ?? null,
+    stripeCustomerId: (row.stripe_customer_id as string | null) ?? null,
+    subscriptionStatus: (row.subscription_status as string) ?? "none",
+    subscriptionPlan: (row.subscription_plan as string) ?? "",
+    subscriptionPeriodEnd: row.subscription_period_end
+      ? toISO(row.subscription_period_end)
+      : null,
   };
 }
 
@@ -142,6 +148,44 @@ export async function getTeacherByClerkUserId(
   const rows =
     await sql`select * from teachers where clerk_user_id = ${clerkUserId}`;
   return rows[0] ? rowToTeacher(rows[0]) : null;
+}
+
+export async function getTeacherByStripeCustomerId(
+  customerId: string,
+): Promise<Teacher | null> {
+  const rows =
+    await sql`select * from teachers where stripe_customer_id = ${customerId}`;
+  return rows[0] ? rowToTeacher(rows[0]) : null;
+}
+
+export async function setTeacherStripeCustomer(
+  teacherId: string,
+  stripeCustomerId: string,
+): Promise<void> {
+  await sql`
+    update teachers set stripe_customer_id = ${stripeCustomerId}
+    where id = ${teacherId} and stripe_customer_id is null
+  `;
+}
+
+// Mirrors Stripe's subscription state onto the teacher row. Stripe is the
+// source of truth — this is only ever called with values read from Stripe
+// (webhook events or post-checkout verification), never invented locally.
+export async function setTeacherSubscription(
+  teacherId: string,
+  data: {
+    status: string;
+    plan: string;
+    periodEnd: string | null;
+  },
+): Promise<void> {
+  await sql`
+    update teachers set
+      subscription_status = ${data.status},
+      subscription_plan = ${data.plan},
+      subscription_period_end = ${data.periodEnd}
+    where id = ${teacherId}
+  `;
 }
 
 async function uniqueSlug(base: string): Promise<string> {

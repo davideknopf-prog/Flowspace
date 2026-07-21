@@ -15,6 +15,17 @@ export interface Teacher {
   timezone: string; // IANA, e.g. "America/New_York"
   createdAt: string;
   clerkUserId: string | null; // links this profile to a real Clerk account
+  // Teacher's own Flowspace subscription (Stripe Billing). Status mirrors
+  // Stripe's subscription status string ("active", "past_due", "canceled",
+  // ...); "none" = never subscribed. Dashboard requires active/trialing.
+  stripeCustomerId: string | null;
+  subscriptionStatus: string;
+  subscriptionPlan: string; // price lookup_key, e.g. "flowspace_monthly"
+  subscriptionPeriodEnd: string | null;
+}
+
+export function isSubscribed(teacher: Teacher): boolean {
+  return ["active", "trialing"].includes(teacher.subscriptionStatus);
 }
 
 export type LocationType = "online" | "in_person";

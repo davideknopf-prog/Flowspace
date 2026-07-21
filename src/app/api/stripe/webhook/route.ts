@@ -7,8 +7,10 @@ import {
   backfillStripeFee,
   deletePendingBooking,
   getTeacherById,
+  getTeacherByStripeCustomerId,
   getSessionType,
 } from "@/lib/repo";
+import { syncSubscriptionToTeacher } from "@/lib/billing";
 import { sendBookingEmails } from "@/lib/email";
 
 // Stripe's source of truth for payment state. Confirms bookings (and sends
@@ -42,6 +44,25 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
     const booking = await getBookingByStripeSessionId(session.id);
     if (booking) await deletePendingBooking(booking.id);
+  }
+
+  // Teacher subscription lifecycle: renewals, payment failures, cancellations.
+  // Stripe's status string is mirrored verbatim onto the teacher row; the
+  // dashboard gate reads it from there.
+  if (
+    event.type === "customer.subscription.created" ||
+    event.type === "customer.subscription.updated" ||
+    event.type === "customer.subscription.deleted"
+  ) {
+    const subscription = event.data.object as Stripe.Subscription;
+    const customerId =
+      typeof subscription.customer === "string"
+        ? subscription.customer
+        : subscription.customer.id;
+    const teacher = await getTeacherByStripeCustomerId(customerId);
+    if (teacher) {
+      await syncSubscriptionToTeacher(teacher.id, subscription);
+    }
   }
 
   return NextResponse.json({ received: true });
