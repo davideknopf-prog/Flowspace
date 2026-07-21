@@ -159,3 +159,48 @@ export function computeSlots(params: {
   slots.sort((a, b) => a.startISO.localeCompare(b.startISO));
   return slots;
 }
+
+// One soonest-first bookable opening, tagged with the session it's for. This is
+// the "upcoming classes" interim (pre real scheduled events): we don't have
+// class instances yet, so we surface the next open times derived from
+// availability, each a one-tap path into the booking flow.
+export interface UpcomingClass {
+  startISO: string;
+  endISO: string;
+  sessionTypeId: string;
+}
+
+// Merge each active session type's next slots into a single chronological list,
+// capped to the soonest `limit`. Different session types have different
+// durations, so their grids differ; a shared start time across two types is
+// kept (they're genuinely two different classes to choose from).
+export function computeUpcomingClasses(params: {
+  now: Date;
+  timeZone: string;
+  rules: AvailabilityRule[];
+  bookings: Booking[];
+  sessionTypes: Array<{ id: string; durationMinutes: number }>;
+  limit?: number;
+  days?: number;
+}): UpcomingClass[] {
+  const { now, timeZone, rules, bookings, sessionTypes, limit = 6, days = 14 } =
+    params;
+  if (rules.length === 0 || sessionTypes.length === 0) return [];
+
+  const all: UpcomingClass[] = [];
+  for (const st of sessionTypes) {
+    const slots = computeSlots({
+      now,
+      timeZone,
+      durationMinutes: st.durationMinutes,
+      rules,
+      bookings,
+      days,
+    });
+    for (const s of slots) {
+      all.push({ startISO: s.startISO, endISO: s.endISO, sessionTypeId: st.id });
+    }
+  }
+  all.sort((a, b) => a.startISO.localeCompare(b.startISO));
+  return all.slice(0, limit);
+}

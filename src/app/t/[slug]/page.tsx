@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getTeacherBySlug, listSessionTypes, listOffers } from "@/lib/repo";
+import {
+  getTeacherBySlug,
+  listSessionTypes,
+  listOffers,
+  listAvailability,
+  listBookings,
+} from "@/lib/repo";
+import { computeUpcomingClasses } from "@/lib/slots";
 import { Avatar } from "@/components/Avatar";
-import { formatPrice, formatDuration } from "@/lib/format";
+import { formatPrice, formatDuration, formatSlot } from "@/lib/format";
 import { buyPassAction } from "./actions";
 
 export async function generateMetadata({
@@ -32,12 +39,26 @@ export default async function PublicProfile({
   const teacher = await getTeacherBySlug(slug);
   if (!teacher) notFound();
 
-  const [sessionTypesAll, offersAll] = await Promise.all([
+  const [sessionTypesAll, offersAll, rules, bookings] = await Promise.all([
     listSessionTypes(teacher.id),
     listOffers(teacher.id),
+    listAvailability(teacher.id),
+    listBookings(teacher.id),
   ]);
   const sessionTypes = sessionTypesAll.filter((s) => s.active);
   const offers = offersAll.filter((o) => o.active);
+
+  // "Coming soon" fast-path: the next open times across all sessions, so a
+  // prospect can book in two clicks without scrolling the full menu.
+  const sessionById = new Map(sessionTypes.map((s) => [s.id, s]));
+  const upcoming = computeUpcomingClasses({
+    now: new Date(),
+    timeZone: teacher.timezone,
+    rules,
+    bookings,
+    sessionTypes,
+    limit: 6,
+  });
 
   return (
     <main className="min-h-screen">
@@ -73,6 +94,50 @@ export default async function PublicProfile({
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-danger">
             {error}
           </p>
+        )}
+
+        {/* Coming up — the soonest bookable times, front and center */}
+        {upcoming.length > 0 && (
+          <section>
+            <h2 className="text-lg font-semibold mb-1">Coming up</h2>
+            <p className="text-sm text-muted mb-3">
+              Grab one of {teacher.name.split(" ")[0]}&apos;s next open times —
+              you&apos;ll pick it on the next screen.
+            </p>
+            <ul className="space-y-2">
+              {upcoming.map((u) => {
+                const s = sessionById.get(u.sessionTypeId);
+                if (!s) return null;
+                return (
+                  <li key={`${u.sessionTypeId}-${u.startISO}`}>
+                    <Link
+                      href={`/t/${teacher.slug}/book/${u.sessionTypeId}?start=${encodeURIComponent(u.startISO)}`}
+                      className="card flex items-center justify-between gap-4 !py-3 hover:border-brand transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium">
+                          {formatSlot(u.startISO, teacher.timezone)}
+                        </p>
+                        <p className="text-sm text-muted truncate">
+                          {s.name} · {formatDuration(s.durationMinutes)} ·{" "}
+                          {s.locationType === "online"
+                            ? "💻 Online"
+                            : "📍 In person"}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-semibold">
+                          {formatPrice(s.priceCents)}
+                        </p>
+                        <span className="text-xs text-brand-dark">Book →</span>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="hint mt-2">Times shown in {teacher.timezone}.</p>
+          </section>
         )}
 
         {teacher.bio && (
