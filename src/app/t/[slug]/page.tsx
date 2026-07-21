@@ -57,7 +57,7 @@ export default async function PublicProfile({
     rules,
     bookings,
     sessionTypes,
-    limit: 6,
+    limit: 3,
   });
 
   return (

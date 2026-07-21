@@ -202,5 +202,16 @@ export function computeUpcomingClasses(params: {
     }
   }
   all.sort((a, b) => a.startISO.localeCompare(b.startISO));
-  return all.slice(0, limit);
+
+  // Collapse same-start-time entries to a single teaser row — when several
+  // session types are open at the same instant we show it once (the first by
+  // sort order); the full menu below still lists every session. Keeps this
+  // "coming up" glance uncluttered.
+  const seen = new Set<string>();
+  const distinct = all.filter((u) => {
+    if (seen.has(u.startISO)) return false;
+    seen.add(u.startISO);
+    return true;
+  });
+  return distinct.slice(0, limit);
 }
