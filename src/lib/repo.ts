@@ -5,8 +5,11 @@ import type {
   SessionType,
   AvailabilityRule,
   Booking,
+  Offer,
+  Pass,
   Payout,
 } from "./types";
+import { passIsRedeemable } from "./types";
 
 // Single knob for the platform's cut of each paid booking. A plain env var
 // (not a DB setting) is enough for now — changing it is a deliberate,
@@ -111,6 +114,41 @@ function rowToBooking(row: Record<string, unknown>): Booking {
     stripeCheckoutSessionId: (row.stripe_checkout_session_id as string | null) ?? null,
     platformFeeCents: row.platform_fee_cents as number,
     stripeFeeCents: row.stripe_fee_cents as number,
+    passId: (row.pass_id as string | null) ?? null,
+  };
+}
+
+function rowToOffer(row: Record<string, unknown>): Offer {
+  return {
+    id: row.id as string,
+    teacherId: row.teacher_id as string,
+    name: row.name as string,
+    description: row.description as string,
+    priceCents: row.price_cents as number,
+    creditCount: (row.credit_count as number | null) ?? null,
+    validDays: (row.valid_days as number | null) ?? null,
+    active: row.active as boolean,
+    createdAt: toISO(row.created_at),
+  };
+}
+
+function rowToPass(row: Record<string, unknown>): Pass {
+  return {
+    id: row.id as string,
+    offerId: row.offer_id as string,
+    teacherId: row.teacher_id as string,
+    clientName: row.client_name as string,
+    clientEmail: row.client_email as string,
+    creditsTotal: (row.credits_total as number | null) ?? null,
+    creditsUsed: row.credits_used as number,
+    priceCents: row.price_cents as number,
+    platformFeeCents: row.platform_fee_cents as number,
+    stripeFeeCents: row.stripe_fee_cents as number,
+    paymentStatus: row.payment_status as Pass["paymentStatus"],
+    stripeCheckoutSessionId:
+      (row.stripe_checkout_session_id as string | null) ?? null,
+    expiresAt: row.expires_at ? toISO(row.expires_at) : null,
+    createdAt: toISO(row.created_at),
   };
 }
 
@@ -354,11 +392,11 @@ export async function createBooking(
     insert into bookings
       (id, teacher_id, session_type_id, client_name, client_email, note, start_iso,
        duration_minutes, price_cents, location_type, meeting_url, location_note,
-       payment_status, status, stripe_checkout_session_id, platform_fee_cents)
+       payment_status, status, stripe_checkout_session_id, platform_fee_cents, pass_id)
     values
       (${id}, ${data.teacherId}, ${data.sessionTypeId}, ${data.clientName}, ${data.clientEmail}, ${data.note}, ${data.startISO},
        ${data.durationMinutes}, ${data.priceCents}, ${data.locationType}, ${data.meetingUrl}, ${data.locationNote},
-       ${data.paymentStatus}, 'confirmed', ${data.stripeCheckoutSessionId}, ${data.platformFeeCents})
+       ${data.paymentStatus}, 'confirmed', ${data.stripeCheckoutSessionId}, ${data.platformFeeCents}, ${data.passId})
     returning *
   `;
   return rowToBooking(rows[0]);
@@ -413,6 +451,163 @@ export async function backfillStripeFee(
   `;
 }
 
+// --- Offers ------------------------------------------------------------------
+
+export async function listOffers(teacherId: string): Promise<Offer[]> {
+  const rows = await sql`
+    select * from offers where teacher_id = ${teacherId} order by created_at
+  `;
+  return rows.map(rowToOffer);
+}
+
+export async function getOffer(id: string): Promise<Offer | null> {
+  const rows = await sql`select * from offers where id = ${id}`;
+  return rows[0] ? rowToOffer(rows[0]) : null;
+}
+
+export async function createOffer(
+  teacherId: string,
+  data: Pick<Offer, "name" | "description" | "priceCents" | "creditCount" | "validDays">,
+): Promise<Offer> {
+  const id = newId("off");
+  const rows = await sql`
+    insert into offers (id, teacher_id, name, description, price_cents, credit_count, valid_days, active)
+    values (${id}, ${teacherId}, ${data.name}, ${data.description}, ${data.priceCents}, ${data.creditCount}, ${data.validDays}, true)
+    returning *
+  `;
+  return rowToOffer(rows[0]);
+}
+
+export async function deleteOffer(teacherId: string, id: string): Promise<void> {
+  // Offers with sold passes are deactivated (passes reference them); unsold
+  // ones are removed outright.
+  const passes = await sql`select 1 from passes where offer_id = ${id} limit 1`;
+  if (passes.length > 0) {
+    await sql`update offers set active = false where id = ${id} and teacher_id = ${teacherId}`;
+  } else {
+    await sql`delete from offers where id = ${id} and teacher_id = ${teacherId}`;
+  }
+}
+
+// --- Passes ------------------------------------------------------------------
+
+export async function createPendingPass(
+  offer: Offer,
+  clientName: string,
+  clientEmail: string,
+  platformFeeCents: number,
+): Promise<Pass> {
+  const id = newId("pas");
+  // expires_at is set at purchase time from the offer's validity window.
+  const expiresAt = offer.validDays
+    ? new Date(Date.now() + offer.validDays * 24 * 60 * 60_000).toISOString()
+    : null;
+  const rows = await sql`
+    insert into passes
+      (id, offer_id, teacher_id, client_name, client_email, credits_total,
+       price_cents, platform_fee_cents, payment_status, expires_at)
+    values
+      (${id}, ${offer.id}, ${offer.teacherId}, ${clientName}, ${clientEmail}, ${offer.creditCount},
+       ${offer.priceCents}, ${platformFeeCents}, 'pending', ${expiresAt})
+    returning *
+  `;
+  return rowToPass(rows[0]);
+}
+
+export async function attachPassStripeSession(
+  passId: string,
+  stripeCheckoutSessionId: string,
+): Promise<void> {
+  await sql`
+    update passes set stripe_checkout_session_id = ${stripeCheckoutSessionId}
+    where id = ${passId}
+  `;
+}
+
+export async function getPassById(id: string): Promise<Pass | null> {
+  const rows = await sql`select * from passes where id = ${id}`;
+  return rows[0] ? rowToPass(rows[0]) : null;
+}
+
+export async function getPassByStripeSessionId(
+  sessionId: string,
+): Promise<Pass | null> {
+  const rows =
+    await sql`select * from passes where stripe_checkout_session_id = ${sessionId}`;
+  return rows[0] ? rowToPass(rows[0]) : null;
+}
+
+// Idempotent pending -> paid, same contract as markBookingPaid.
+export async function markPassPaid(
+  id: string,
+  stripeFeeCents: number,
+): Promise<Pass | null> {
+  const rows = await sql`
+    update passes set payment_status = 'paid', stripe_fee_cents = ${stripeFeeCents}
+    where id = ${id} and payment_status = 'pending'
+    returning *
+  `;
+  return rows[0] ? rowToPass(rows[0]) : null;
+}
+
+export async function backfillPassStripeFee(
+  id: string,
+  stripeFeeCents: number,
+): Promise<void> {
+  await sql`
+    update passes set stripe_fee_cents = ${stripeFeeCents}
+    where id = ${id} and payment_status = 'paid' and stripe_fee_cents = 0
+  `;
+}
+
+export async function deletePendingPass(id: string): Promise<void> {
+  await sql`delete from passes where id = ${id} and payment_status = 'pending'`;
+}
+
+// A student's best redeemable pass with this teacher, matched by email.
+// Booking auto-applies it: expiring-soonest first, then oldest.
+export async function findRedeemablePass(
+  teacherId: string,
+  clientEmail: string,
+): Promise<Pass | null> {
+  const rows = await sql`
+    select * from passes
+    where teacher_id = ${teacherId}
+      and lower(client_email) = ${clientEmail.toLowerCase()}
+      and payment_status = 'paid'
+    order by expires_at asc nulls last, created_at asc
+  `;
+  const now = new Date();
+  for (const row of rows) {
+    const pass = rowToPass(row);
+    if (passIsRedeemable(pass, now)) return pass;
+  }
+  return null;
+}
+
+// Consume one credit. Guarded so a credit pass can never go negative; a race
+// that would over-consume simply no-ops (returns false -> caller falls back
+// to normal payment).
+export async function redeemPassCredit(passId: string): Promise<boolean> {
+  const rows = await sql`
+    update passes set credits_used = credits_used + 1
+    where id = ${passId}
+      and payment_status = 'paid'
+      and (credits_total is null or credits_used < credits_total)
+    returning id
+  `;
+  return rows.length > 0;
+}
+
+export async function listPasses(teacherId: string): Promise<Pass[]> {
+  const rows = await sql`
+    select * from passes
+    where teacher_id = ${teacherId} and payment_status = 'paid'
+    order by created_at desc
+  `;
+  return rows.map(rowToPass);
+}
+
 // --- Payouts -----------------------------------------------------------------
 
 export async function listPayouts(teacherId: string): Promise<Payout[]> {
@@ -437,11 +632,15 @@ export async function createPayout(
 }
 
 export interface EarningsSummary {
-  totalPaidCents: number; // gross, what students paid
+  totalPaidCents: number; // gross: paid bookings + paid passes
   totalPlatformFeeCents: number;
   totalStripeFeeCents: number; // Stripe's actual processing fee, absorbed by the teacher
   totalPayoutCents: number;
   balanceCents: number; // what's still owed to the teacher
+  // Activity stats
+  uniqueStudents: number;
+  classesBooked: number; // confirmed bookings, any payment type
+  passesSold: number;
 }
 
 export async function getEarningsSummary(
@@ -449,10 +648,21 @@ export async function getEarningsSummary(
 ): Promise<EarningsSummary> {
   const [bookingRows] = await sql`
     select
+      coalesce(sum(price_cents) filter (where payment_status = 'paid'), 0) as total_price,
+      coalesce(sum(platform_fee_cents) filter (where payment_status = 'paid'), 0) as total_platform_fee,
+      coalesce(sum(stripe_fee_cents) filter (where payment_status = 'paid'), 0) as total_stripe_fee,
+      count(*) filter (where status = 'confirmed' and payment_status != 'pending') as classes_booked,
+      count(distinct lower(client_email)) filter (where status = 'confirmed' and payment_status != 'pending') as unique_students
+    from bookings
+    where teacher_id = ${teacherId}
+  `;
+  const [passRows] = await sql`
+    select
       coalesce(sum(price_cents), 0) as total_price,
       coalesce(sum(platform_fee_cents), 0) as total_platform_fee,
-      coalesce(sum(stripe_fee_cents), 0) as total_stripe_fee
-    from bookings
+      coalesce(sum(stripe_fee_cents), 0) as total_stripe_fee,
+      count(*) as passes_sold
+    from passes
     where teacher_id = ${teacherId} and payment_status = 'paid'
   `;
   const [payoutRows] = await sql`
@@ -461,9 +671,12 @@ export async function getEarningsSummary(
     where teacher_id = ${teacherId}
   `;
 
-  const totalPaidCents = Number(bookingRows.total_price);
-  const totalPlatformFeeCents = Number(bookingRows.total_platform_fee);
-  const totalStripeFeeCents = Number(bookingRows.total_stripe_fee);
+  const totalPaidCents =
+    Number(bookingRows.total_price) + Number(passRows.total_price);
+  const totalPlatformFeeCents =
+    Number(bookingRows.total_platform_fee) + Number(passRows.total_platform_fee);
+  const totalStripeFeeCents =
+    Number(bookingRows.total_stripe_fee) + Number(passRows.total_stripe_fee);
   const totalPayoutCents = Number(payoutRows.total_payout);
   const owedTotal = totalPaidCents - totalPlatformFeeCents - totalStripeFeeCents;
 
@@ -473,5 +686,8 @@ export async function getEarningsSummary(
     totalStripeFeeCents,
     totalPayoutCents,
     balanceCents: owedTotal - totalPayoutCents,
+    uniqueStudents: Number(bookingRows.unique_students),
+    classesBooked: Number(bookingRows.classes_booked),
+    passesSold: Number(passRows.passes_sold),
   };
 }

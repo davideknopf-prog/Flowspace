@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
 import { getCurrentTeacher } from "@/lib/session";
 import { isSubscribed } from "@/lib/types";
+import { isFounder } from "@/lib/founder";
 import { Avatar } from "@/components/Avatar";
 import { DashboardNav } from "@/components/DashboardNav";
 
@@ -15,7 +16,8 @@ export default async function DashboardLayout({
   if (!teacher) redirect("/login");
   // Pay-at-signup: the dashboard is for subscribed teachers. Public booking
   // pages stay up regardless — a lapsed teacher's students are never blocked.
-  if (!isSubscribed(teacher)) redirect("/subscribe");
+  // Founder emails (FOUNDER_EMAILS env var) bypass the gate to demo freely.
+  if (!isSubscribed(teacher) && !isFounder(teacher.email)) redirect("/subscribe");
 
   return (
     <div className="min-h-screen flex flex-col">

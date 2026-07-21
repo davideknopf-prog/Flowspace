@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getTeacherBySlug, listSessionTypes } from "@/lib/repo";
+import { getTeacherBySlug, listSessionTypes, listOffers } from "@/lib/repo";
 import { Avatar } from "@/components/Avatar";
 import { formatPrice, formatDuration } from "@/lib/format";
+import { buyPassAction } from "./actions";
 
 export async function generateMetadata({
   params,
@@ -31,9 +32,12 @@ export default async function PublicProfile({
   const teacher = await getTeacherBySlug(slug);
   if (!teacher) notFound();
 
-  const sessionTypes = (await listSessionTypes(teacher.id)).filter(
-    (s) => s.active,
-  );
+  const [sessionTypesAll, offersAll] = await Promise.all([
+    listSessionTypes(teacher.id),
+    listOffers(teacher.id),
+  ]);
+  const sessionTypes = sessionTypesAll.filter((s) => s.active);
+  const offers = offersAll.filter((o) => o.active);
 
   return (
     <main className="min-h-screen">
@@ -117,6 +121,70 @@ export default async function PublicProfile({
             </ul>
           )}
         </section>
+
+        {/* Class passes */}
+        {offers.length > 0 && (
+          <section>
+            <h2 className="text-lg font-semibold mb-1">Class passes</h2>
+            <p className="text-sm text-muted mb-3">
+              Buy a bundle and save — then book any class with the same email
+              and your pass is applied automatically.
+            </p>
+            <ul className="space-y-3">
+              {offers.map((o) => (
+                <li key={o.id} className="card">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="font-medium">{o.name}</p>
+                      <p className="text-sm text-muted">
+                        {o.creditCount == null
+                          ? "Unlimited classes"
+                          : `${o.creditCount} classes`}
+                        {o.validDays ? ` · valid ${o.validDays} days` : ""}
+                        {o.description ? ` · ${o.description}` : ""}
+                      </p>
+                    </div>
+                    <p className="font-semibold shrink-0 pl-4">
+                      {formatPrice(o.priceCents)}
+                    </p>
+                  </div>
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-sm text-brand-dark font-medium">
+                      Buy this pass →
+                    </summary>
+                    <form
+                      action={buyPassAction}
+                      className="mt-3 grid sm:grid-cols-[1fr_1fr_auto] gap-2"
+                    >
+                      <input type="hidden" name="slug" value={teacher.slug} />
+                      <input type="hidden" name="offerId" value={o.id} />
+                      <input
+                        name="clientName"
+                        placeholder="Your name"
+                        required
+                        className="input"
+                      />
+                      <input
+                        name="clientEmail"
+                        type="email"
+                        placeholder="you@email.com"
+                        required
+                        className="input"
+                      />
+                      <button type="submit" className="btn-primary">
+                        Buy · {formatPrice(o.priceCents)}
+                      </button>
+                    </form>
+                    <p className="hint mt-1">
+                      🔒 Secure checkout via Stripe. Use the same email when
+                      booking classes.
+                    </p>
+                  </details>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <footer className="pt-6 border-t border-border text-center text-xs text-muted">
           Powered by <span className="font-medium">Flowspace</span> 🧘

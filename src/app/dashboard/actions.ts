@@ -9,8 +9,11 @@ import {
   createSessionType,
   deleteSessionType,
   setAvailability,
+  createOffer,
+  deleteOffer,
 } from "@/lib/repo";
 import { slugify } from "@/lib/db";
+import { SESSION_TEMPLATES, OFFER_TEMPLATES } from "@/lib/sku-templates";
 
 async function requireTeacher() {
   const teacher = await getCurrentTeacher();
@@ -127,4 +130,86 @@ function parseHHMM(v: string): number | null {
   const min = Number(m[2]);
   if (h < 0 || h > 23 || min < 0 || min > 59) return null;
   return h * 60 + min;
+}
+
+// --- Offers (multi-class passes) ---------------------------------------------
+
+export async function addOfferAction(formData: FormData) {
+  const teacher = await requireTeacher();
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) redirect("/dashboard/schedule?error=Offer+name+is+required");
+
+  const dollars = Math.max(0, Number(formData.get("price") ?? 0) || 0);
+  const kind = String(formData.get("kind") ?? "credits");
+  const creditCount =
+    kind === "unlimited"
+      ? null
+      : Math.max(1, Math.min(100, Number(formData.get("creditCount") ?? 5) || 5));
+  const validDaysRaw = Number(formData.get("validDays") ?? 0) || 0;
+  // Unlimited passes must expire (otherwise they'd be infinite classes for
+  // one payment); credit passes may run forever.
+  const validDays =
+    kind === "unlimited"
+      ? Math.max(1, validDaysRaw || 30)
+      : validDaysRaw > 0
+        ? validDaysRaw
+        : null;
+
+  await createOffer(teacher.id, {
+    name,
+    description: String(formData.get("description") ?? "").trim(),
+    priceCents: Math.round(dollars * 100),
+    creditCount,
+    validDays,
+  });
+
+  revalidatePath("/dashboard/schedule");
+  redirect("/dashboard/schedule");
+}
+
+export async function deleteOfferAction(formData: FormData) {
+  const teacher = await requireTeacher();
+  const id = String(formData.get("id") ?? "");
+  if (id) await deleteOffer(teacher.id, id);
+  revalidatePath("/dashboard/schedule");
+  redirect("/dashboard/schedule");
+}
+
+// One-click SKU templates: prebuilt sessions and passes teachers can add and
+// then customize (or delete) freely.
+export async function addSessionTemplateAction(formData: FormData) {
+  const teacher = await requireTeacher();
+  const key = String(formData.get("key") ?? "");
+  const tpl = SESSION_TEMPLATES.find((t) => t.key === key);
+  if (tpl) {
+    await createSessionType(teacher.id, {
+      name: tpl.name,
+      description: tpl.description,
+      durationMinutes: tpl.durationMinutes,
+      priceCents: Math.round(tpl.priceDollars * 100),
+      locationType: tpl.locationType,
+      meetingUrl: "",
+      locationNote: "",
+    });
+  }
+  revalidatePath("/dashboard/schedule");
+  redirect("/dashboard/schedule");
+}
+
+export async function addOfferTemplateAction(formData: FormData) {
+  const teacher = await requireTeacher();
+  const key = String(formData.get("key") ?? "");
+  const tpl = OFFER_TEMPLATES.find((t) => t.key === key);
+  if (tpl) {
+    await createOffer(teacher.id, {
+      name: tpl.name,
+      description: tpl.description,
+      priceCents: Math.round(tpl.priceDollars * 100),
+      creditCount: tpl.creditCount,
+      validDays: tpl.validDays,
+    });
+  }
+  revalidatePath("/dashboard/schedule");
+  redirect("/dashboard/schedule");
 }

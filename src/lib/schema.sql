@@ -88,3 +88,44 @@ create table if not exists payouts (
 );
 
 create index if not exists payouts_teacher_id_idx on payouts(teacher_id);
+
+-- Offers: multi-class products a teacher sells (5-class pass, 10-class pass,
+-- unlimited month, ...). credit_count null = unlimited within valid_days.
+create table if not exists offers (
+  id text primary key,
+  teacher_id text not null references teachers(id) on delete cascade,
+  name text not null,
+  description text not null default '',
+  price_cents integer not null,
+  credit_count integer,
+  valid_days integer,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists offers_teacher_id_idx on offers(teacher_id);
+
+-- Passes: a student's purchased offer. Credits are consumed by bookings.
+-- payment_status: 'pending' until Stripe confirms, then 'paid'.
+create table if not exists passes (
+  id text primary key,
+  offer_id text not null references offers(id),
+  teacher_id text not null references teachers(id) on delete cascade,
+  client_name text not null,
+  client_email text not null,
+  credits_total integer,
+  credits_used integer not null default 0,
+  price_cents integer not null,
+  platform_fee_cents integer not null default 0,
+  stripe_fee_cents integer not null default 0,
+  payment_status text not null default 'pending',
+  stripe_checkout_session_id text unique,
+  expires_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists passes_teacher_id_idx on passes(teacher_id);
+create index if not exists passes_client_email_idx on passes(client_email);
+
+-- Bookings paid by redeeming a pass credit reference the pass.
+alter table bookings add column if not exists pass_id text references passes(id);

@@ -9,9 +9,14 @@ import {
   getTeacherById,
   getTeacherByStripeCustomerId,
   getSessionType,
+  getPassByStripeSessionId,
+  markPassPaid,
+  backfillPassStripeFee,
+  deletePendingPass,
+  getOffer,
 } from "@/lib/repo";
 import { syncSubscriptionToTeacher } from "@/lib/billing";
-import { sendBookingEmails } from "@/lib/email";
+import { sendBookingEmails, sendPassEmails } from "@/lib/email";
 
 // Stripe's source of truth for payment state. Confirms bookings (and sends
 // the confirmation emails) once Checkout actually succeeds, and frees the
@@ -37,13 +42,18 @@ export async function POST(req: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+    // A one-time-payment session is either a booking or a pass purchase —
+    // each confirm helper no-ops if the session isn't theirs.
     await confirmBookingForSession(session.id);
+    await confirmPassForSession(session.id);
   }
 
   if (event.type === "checkout.session.expired") {
     const session = event.data.object as Stripe.Checkout.Session;
     const booking = await getBookingByStripeSessionId(session.id);
     if (booking) await deletePendingBooking(booking.id);
+    const pass = await getPassByStripeSessionId(session.id);
+    if (pass && pass.paymentStatus === "pending") await deletePendingPass(pass.id);
   }
 
   // Teacher subscription lifecycle: renewals, payment failures, cancellations.
@@ -155,5 +165,38 @@ export async function confirmBookingForSession(
     await sendBookingEmails({ booking: justPaid, teacher, sessionType });
   } catch (err) {
     console.error("[booking] email send failed", err);
+  }
+}
+
+// Pass-purchase twin of confirmBookingForSession — shared by the webhook and
+// the pass success page's fallback check. Same idempotency contract.
+export async function confirmPassForSession(
+  stripeSessionId: string,
+): Promise<void> {
+  const existing = await getPassByStripeSessionId(stripeSessionId);
+  if (!existing) return;
+
+  if (existing.paymentStatus === "paid") {
+    if (existing.stripeFeeCents === 0) {
+      const feeCents = await fetchStripeFeeCents(stripeSessionId);
+      if (feeCents > 0) await backfillPassStripeFee(existing.id, feeCents);
+    }
+    return;
+  }
+
+  const stripeFeeCents = await fetchStripeFeeCents(stripeSessionId);
+  const justPaid = await markPassPaid(existing.id, stripeFeeCents);
+  if (!justPaid) return;
+
+  const [teacher, offer] = await Promise.all([
+    getTeacherById(justPaid.teacherId),
+    getOffer(justPaid.offerId),
+  ]);
+  if (!teacher || !offer) return;
+
+  try {
+    await sendPassEmails({ pass: justPaid, teacher, offer });
+  } catch (err) {
+    console.error("[pass] email send failed", err);
   }
 }

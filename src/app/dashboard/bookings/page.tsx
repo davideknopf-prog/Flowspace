@@ -120,9 +120,11 @@ function Section({
               <span className="pill">
                 {b.paymentStatus === "paid"
                   ? "Paid ✓"
-                  : b.paymentStatus === "free"
-                    ? "Free"
-                    : "Payment pending"}
+                  : b.paymentStatus === "pass"
+                    ? "Pass 🎟"
+                    : b.paymentStatus === "free"
+                      ? "Free"
+                      : "Payment pending"}
               </span>
             </div>
           </li>

@@ -1,4 +1,4 @@
-import type { Booking, Teacher, SessionType } from "./types";
+import type { Booking, Teacher, SessionType, Pass, Offer } from "./types";
 import { formatSlot, formatPrice, formatDuration } from "./format";
 
 // -----------------------------------------------------------------------------
@@ -180,5 +180,76 @@ export async function sendBookingEmails({
   }
   if (teacherResult.status === "rejected") {
     console.error("[email] teacher notification failed", teacherResult.reason);
+  }
+}
+
+export async function sendPassEmails({
+  pass,
+  teacher,
+  offer,
+}: {
+  pass: Pass;
+  teacher: Teacher;
+  offer: Offer;
+}): Promise<void> {
+  const price = formatPrice(pass.priceCents);
+  const credits =
+    pass.creditsTotal == null ? "Unlimited classes" : `${pass.creditsTotal} classes`;
+  const expiry = pass.expiresAt
+    ? `Valid until ${new Date(pass.expiresAt).toLocaleDateString()}`
+    : "No expiration";
+
+  const studentText = [
+    `You bought ${offer.name} with ${teacher.name}!`,
+    ``,
+    `Includes: ${credits}`,
+    `${expiry}`,
+    `Price: ${price}`,
+    ``,
+    `To use it: book any class on ${teacher.name.split(" ")[0]}'s page with this same email (${pass.clientEmail}) and your pass is applied automatically — no code needed.`,
+  ].join("\n");
+
+  const studentHtml = wrapHtml(`
+    <h1 style="font-size:18px">Your pass is active! ✓</h1>
+    <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
+      <tr><td style="color:#7c736a;padding-right:16px">Pass</td><td>${offer.name} with ${teacher.name}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Includes</td><td>${credits}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Validity</td><td>${expiry}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Price</td><td>${price}</td></tr>
+    </table>
+    <p style="font-size:13px;color:#7c736a;margin-top:16px">To use it, book any class with this same email (${pass.clientEmail}) — your pass is applied automatically.</p>`);
+
+  const teacherText = [
+    `${pass.clientName} (${pass.clientEmail}) bought your ${offer.name} for ${price}.`,
+    `Includes: ${credits} · ${expiry}`,
+  ].join("\n");
+
+  const teacherHtml = wrapHtml(`
+    <h1 style="font-size:18px">Pass sold! 🎉</h1>
+    <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
+      <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${pass.clientName} &lt;${pass.clientEmail}&gt;</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Pass</td><td>${offer.name}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Price</td><td>${price}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Includes</td><td>${credits} · ${expiry}</td></tr>
+    </table>`);
+
+  const results = await Promise.allSettled([
+    send({
+      to: pass.clientEmail,
+      subject: `Pass confirmed: ${offer.name} with ${teacher.name}`,
+      html: studentHtml,
+      text: studentText,
+      replyTo: teacher.email,
+    }),
+    send({
+      to: teacher.email,
+      subject: `Pass sold: ${pass.clientName} — ${offer.name}`,
+      html: teacherHtml,
+      text: teacherText,
+      replyTo: pass.clientEmail,
+    }),
+  ]);
+  for (const r of results) {
+    if (r.status === "rejected") console.error("[email] pass email failed", r.reason);
   }
 }

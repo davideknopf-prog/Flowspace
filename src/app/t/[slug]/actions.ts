@@ -11,6 +11,12 @@ import {
   attachStripeSession,
   computePlatformFeeCents,
   deletePendingBooking,
+  findRedeemablePass,
+  redeemPassCredit,
+  getOffer,
+  createPendingPass,
+  attachPassStripeSession,
+  deletePendingPass,
 } from "@/lib/repo";
 import { computeSlots } from "@/lib/slots";
 import { sendBookingEmails } from "@/lib/email";
@@ -71,6 +77,21 @@ export async function bookAction(formData: FormData) {
 
   const isFree = sessionType!.priceCents === 0;
 
+  // Auto-apply a pass: if this student (matched by email) holds a redeemable
+  // pass with this teacher, consume a credit instead of charging them.
+  let passId: string | null = null;
+  if (!isFree) {
+    const pass = await findRedeemablePass(teacher!.id, clientEmail);
+    if (pass) {
+      const redeemed = await redeemPassCredit(pass.id);
+      if (redeemed) passId = pass.id;
+      // If the redeem raced out (last credit just used), fall through to
+      // normal payment.
+    }
+  }
+
+  const paidByPass = passId !== null;
+
   const booking = await createBooking({
     teacherId: teacher!.id,
     sessionTypeId: sessionType!.id,
@@ -84,12 +105,15 @@ export async function bookAction(formData: FormData) {
     locationType: sessionType!.locationType,
     meetingUrl: sessionType!.meetingUrl,
     locationNote: sessionType!.locationNote,
-    paymentStatus: isFree ? "free" : "pending",
+    paymentStatus: isFree ? "free" : paidByPass ? "pass" : "pending",
     stripeCheckoutSessionId: null,
-    platformFeeCents: isFree ? 0 : computePlatformFeeCents(sessionType!.priceCents),
+    // Pass bookings carry no fees of their own — the pass purchase already did.
+    platformFeeCents:
+      isFree || paidByPass ? 0 : computePlatformFeeCents(sessionType!.priceCents),
+    passId,
   });
 
-  if (isFree) {
+  if (isFree || paidByPass) {
     try {
       await sendBookingEmails({ booking, teacher: teacher!, sessionType: sessionType! });
     } catch (err) {
@@ -131,5 +155,64 @@ export async function bookAction(formData: FormData) {
   }
 
   await attachStripeSession(booking.id, session.id);
+  redirect(session.url!);
+}
+
+// Buy a multi-class pass from the public page. Same pending -> paid dance as
+// bookings: the pass exists immediately but only becomes redeemable once
+// Stripe confirms payment (webhook or success-page fallback).
+export async function buyPassAction(formData: FormData) {
+  const slug = String(formData.get("slug") ?? "");
+  const offerId = String(formData.get("offerId") ?? "");
+  const clientName = String(formData.get("clientName") ?? "").trim();
+  const clientEmail = String(formData.get("clientEmail") ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!clientName || !clientEmail.includes("@")) {
+    redirect(`/t/${slug}?error=Enter+your+name+and+a+valid+email`);
+  }
+
+  const teacher = await getTeacherBySlug(slug);
+  const offer = await getOffer(offerId);
+  if (!teacher || !offer || offer.teacherId !== teacher.id || !offer.active) {
+    redirect(`/t/${slug}?error=That+offer+is+no+longer+available`);
+  }
+
+  const pass = await createPendingPass(
+    offer!,
+    clientName,
+    clientEmail,
+    computePlatformFeeCents(offer!.priceCents),
+  );
+
+  const origin = await siteOrigin();
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: `${offer!.name} with ${teacher!.name}` },
+            unit_amount: offer!.priceCents,
+          },
+          quantity: 1,
+        },
+      ],
+      customer_email: clientEmail,
+      success_url: `${origin}/t/${slug}/pass-success/${pass.id}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/api/stripe/cancel?passId=${pass.id}&slug=${slug}`,
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+      metadata: { passId: pass.id },
+    });
+  } catch (err) {
+    console.error("[pass] stripe checkout session creation failed", err);
+    await deletePendingPass(pass.id);
+    redirect(`/t/${slug}?error=Payment+setup+failed.+Please+try+again.`);
+  }
+
+  await attachPassStripeSession(pass.id, session.id);
   redirect(session.url!);
 }

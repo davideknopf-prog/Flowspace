@@ -37,9 +37,11 @@ export default async function BookedPage({
   const paymentLabel =
     booking.paymentStatus === "paid"
       ? "Paid ✓"
-      : booking.paymentStatus === "free"
-        ? "Free"
-        : "Confirming…";
+      : booking.paymentStatus === "pass"
+        ? "Paid with your pass 🎟"
+        : booking.paymentStatus === "free"
+          ? "Free"
+          : "Confirming…";
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-16">

@@ -61,7 +61,8 @@ export type BookingStatus = "confirmed" | "cancelled";
 
 // "pending" = Stripe Checkout created but not yet paid (holds the slot until
 // the checkout completes or expires). "free" = no payment needed at all.
-export type PaymentStatus = "free" | "pending" | "paid";
+// "pass" = paid by redeeming a credit from a purchased pass.
+export type PaymentStatus = "free" | "pending" | "paid" | "pass";
 
 export interface Booking {
   id: string;
@@ -92,6 +93,49 @@ export interface Booking {
   // absorbs this, same as platformFeeCents: payout = priceCents -
   // platformFeeCents - stripeFeeCents. 0 until payment confirms.
   stripeFeeCents: number;
+  // Set when this booking was paid by redeeming a pass credit.
+  passId: string | null;
+}
+
+// A multi-class product a teacher sells (5-class pass, unlimited month, ...).
+// creditCount null = unlimited during the validity window.
+export interface Offer {
+  id: string;
+  teacherId: string;
+  name: string;
+  description: string;
+  priceCents: number;
+  creditCount: number | null;
+  validDays: number | null;
+  active: boolean;
+  createdAt: string;
+}
+
+// A student's purchased offer. Bookings consume credits until none remain
+// (or, for unlimited passes, until the pass expires).
+export interface Pass {
+  id: string;
+  offerId: string;
+  teacherId: string;
+  clientName: string;
+  clientEmail: string;
+  creditsTotal: number | null;
+  creditsUsed: number;
+  priceCents: number;
+  platformFeeCents: number;
+  stripeFeeCents: number;
+  paymentStatus: "pending" | "paid";
+  stripeCheckoutSessionId: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export function passIsRedeemable(pass: Pass, now: Date): boolean {
+  if (pass.paymentStatus !== "paid") return false;
+  if (pass.expiresAt && new Date(pass.expiresAt) < now) return false;
+  if (pass.creditsTotal != null && pass.creditsUsed >= pass.creditsTotal)
+    return false;
+  return true;
 }
 
 // A manual record that the founder paid a teacher out (bank transfer, Venmo,

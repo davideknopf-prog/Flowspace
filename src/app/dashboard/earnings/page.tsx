@@ -21,6 +21,22 @@ export default async function EarningsPage() {
         </p>
       </div>
 
+      {/* Activity stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="card text-center !p-4">
+          <p className="text-2xl font-semibold">{summary.uniqueStudents}</p>
+          <p className="text-xs text-muted">students</p>
+        </div>
+        <div className="card text-center !p-4">
+          <p className="text-2xl font-semibold">{summary.classesBooked}</p>
+          <p className="text-xs text-muted">classes booked</p>
+        </div>
+        <div className="card text-center !p-4">
+          <p className="text-2xl font-semibold">{summary.passesSold}</p>
+          <p className="text-xs text-muted">passes sold</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="card text-center">
           <p className="text-sm text-muted mb-1">Total earned</p>

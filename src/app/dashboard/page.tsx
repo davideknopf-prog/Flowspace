@@ -5,6 +5,7 @@ import { listSessionTypes, listAvailability, listBookings } from "@/lib/repo";
 import { CopyLink } from "@/components/CopyLink";
 import { formatSlot } from "@/lib/format";
 import { headers } from "next/headers";
+import { FOUNDER } from "@/lib/founder";
 
 export default async function DashboardHome() {
   const teacher = await getCurrentTeacher();
@@ -73,6 +74,35 @@ export default async function DashboardHome() {
           </ul>
         </div>
       )}
+
+      {/* Founder concierge onboarding */}
+      <div className="card border-brand ring-1 ring-[var(--ring)]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-semibold mb-1">
+              You have a direct line to the founder 👋
+            </h2>
+            <p className="text-sm text-muted mb-3">
+              I&apos;m {FOUNDER.name}, {FOUNDER.title} of Flowspace. Text, call,
+              or email me anytime — and I <span className="font-medium text-foreground">highly
+              recommend</span> a quick onboarding call so we get you earning
+              fast. It&apos;s free, and it&apos;s the fastest way to get set up
+              right.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <a href={FOUNDER.onboardingCallUrl} target="_blank" rel="noreferrer" className="btn-primary text-sm">
+                📅 Book your onboarding call
+              </a>
+              <a href={FOUNDER.smsHref} className="btn-secondary text-sm">
+                💬 Text {FOUNDER.phone}
+              </a>
+              <a href={`mailto:${FOUNDER.email}`} className="btn-secondary text-sm">
+                ✉️ Email
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Share link */}
       <div className="card">
