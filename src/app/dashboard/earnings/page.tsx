@@ -88,7 +88,7 @@ export default async function EarningsPage() {
         processing fee (typically ~2.9% + $0.30) on every transaction — this
         comes out of your earnings, same as it would on any other payment
         platform. There&apos;s no automatic payout schedule yet — you&apos;ll
-        be paid manually while Flowspace is in its early days, and this page
+        be paid manually while Kuleo is in its early days, and this page
         always reflects the accurate running balance.
       </div>
 

@@ -213,7 +213,7 @@ function MeetingLinkHelp() {
           </ol>
         </div>
         <p className="text-xs text-muted">
-          Tip: a reusable personal room is perfect for now. Later, Flowspace can
+          Tip: a reusable personal room is perfect for now. Later, Kuleo can
           create a fresh meeting for each class automatically.
         </p>
       </div>

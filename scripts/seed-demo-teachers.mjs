@@ -16,7 +16,7 @@ const sql = neon(process.env.DATABASE_URL);
 const DEMO_TEACHERS = [
   {
     slug: "maya-chen",
-    email: "demo-maya@flowspace.demo",
+    email: "demo-maya@kuleo.demo",
     name: "Maya Chen",
     headline: "Vinyasa & breathwork for busy professionals",
     bio: "I've spent a decade helping desk-bound professionals undo the damage of the 9-to-5. My classes blend strong, mindful vinyasa with breathwork you can actually use — in traffic, before a big meeting, anywhere. Expect to sweat a little, breathe a lot, and leave lighter than you came.\n\n500-hr RYT · Trained in Mysore, India",
@@ -39,7 +39,7 @@ const DEMO_TEACHERS = [
   },
   {
     slug: "james-okafor",
-    email: "demo-james@flowspace.demo",
+    email: "demo-james@kuleo.demo",
     name: "James Okafor",
     headline: "Strength-focused yoga for athletes & lifters",
     bio: "Former college sprinter turned yoga teacher. I work with athletes, runners, and gym rats who think they're 'too tight for yoga' — that's exactly why you need it. Mobility, recovery, and injury prevention, without the incense.\n\nRYT-200 · FRC Mobility Specialist",
@@ -61,7 +61,7 @@ const DEMO_TEACHERS = [
   },
   {
     slug: "sofia-reyes",
-    email: "demo-sofia@flowspace.demo",
+    email: "demo-sofia@kuleo.demo",
     name: "Sofia Reyes",
     headline: "Gentle & restorative yoga — all bodies welcome",
     bio: "Yoga found me after burnout, and I teach the way I wish someone had taught me then: slow, kind, and zero judgment. My classes are for real bodies — new moms, seniors, beginners, and anyone tired of feeling like yoga isn't 'for them.' It is.\n\nRYT-500 · Prenatal & Restorative certified",
@@ -90,7 +90,7 @@ const id = (p) => `${p}_${Date.now().toString(36)}${(n++).toString(36)}`;
 
 if (removeMode) {
   for (const t of DEMO_TEACHERS) {
-    await sql.query("delete from teachers where slug = $1 and email like '%@flowspace.demo'", [t.slug]);
+    await sql.query("delete from teachers where slug = $1 and email like '%@kuleo.demo'", [t.slug]);
     console.log(`- removed ${t.slug}`);
   }
   process.exit(0);

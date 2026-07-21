@@ -9,7 +9,7 @@ export default function LoginPage() {
           href="/"
           className="mb-8 flex items-center gap-2 justify-center text-brand-dark font-semibold text-lg"
         >
-          <span className="text-2xl">🧘</span> Flowspace
+          <span className="text-2xl">🧘</span> Kuleo
         </Link>
         <SignIn
           routing="hash"

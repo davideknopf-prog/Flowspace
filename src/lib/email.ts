@@ -10,7 +10,7 @@ import { formatSlot, formatPrice, formatDuration } from "./format";
 //
 // To go live:
 //   1. Create a Resend account, verify your sending domain.
-//   2. Set RESEND_API_KEY and EMAIL_FROM (e.g. "Flowspace <hello@yourdomain>").
+//   2. Set RESEND_API_KEY and EMAIL_FROM (e.g. "Kuleo <hello@yourdomain>").
 // Until a domain is verified, Resend only delivers to the account owner from
 // "onboarding@resend.dev".
 // -----------------------------------------------------------------------------
@@ -37,7 +37,7 @@ async function send({
   replyTo,
 }: SendArgs): Promise<{ sent: boolean }> {
   const key = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "Flowspace <onboarding@resend.dev>";
+  const from = process.env.EMAIL_FROM || "Kuleo <onboarding@resend.dev>";
 
   if (!key) {
     console.log(
@@ -86,9 +86,9 @@ function locationBlock(b: Booking): { label: string; value: string; link?: strin
 
 function wrapHtml(inner: string): string {
   return `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;color:#26211c">
-    <div style="font-size:20px;font-weight:600;color:#47645a;margin-bottom:16px">🧘 Flowspace</div>
+    <div style="font-size:20px;font-weight:600;color:#47645a;margin-bottom:16px">🧘 Kuleo</div>
     ${inner}
-    <p style="color:#7c736a;font-size:12px;margin-top:24px">Powered by Flowspace</p>
+    <p style="color:#7c736a;font-size:12px;margin-top:24px">Powered by Kuleo</p>
   </div>`;
 }
 

@@ -187,7 +187,7 @@ export default async function PublicProfile({
         )}
 
         <footer className="pt-6 border-t border-border text-center text-xs text-muted">
-          Powered by <span className="font-medium">Flowspace</span> 🧘
+          Powered by <span className="font-medium">Kuleo</span> 🧘
         </footer>
       </div>
     </main>

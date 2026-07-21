@@ -7,9 +7,9 @@ import { setTeacherSubscription } from "./repo";
 // scripts/setup-stripe-prices.mjs in each mode).
 
 export const PLAN_LOOKUP_KEYS = [
-  "flowspace_weekly",
-  "flowspace_monthly",
-  "flowspace_annual",
+  "kuleo_weekly",
+  "kuleo_monthly",
+  "kuleo_annual",
 ] as const;
 
 export interface Plan {

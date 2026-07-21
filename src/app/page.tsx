@@ -10,7 +10,7 @@ export default async function Home() {
       <header className="border-b border-border bg-surface/80 backdrop-blur sticky top-0 z-10">
         <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
           <span className="flex items-center gap-2 font-semibold text-brand-dark">
-            <span className="text-xl">🧘</span> Flowspace
+            <span className="text-xl">🧘</span> Kuleo
           </span>
           <nav className="flex items-center gap-3">
             {teacher ? (
@@ -83,14 +83,14 @@ export default async function Home() {
           </h2>
           <ol className="grid sm:grid-cols-3 gap-8">
             <Step n={1} title="Set up your studio" body="Add your profile, sessions, and prices in a few minutes." />
-            <Step n={2} title="Set your hours" body="Tell Flowspace when you teach. We turn it into bookable times." />
+            <Step n={2} title="Set your hours" body="Tell Kuleo when you teach. We turn it into bookable times." />
             <Step n={3} title="Share your link" body="Post it anywhere. Students book and pay — you get the calendar entry." />
           </ol>
         </div>
       </section>
 
       <footer className="mx-auto max-w-5xl px-4 py-10 text-center text-sm text-muted">
-        Flowspace 🧘 — the business OS for yoga teachers.
+        Kuleo 🧘 — the business OS for yoga teachers.
       </footer>
     </main>
   );

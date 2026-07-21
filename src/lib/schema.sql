@@ -1,4 +1,4 @@
--- Flowspace schema. Mirrors src/lib/types.ts exactly.
+-- Kuleo schema. Mirrors src/lib/types.ts exactly.
 -- Run once via: npm run db:migrate
 
 create table if not exists teachers (

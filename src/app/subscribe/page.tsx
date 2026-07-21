@@ -10,18 +10,18 @@ const PLAN_COPY: Record<
   string,
   { title: string; cadence: string; note: string; highlight?: boolean }
 > = {
-  flowspace_weekly: {
+  kuleo_weekly: {
     title: "Weekly",
     cadence: "per week",
     note: "Great for trying things out.",
   },
-  flowspace_monthly: {
+  kuleo_monthly: {
     title: "Monthly",
     cadence: "per month",
     note: "Most popular with teachers.",
     highlight: true,
   },
-  flowspace_annual: {
+  kuleo_annual: {
     title: "Annual",
     cadence: "per year",
     note: "Two months free vs. monthly.",
@@ -47,7 +47,7 @@ export default async function SubscribePage({
           href="/"
           className="mb-10 flex items-center gap-2 justify-center text-brand-dark font-semibold text-lg"
         >
-          <span className="text-2xl">🧘</span> Flowspace
+          <span className="text-2xl">🧘</span> Kuleo
         </Link>
 
         <div className="text-center mb-10">
@@ -106,7 +106,7 @@ export default async function SubscribePage({
 
         <div className="mt-8 text-center text-sm text-muted space-y-2">
           <p>
-            Secure checkout via Stripe. Your students never pay Flowspace —
+            Secure checkout via Stripe. Your students never pay Kuleo —
             this is just your tool subscription.
           </p>
           <SignOutButton redirectUrl="/">

@@ -9,7 +9,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Flowspace — the business OS for yoga teachers",
+  title: "Kuleo — the business OS for yoga teachers",
   description:
     "Your profile, schedule, and payments in one place. Share one link; students book and pay.",
 };

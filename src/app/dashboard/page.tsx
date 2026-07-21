@@ -83,7 +83,7 @@ export default async function DashboardHome() {
               You have a direct line to the founder 👋
             </h2>
             <p className="text-sm text-muted mb-3">
-              I&apos;m {FOUNDER.name}, {FOUNDER.title} of Flowspace. Text, call,
+              I&apos;m {FOUNDER.name}, {FOUNDER.title} of Kuleo. Text, call,
               or email me anytime — and I <span className="font-medium text-foreground">highly
               recommend</span> a quick onboarding call so we get you earning
               fast. It&apos;s free, and it&apos;s the fastest way to get set up

@@ -27,7 +27,7 @@ export default async function DashboardLayout({
             href="/dashboard"
             className="flex items-center gap-2 font-semibold text-brand-dark"
           >
-            <span className="text-xl">🧘</span> Flowspace
+            <span className="text-xl">🧘</span> Kuleo
           </Link>
           <div className="flex items-center gap-3">
             <Link

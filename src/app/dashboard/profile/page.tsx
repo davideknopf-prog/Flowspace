@@ -114,7 +114,7 @@ export default async function ProfilePage({
             Public link
           </label>
           <div className="flex items-center gap-1 text-sm">
-            <span className="text-muted">flowspace.app/t/</span>
+            <span className="text-muted">kuleo.io/t/</span>
             <input
               id="slug"
               name="slug"
