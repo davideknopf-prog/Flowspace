@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
-import { getCurrentTeacher } from "@/lib/session";
+import { getViewerContext } from "@/lib/session";
 import { isSubscribed } from "@/lib/types";
-import { isFounder } from "@/lib/founder";
+import { exitViewAsAction } from "./actions";
 import { Avatar } from "@/components/Avatar";
 import { DashboardNav } from "@/components/DashboardNav";
 
@@ -12,15 +12,33 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const teacher = await getCurrentTeacher();
-  if (!teacher) redirect("/login");
+  const ctx = await getViewerContext();
+  if (!ctx) redirect("/login");
+  const { teacher, isFounderViewer, impersonating } = ctx;
   // Pay-at-signup: the dashboard is for subscribed teachers. Public booking
   // pages stay up regardless — a lapsed teacher's students are never blocked.
-  // Founder emails (FOUNDER_EMAILS env var) bypass the gate to demo freely.
-  if (!isSubscribed(teacher) && !isFounder(teacher.email)) redirect("/subscribe");
+  // Founder viewers (FOUNDER_EMAILS env var) bypass the gate to demo freely,
+  // including while viewing another teacher's dashboard.
+  if (!isSubscribed(teacher) && !isFounderViewer) redirect("/subscribe");
 
   return (
     <div className="min-h-screen flex flex-col">
+      {impersonating && (
+        <div className="bg-accent text-white text-sm px-4 py-2 flex items-center justify-center gap-3">
+          <span>
+            👁 Viewing as <span className="font-semibold">{teacher.name}</span> —
+            this is their dashboard exactly as they see it.
+          </span>
+          <form action={exitViewAsAction}>
+            <button
+              type="submit"
+              className="underline font-medium cursor-pointer"
+            >
+              Exit
+            </button>
+          </form>
+        </div>
+      )}
       <header className="border-b border-border bg-surface">
         <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
           <Link

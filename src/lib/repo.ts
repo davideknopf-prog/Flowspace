@@ -170,6 +170,11 @@ export async function getTeacherById(id: string): Promise<Teacher | null> {
   return rows[0] ? rowToTeacher(rows[0]) : null;
 }
 
+export async function listAllTeachers(): Promise<Teacher[]> {
+  const rows = await sql`select * from teachers order by created_at`;
+  return rows.map(rowToTeacher);
+}
+
 export async function getTeacherBySlug(slug: string): Promise<Teacher | null> {
   const rows = await sql`select * from teachers where slug = ${slug}`;
   return rows[0] ? rowToTeacher(rows[0]) : null;

@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getCurrentTeacher } from "@/lib/session";
+import {
+  getCurrentTeacher,
+  getViewerContext,
+  setViewAsCookie,
+  clearViewAsCookie,
+} from "@/lib/session";
 import {
   updateTeacher,
   getTeacherBySlug,
@@ -213,4 +218,25 @@ export async function addOfferTemplateAction(formData: FormData) {
   }
   revalidatePath("/dashboard/schedule");
   redirect("/dashboard/schedule");
+}
+
+// --- Founder operator tools --------------------------------------------------
+
+// "View as" — founder-only impersonation for demos. The cookie makes every
+// dashboard page render the target teacher's data; the layout shows an exit
+// banner. Both actions verify the REAL signed-in viewer is a founder.
+export async function viewAsAction(formData: FormData) {
+  const ctx = await getViewerContext();
+  if (!ctx?.isFounderViewer) redirect("/dashboard");
+  const teacherId = String(formData.get("teacherId") ?? "");
+  if (teacherId) await setViewAsCookie(teacherId);
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
+}
+
+export async function exitViewAsAction() {
+  const ctx = await getViewerContext();
+  if (ctx?.isFounderViewer) await clearViewAsCookie();
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }

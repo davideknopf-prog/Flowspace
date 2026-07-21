@@ -13,6 +13,12 @@ export default async function Home() {
             <span className="text-xl">🧘</span> Kuleo
           </span>
           <nav className="flex items-center gap-3">
+            <Link href="/teachers" className="btn-ghost text-sm hidden sm:inline-flex">
+              Teachers
+            </Link>
+            <Link href="/schedule" className="btn-ghost text-sm hidden sm:inline-flex">
+              Schedule
+            </Link>
             {teacher ? (
               <Link href="/dashboard" className="btn-primary text-sm">
                 Go to dashboard

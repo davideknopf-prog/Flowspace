@@ -1,15 +1,26 @@
 import Link from "next/link";
-import { getCurrentTeacher } from "@/lib/session";
+import { getViewerContext } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { listSessionTypes, listAvailability, listBookings } from "@/lib/repo";
+import {
+  listSessionTypes,
+  listAvailability,
+  listBookings,
+  listAllTeachers,
+} from "@/lib/repo";
 import { CopyLink } from "@/components/CopyLink";
 import { formatSlot } from "@/lib/format";
 import { headers } from "next/headers";
 import { FOUNDER } from "@/lib/founder";
+import { viewAsAction } from "./actions";
 
 export default async function DashboardHome() {
-  const teacher = await getCurrentTeacher();
-  if (!teacher) redirect("/login");
+  const ctx = await getViewerContext();
+  if (!ctx) redirect("/login");
+  const { teacher, isFounderViewer, impersonating } = ctx;
+  const otherTeachers =
+    isFounderViewer && !impersonating
+      ? (await listAllTeachers()).filter((t) => t.id !== teacher.id)
+      : [];
 
   const [sessionTypes, availability, bookings] = await Promise.all([
     listSessionTypes(teacher.id),
@@ -72,6 +83,27 @@ export default async function DashboardHome() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Founder-only operator tools */}
+      {otherTeachers.length > 0 && (
+        <div className="card border-dashed">
+          <h2 className="font-semibold mb-1">🛠 Operator tools</h2>
+          <p className="text-sm text-muted mb-3">
+            Step into any teacher&apos;s dashboard to demo their business —
+            earnings, bookings, passes, all of it. Only you can see this card.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {otherTeachers.map((t) => (
+              <form key={t.id} action={viewAsAction}>
+                <input type="hidden" name="teacherId" value={t.id} />
+                <button type="submit" className="btn-secondary text-sm">
+                  👁 View as {t.name}
+                </button>
+              </form>
+            ))}
+          </div>
         </div>
       )}
 
