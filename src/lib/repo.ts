@@ -829,6 +829,76 @@ export interface EarningsSummary {
   passesSold: number;
 }
 
+// A single person a teacher has done business with, aggregated across every
+// booking and pass that shares an email. This is the CRM seed — built entirely
+// from data we already have, no new capture step.
+export interface AudienceMember {
+  email: string;
+  name: string;
+  classesBooked: number; // confirmed, non-pending bookings
+  passesBought: number; // paid passes
+  totalSpentCents: number; // money that actually came from this person
+  firstSeenISO: string;
+  lastClassISO: string | null;
+}
+
+// Everyone who has booked a class or bought a pass with this teacher, grouped
+// by email, "top fans" (most classes) first. Spend counts paid bookings +
+// paid passes only — a pass-redeemed or free booking never double-counts the
+// money (the pass purchase already did).
+export async function getAudience(teacherId: string): Promise<AudienceMember[]> {
+  const rows = await sql`
+    with events as (
+      select
+        lower(client_email) as email,
+        client_name as name,
+        created_at,
+        start_iso,
+        price_cents,
+        (status = 'confirmed' and payment_status <> 'pending') as is_class,
+        (payment_status = 'paid') as is_paid_booking,
+        false as is_pass
+      from bookings
+      where teacher_id = ${teacherId} and client_email <> ''
+      union all
+      select
+        lower(client_email) as email,
+        client_name as name,
+        created_at,
+        null::timestamptz as start_iso,
+        price_cents,
+        false as is_class,
+        false as is_paid_booking,
+        true as is_pass
+      from passes
+      where teacher_id = ${teacherId}
+        and payment_status = 'paid'
+        and client_email <> ''
+    )
+    select
+      email,
+      (array_agg(name order by created_at desc))[1] as name,
+      count(*) filter (where is_class) as classes_booked,
+      count(*) filter (where is_pass) as passes_bought,
+      coalesce(sum(price_cents) filter (where is_paid_booking or is_pass), 0) as total_spent_cents,
+      min(created_at) as first_seen,
+      max(start_iso) filter (where is_class) as last_class
+    from events
+    group by email
+    having count(*) filter (where is_class) > 0 or count(*) filter (where is_pass) > 0
+    order by classes_booked desc, total_spent_cents desc, passes_bought desc, email
+  `;
+  return rows.map((row) => ({
+    email: row.email as string,
+    name: (row.name as string) || (row.email as string),
+    classesBooked: Number(row.classes_booked),
+    passesBought: Number(row.passes_bought),
+    totalSpentCents: Number(row.total_spent_cents),
+    firstSeenISO: toISO(row.first_seen),
+    lastClassISO: row.last_class ? toISO(row.last_class) : null,
+  }));
+}
+
 export async function getEarningsSummary(
   teacherId: string,
 ): Promise<EarningsSummary> {
