@@ -8,6 +8,8 @@ import type {
   Offer,
   Pass,
   Payout,
+  PayoutMethod,
+  PayoutRequest,
 } from "./types";
 import { passIsRedeemable } from "./types";
 
@@ -59,6 +61,8 @@ function rowToTeacher(row: Record<string, unknown>): Teacher {
     avatarUrl: row.avatar_url as string,
     timezone: row.timezone as string,
     defaultMeetingUrl: (row.default_meeting_url as string) ?? "",
+    payoutMethod: ((row.payout_method as string) ?? "") as Teacher["payoutMethod"],
+    payoutHandle: (row.payout_handle as string) ?? "",
     createdAt: toISO(row.created_at),
     clerkUserId: (row.clerk_user_id as string | null) ?? null,
     stripeCustomerId: (row.stripe_customer_id as string | null) ?? null,
@@ -160,6 +164,20 @@ function rowToPayout(row: Record<string, unknown>): Payout {
     amountCents: row.amount_cents as number,
     note: row.note as string,
     createdAt: toISO(row.created_at),
+  };
+}
+
+function rowToPayoutRequest(row: Record<string, unknown>): PayoutRequest {
+  return {
+    id: row.id as string,
+    teacherId: row.teacher_id as string,
+    amountCents: row.amount_cents as number,
+    method: row.method as PayoutMethod,
+    handle: row.handle as string,
+    status: row.status as PayoutRequest["status"],
+    payoutId: (row.payout_id as string | null) ?? null,
+    createdAt: toISO(row.created_at),
+    paidAt: row.paid_at ? toISO(row.paid_at) : null,
   };
 }
 
@@ -295,7 +313,9 @@ export async function updateTeacher(
       specialties = ${JSON.stringify(merged.specialties)}::jsonb,
       avatar_url = ${merged.avatarUrl},
       timezone = ${merged.timezone},
-      default_meeting_url = ${merged.defaultMeetingUrl}
+      default_meeting_url = ${merged.defaultMeetingUrl},
+      payout_method = ${merged.payoutMethod},
+      payout_handle = ${merged.payoutHandle}
     where id = ${id}
     returning *
   `;
@@ -648,6 +668,153 @@ export async function createPayout(
     returning *
   `;
   return rowToPayout(rows[0]);
+}
+
+// --- Cash-out requests -------------------------------------------------------
+
+export async function setTeacherPayoutMethod(
+  teacherId: string,
+  method: PayoutMethod,
+  handle: string,
+): Promise<void> {
+  await sql`
+    update teachers set payout_method = ${method}, payout_handle = ${handle}
+    where id = ${teacherId}
+  `;
+}
+
+export async function getPendingPayoutRequest(
+  teacherId: string,
+): Promise<PayoutRequest | null> {
+  const rows = await sql`
+    select * from payout_requests
+    where teacher_id = ${teacherId} and status = 'pending'
+  `;
+  return rows[0] ? rowToPayoutRequest(rows[0]) : null;
+}
+
+// Creates the request. A partial unique index allows only one pending request
+// per teacher, so a double-submit races to a constraint error — callers treat
+// that as "already requested", not a failure.
+export async function createPayoutRequest(
+  teacherId: string,
+  amountCents: number,
+  method: PayoutMethod,
+  handle: string,
+): Promise<PayoutRequest> {
+  const id = newId("pyr");
+  const rows = await sql`
+    insert into payout_requests (id, teacher_id, amount_cents, method, handle, status)
+    values (${id}, ${teacherId}, ${amountCents}, ${method}, ${handle}, 'pending')
+    returning *
+  `;
+  return rowToPayoutRequest(rows[0]);
+}
+
+export interface PayoutRequestWithTeacher {
+  request: PayoutRequest;
+  teacherName: string;
+  teacherEmail: string;
+  teacherSlug: string;
+}
+
+// Every open cash-out request across all teachers — the founder's work queue.
+export async function listPendingPayoutRequests(): Promise<
+  PayoutRequestWithTeacher[]
+> {
+  const rows = await sql`
+    select pr.*, t.name as teacher_name, t.email as teacher_email, t.slug as teacher_slug
+    from payout_requests pr
+    join teachers t on t.id = pr.teacher_id
+    where pr.status = 'pending'
+    order by pr.created_at
+  `;
+  return rows.map((row) => ({
+    request: rowToPayoutRequest(row),
+    teacherName: row.teacher_name as string,
+    teacherEmail: row.teacher_email as string,
+    teacherSlug: row.teacher_slug as string,
+  }));
+}
+
+// Idempotent pending -> paid, same contract as markBookingPaid: only the call
+// that actually makes the transition gets the request back (and goes on to
+// record the payout + email the teacher); a repeat click returns null.
+export async function markPayoutRequestPaid(
+  requestId: string,
+): Promise<PayoutRequest | null> {
+  const rows = await sql`
+    update payout_requests set status = 'paid', paid_at = now()
+    where id = ${requestId} and status = 'pending'
+    returning *
+  `;
+  if (!rows[0]) return null;
+  const request = rowToPayoutRequest(rows[0]);
+
+  const payout = await createPayout(
+    request.teacherId,
+    request.amountCents,
+    `Cash-out via ${request.method} (${request.handle})`,
+  );
+  await sql`
+    update payout_requests set payout_id = ${payout.id} where id = ${request.id}
+  `;
+  return { ...request, payoutId: payout.id };
+}
+
+// Net earnings per week for the mini chart: Monday-start UTC buckets, oldest
+// first, zero-filled so every week renders. Bookings count in the week the
+// class happens (clamped to now so prepaid future classes still show today);
+// passes count in the week they were bought.
+export interface WeeklyEarnings {
+  weekStartISO: string;
+  netCents: number;
+}
+
+export async function getWeeklyNetEarnings(
+  teacherId: string,
+  weeks = 8,
+): Promise<WeeklyEarnings[]> {
+  const bookingRows = await sql`
+    select date_trunc('week', least(start_iso, now())) as week,
+           coalesce(sum(price_cents - platform_fee_cents - stripe_fee_cents), 0) as net
+    from bookings
+    where teacher_id = ${teacherId} and payment_status = 'paid'
+    group by 1
+  `;
+  const passRows = await sql`
+    select date_trunc('week', created_at) as week,
+           coalesce(sum(price_cents - platform_fee_cents - stripe_fee_cents), 0) as net
+    from passes
+    where teacher_id = ${teacherId} and payment_status = 'paid'
+    group by 1
+  `;
+
+  const byWeek = new Map<string, number>();
+  for (const row of [...bookingRows, ...passRows]) {
+    const key = toISO(row.week).slice(0, 10);
+    byWeek.set(key, (byWeek.get(key) ?? 0) + Number(row.net));
+  }
+
+  // Monday of the current UTC week (matches Postgres date_trunc('week')).
+  const now = new Date();
+  const daysSinceMonday = (now.getUTCDay() + 6) % 7;
+  const monday = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() - daysSinceMonday,
+  );
+
+  const series: WeeklyEarnings[] = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const weekStart = new Date(monday - i * 7 * 24 * 60 * 60_000);
+    const key = weekStart.toISOString().slice(0, 10);
+    series.push({
+      weekStartISO: weekStart.toISOString(),
+      netCents: byWeek.get(key) ?? 0,
+    });
+  }
+  return series;
 }
 
 export interface EarningsSummary {

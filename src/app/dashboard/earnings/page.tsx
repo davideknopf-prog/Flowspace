@@ -1,25 +1,144 @@
 import { getCurrentTeacher } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { getEarningsSummary, listPayouts } from "@/lib/repo";
-import { formatPrice } from "@/lib/format";
+import {
+  getEarningsSummary,
+  listPayouts,
+  getWeeklyNetEarnings,
+  getPendingPayoutRequest,
+} from "@/lib/repo";
+import { formatMoney } from "@/lib/format";
+import { payoutMethodLabel } from "@/lib/types";
+import { CashOutButton } from "@/components/CashOutButton";
+import { WeeklyEarningsChart } from "@/components/WeeklyEarningsChart";
 
-export default async function EarningsPage() {
+// The "money feel" page: one celebratory number, momentum, and a cash-out
+// button. Fees are deliberately NOT itemized here — they live in the
+// collapsible math below and in the cash-out dialog.
+
+export default async function EarningsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ requested?: string; error?: string }>;
+}) {
   const teacher = await getCurrentTeacher();
   if (!teacher) redirect("/login");
+  const { requested, error } = await searchParams;
 
-  const [summary, payouts] = await Promise.all([
+  const [summary, payouts, weekly, pendingRequest] = await Promise.all([
     getEarningsSummary(teacher.id),
     listPayouts(teacher.id),
+    getWeeklyNetEarnings(teacher.id, 8),
+    getPendingPayoutRequest(teacher.id),
   ]);
 
+  const earnedCents =
+    summary.totalPaidCents -
+    summary.totalPlatformFeeCents -
+    summary.totalStripeFeeCents;
+  const feeCents = summary.totalPlatformFeeCents + summary.totalStripeFeeCents;
+  const availableCents = Math.max(0, summary.balanceCents);
+  const thisWeekCents = weekly[weekly.length - 1]?.netCents ?? 0;
+  const hasEarnings = earnedCents > 0;
+
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold mb-1">Earnings</h1>
         <p className="text-muted text-sm">
-          What you&apos;ve earned from paid bookings, and what&apos;s been paid out to you.
+          Your money at a glance — cash out whenever you like.
         </p>
       </div>
+
+      {requested && (
+        <div className="card !p-4 border-brand bg-brand-tint/60 text-sm">
+          💸 <span className="font-medium">Your cash-out request is in!</span>{" "}
+          David has been notified and will send your money shortly.
+        </div>
+      )}
+      {error === "empty" && (
+        <div className="card !p-4 text-sm text-muted">
+          Nothing to cash out just yet — your balance updates the moment a
+          student pays.
+        </div>
+      )}
+      {error === "method" && (
+        <div className="card !p-4 border-danger text-sm text-danger">
+          Pick a payout method and enter your handle to cash out.
+        </div>
+      )}
+      {error === "retry" && (
+        <div className="card !p-4 border-danger text-sm text-danger">
+          Something went wrong sending your request — please try again in a
+          moment.
+        </div>
+      )}
+
+      {/* Hero: the number the page exists for */}
+      <section className="card !p-8 bg-gradient-to-br from-brand-tint to-surface">
+        <p className="text-sm font-medium text-brand-dark">
+          Total earned with Kuleo
+        </p>
+        <p className="mt-1 text-5xl font-semibold tracking-tight">
+          {formatMoney(earnedCents)}
+        </p>
+        {thisWeekCents > 0 && (
+          <p className="mt-2 text-sm text-muted">
+            <span className="font-medium text-brand-dark">
+              +{formatMoney(thisWeekCents)}
+            </span>{" "}
+            this week 🎉
+          </p>
+        )}
+
+        {hasEarnings && (
+          <div className="mt-6">
+            <WeeklyEarningsChart series={weekly} />
+          </div>
+        )}
+
+        <div className="mt-6 border-t border-border pt-5">
+          {pendingRequest ? (
+            <div className="flex items-start gap-3 text-sm">
+              <span className="text-xl">💸</span>
+              <div className="min-w-0">
+                <p className="font-medium break-words">
+                  {formatMoney(pendingRequest.amountCents)} is on its way to
+                  your {payoutMethodLabel(pendingRequest.method)} (
+                  {pendingRequest.handle})
+                </p>
+                <p className="text-muted">
+                  Requested{" "}
+                  {new Date(pendingRequest.createdAt).toLocaleDateString()} —
+                  usually arrives within 1–2 business days.
+                </p>
+              </div>
+            </div>
+          ) : availableCents > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-muted">Available to cash out</p>
+                <p className="text-xl font-semibold text-brand-dark">
+                  {formatMoney(availableCents)}
+                </p>
+              </div>
+              <CashOutButton
+                balanceCents={availableCents}
+                collectedCents={summary.totalPaidCents}
+                feeCents={feeCents}
+                paidOutCents={summary.totalPayoutCents}
+                savedMethod={teacher.payoutMethod}
+                savedHandle={teacher.payoutHandle}
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-muted">
+              {hasEarnings
+                ? "You're all caught up — everything you've earned has been paid out. 🙌"
+                : "Share your booking page and this number starts climbing."}
+            </p>
+          )}
+        </div>
+      </section>
 
       {/* Activity stats */}
       <div className="grid grid-cols-3 gap-4">
@@ -37,73 +156,72 @@ export default async function EarningsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="card text-center">
-          <p className="text-sm text-muted mb-1">Total earned</p>
-          <p className="text-2xl font-semibold">
-            {formatPrice(
-              summary.totalPaidCents -
-                summary.totalPlatformFeeCents -
-                summary.totalStripeFeeCents,
-            )}
+      {/* The full math, tucked away by default */}
+      <details className="card !p-0 overflow-hidden">
+        <summary className="cursor-pointer list-none px-6 py-4 text-sm font-medium hover:bg-brand-tint/40">
+          See the full math ▾
+        </summary>
+        <div className="border-t border-border px-6 py-4 text-sm space-y-2">
+          <Row
+            label="Collected from students"
+            value={formatMoney(summary.totalPaidCents)}
+          />
+          <Row
+            label="Stripe processing fee"
+            value={`− ${formatMoney(summary.totalStripeFeeCents)}`}
+          />
+          <Row
+            label="Platform fee"
+            value={`− ${formatMoney(summary.totalPlatformFeeCents)}`}
+          />
+          <div className="border-t border-border my-2" />
+          <Row label="Your earnings" value={formatMoney(earnedCents)} bold />
+          <Row
+            label="Already paid out"
+            value={`− ${formatMoney(summary.totalPayoutCents)}`}
+          />
+          <Row
+            label="Available to cash out"
+            value={formatMoney(availableCents)}
+            bold
+          />
+          <p className="text-xs text-muted pt-2">
+            Payments are collected securely via Stripe, which charges its own
+            processing fee (typically ~2.9% + $0.30) on every transaction —
+            same as on any other payment platform. This page always reflects
+            your accurate live balance.
           </p>
         </div>
-        <div className="card text-center bg-brand-tint/50">
-          <p className="text-sm text-muted mb-1">Balance owed to you</p>
-          <p className="text-2xl font-semibold text-brand-dark">
-            {formatPrice(Math.max(0, summary.balanceCents))}
-          </p>
-        </div>
-      </div>
-
-      <div className="card text-sm space-y-2">
-        <p className="font-medium mb-1">How this is calculated</p>
-        <Row label="Collected from students" value={formatPrice(summary.totalPaidCents)} />
-        <Row
-          label="Stripe processing fee"
-          value={`− ${formatPrice(summary.totalStripeFeeCents)}`}
-        />
-        <Row
-          label="Platform fee"
-          value={`− ${formatPrice(summary.totalPlatformFeeCents)}`}
-        />
-        <div className="border-t border-border my-2" />
-        <Row
-          label="Your earnings"
-          value={formatPrice(
-            summary.totalPaidCents -
-              summary.totalPlatformFeeCents -
-              summary.totalStripeFeeCents,
-          )}
-          bold
-        />
-        <Row
-          label="Already paid out"
-          value={`− ${formatPrice(summary.totalPayoutCents)}`}
-        />
-      </div>
-
-      <div className="card text-sm text-muted">
-        Payments are collected securely via Stripe. Stripe charges its own
-        processing fee (typically ~2.9% + $0.30) on every transaction — this
-        comes out of your earnings, same as it would on any other payment
-        platform. There&apos;s no automatic payout schedule yet — you&apos;ll
-        be paid manually while Kuleo is in its early days, and this page
-        always reflects the accurate running balance.
-      </div>
+      </details>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">Payout history</h2>
-        {payouts.length === 0 ? (
+        <h2 className="text-lg font-semibold mb-3">Cash-out history</h2>
+        {payouts.length === 0 && !pendingRequest ? (
           <div className="card text-center py-8 text-sm text-muted">
-            No payouts recorded yet.
+            No cash-outs yet — your first one is a button-click away.
           </div>
         ) : (
           <ul className="space-y-2">
+            {pendingRequest && (
+              <li className="card !p-4 flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="font-medium">
+                    {formatMoney(pendingRequest.amountCents)}
+                  </p>
+                  <p className="text-sm text-muted break-words">
+                    Via {payoutMethodLabel(pendingRequest.method)} (
+                    {pendingRequest.handle})
+                  </p>
+                </div>
+                <span className="pill !bg-accent/15 !text-accent shrink-0">
+                  Pending
+                </span>
+              </li>
+            )}
             {payouts.map((p) => (
               <li key={p.id} className="card !p-4 flex items-center justify-between">
                 <div>
-                  <p className="font-medium">{formatPrice(p.amountCents)}</p>
+                  <p className="font-medium">{formatMoney(p.amountCents)}</p>
                   {p.note && <p className="text-sm text-muted">{p.note}</p>}
                 </div>
                 <p className="text-xs text-muted">

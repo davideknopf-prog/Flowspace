@@ -16,6 +16,10 @@ export interface Teacher {
   // The teacher's reusable "virtual studio room" (Zoom/Meet link). Online
   // sessions without their own link fall back to this at booking time.
   defaultMeetingUrl: string;
+  // Where cash-outs go: a P2P handle (Zelle/Venmo/PayPal), deliberately not
+  // raw bank details in v1. Empty until the teacher's first cash-out.
+  payoutMethod: PayoutMethod | "";
+  payoutHandle: string;
   createdAt: string;
   clerkUserId: string | null; // links this profile to a real Clerk account
   // Teacher's own Kuleo subscription (Stripe Billing). Status mirrors
@@ -149,6 +153,37 @@ export interface Payout {
   amountCents: number;
   note: string;
   createdAt: string;
+}
+
+export const PAYOUT_METHODS = ["zelle", "venmo", "paypal"] as const;
+export type PayoutMethod = (typeof PAYOUT_METHODS)[number];
+
+export function payoutMethodLabel(method: string): string {
+  switch (method) {
+    case "zelle":
+      return "Zelle";
+    case "venmo":
+      return "Venmo";
+    case "paypal":
+      return "PayPal";
+    default:
+      return method;
+  }
+}
+
+// A teacher's "cash out" click: the balance owed at request time, plus where
+// to send it. The founder pays it by hand and marks it paid, which records a
+// Payout and links it here.
+export interface PayoutRequest {
+  id: string;
+  teacherId: string;
+  amountCents: number;
+  method: PayoutMethod;
+  handle: string;
+  status: "pending" | "paid";
+  payoutId: string | null;
+  createdAt: string;
+  paidAt: string | null;
 }
 
 export interface Database {

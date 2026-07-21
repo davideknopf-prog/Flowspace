@@ -2,6 +2,12 @@
 
 export function formatPrice(cents: number): string {
   if (cents === 0) return "Free";
+  return formatMoney(cents);
+}
+
+// Like formatPrice but for money amounts (earnings, payouts) where zero must
+// read "$0", never "Free".
+export function formatMoney(cents: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",

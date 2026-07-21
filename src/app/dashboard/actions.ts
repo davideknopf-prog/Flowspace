@@ -11,12 +11,15 @@ import {
 import {
   updateTeacher,
   getTeacherBySlug,
+  getTeacherById,
   createSessionType,
   deleteSessionType,
   setAvailability,
   createOffer,
   deleteOffer,
+  markPayoutRequestPaid,
 } from "@/lib/repo";
+import { sendCashOutPaidEmail } from "@/lib/email";
 import { slugify } from "@/lib/db";
 import { SESSION_TEMPLATES, OFFER_TEMPLATES } from "@/lib/sku-templates";
 
@@ -238,5 +241,27 @@ export async function exitViewAsAction() {
   const ctx = await getViewerContext();
   if (ctx?.isFounderViewer) await clearViewAsCookie();
   revalidatePath("/dashboard");
+  redirect("/dashboard");
+}
+
+// Founder clicked "Mark paid" on a cash-out request — AFTER actually sending
+// the money on the P2P app. Records the payout (so the teacher's balance
+// drops) and emails them the good news. Idempotent: a double click finds the
+// request already paid and does nothing.
+export async function markPayoutRequestPaidAction(formData: FormData) {
+  const ctx = await getViewerContext();
+  if (!ctx?.isFounderViewer) redirect("/dashboard");
+
+  const requestId = String(formData.get("requestId") ?? "");
+  if (requestId) {
+    const request = await markPayoutRequestPaid(requestId);
+    if (request) {
+      const teacher = await getTeacherById(request.teacherId);
+      if (teacher) await sendCashOutPaidEmail({ teacher, request });
+    }
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/earnings");
   redirect("/dashboard");
 }

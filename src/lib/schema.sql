@@ -81,6 +81,11 @@ alter table bookings add column if not exists stripe_fee_cents integer not null 
 
 create index if not exists bookings_teacher_id_idx on bookings(teacher_id);
 
+-- Where the teacher wants cash-outs sent. A handle on a P2P app (Zelle /
+-- Venmo / PayPal), deliberately NOT raw bank account numbers in v1.
+alter table teachers add column if not exists payout_method text not null default '';
+alter table teachers add column if not exists payout_handle text not null default '';
+
 -- Manual record of a payout the founder sent a teacher (bank transfer, Venmo,
 -- Stripe Payout, whatever). No automation yet — see repo.ts / scripts/payout.mjs.
 create table if not exists payouts (
@@ -92,6 +97,27 @@ create table if not exists payouts (
 );
 
 create index if not exists payouts_teacher_id_idx on payouts(teacher_id);
+
+-- A teacher's "cash out" request: the whole balance owed at request time,
+-- snapshotting the method + handle it should be sent to. The founder fulfills
+-- it by hand (Zelle/Venmo/PayPal) and marks it paid, which records a payout.
+-- status: 'pending' -> 'paid'.
+create table if not exists payout_requests (
+  id text primary key,
+  teacher_id text not null references teachers(id) on delete cascade,
+  amount_cents integer not null,
+  method text not null,
+  handle text not null,
+  status text not null default 'pending',
+  payout_id text references payouts(id),
+  created_at timestamptz not null default now(),
+  paid_at timestamptz
+);
+
+create index if not exists payout_requests_teacher_id_idx on payout_requests(teacher_id);
+-- One open request per teacher at a time (double-click / double-tab guard).
+create unique index if not exists payout_requests_one_pending_idx
+  on payout_requests(teacher_id) where status = 'pending';
 
 -- Offers: multi-class products a teacher sells (5-class pass, 10-class pass,
 -- unlimited month, ...). credit_count null = unlimited within valid_days.

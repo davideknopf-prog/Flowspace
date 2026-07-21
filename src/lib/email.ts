@@ -1,5 +1,14 @@
-import type { Booking, Teacher, SessionType, Pass, Offer } from "./types";
-import { formatSlot, formatPrice, formatDuration } from "./format";
+import type {
+  Booking,
+  Teacher,
+  SessionType,
+  Pass,
+  Offer,
+  PayoutRequest,
+} from "./types";
+import { payoutMethodLabel } from "./types";
+import { formatSlot, formatPrice, formatDuration, formatMoney } from "./format";
+import { FOUNDER } from "./founder";
 
 // -----------------------------------------------------------------------------
 // Transactional email via Resend's REST API (no SDK dependency).
@@ -19,6 +28,19 @@ const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 export function emailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY);
+}
+
+// Escape user-controlled text before it goes into email HTML. Names, notes,
+// payout handles, etc. are free-form: without this a crafted value could inject
+// markup — and the founder's cash-out email is the payment-instruction channel,
+// so a spoofed amount/destination there is a real risk, not just cosmetic.
+function esc(v: string): string {
+  return v
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 interface SendArgs {
@@ -106,8 +128,8 @@ export async function sendBookingEmails({
   const price = formatPrice(booking.priceCents);
   const duration = formatDuration(booking.durationMinutes);
   const locValueHtml = loc.link
-    ? `<a href="${loc.link}" style="color:#47645a">${loc.link}</a>`
-    : loc.value;
+    ? `<a href="${esc(loc.link)}" style="color:#47645a">${esc(loc.link)}</a>`
+    : esc(loc.value);
 
   // --- To the student -------------------------------------------------------
   const studentText = [
@@ -123,10 +145,10 @@ export async function sendBookingEmails({
   ].join("\n");
 
   const studentHtml = wrapHtml(`
-    <h1 style="font-size:18px">You're booked with ${teacher.name}! ✓</h1>
+    <h1 style="font-size:18px">You're booked with ${esc(teacher.name)}! ✓</h1>
     <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
-      <tr><td style="color:#7c736a;padding-right:16px">Session</td><td>${sessionType.name}</td></tr>
-      <tr><td style="color:#7c736a;padding-right:16px">When</td><td>${when}<br><span style="color:#7c736a;font-size:12px">${teacher.timezone}</span></td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Session</td><td>${esc(sessionType.name)}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">When</td><td>${when}<br><span style="color:#7c736a;font-size:12px">${esc(teacher.timezone)}</span></td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Duration</td><td>${duration}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Price</td><td>${price}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px;vertical-align:top">${loc.label}</td><td>${locValueHtml}</td></tr>
@@ -147,11 +169,11 @@ export async function sendBookingEmails({
   const teacherHtml = wrapHtml(`
     <h1 style="font-size:18px">New booking 🎉</h1>
     <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
-      <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${booking.clientName} &lt;${booking.clientEmail}&gt;</td></tr>
-      <tr><td style="color:#7c736a;padding-right:16px">Session</td><td>${sessionType.name}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${esc(booking.clientName)} &lt;${esc(booking.clientEmail)}&gt;</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Session</td><td>${esc(sessionType.name)}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">When</td><td>${when}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Price</td><td>${price}</td></tr>
-      ${booking.note ? `<tr><td style="color:#7c736a;padding-right:16px;vertical-align:top">Note</td><td>${booking.note}</td></tr>` : ""}
+      ${booking.note ? `<tr><td style="color:#7c736a;padding-right:16px;vertical-align:top">Note</td><td>${esc(booking.note)}</td></tr>` : ""}
     </table>`);
 
   // allSettled, not all: the two emails are independent, and a bad address on
@@ -212,12 +234,12 @@ export async function sendPassEmails({
   const studentHtml = wrapHtml(`
     <h1 style="font-size:18px">Your pass is active! ✓</h1>
     <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
-      <tr><td style="color:#7c736a;padding-right:16px">Pass</td><td>${offer.name} with ${teacher.name}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Pass</td><td>${esc(offer.name)} with ${esc(teacher.name)}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Includes</td><td>${credits}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Validity</td><td>${expiry}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Price</td><td>${price}</td></tr>
     </table>
-    <p style="font-size:13px;color:#7c736a;margin-top:16px">To use it, book any class with this same email (${pass.clientEmail}) — your pass is applied automatically.</p>`);
+    <p style="font-size:13px;color:#7c736a;margin-top:16px">To use it, book any class with this same email (${esc(pass.clientEmail)}) — your pass is applied automatically.</p>`);
 
   const teacherText = [
     `${pass.clientName} (${pass.clientEmail}) bought your ${offer.name} for ${price}.`,
@@ -227,8 +249,8 @@ export async function sendPassEmails({
   const teacherHtml = wrapHtml(`
     <h1 style="font-size:18px">Pass sold! 🎉</h1>
     <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
-      <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${pass.clientName} &lt;${pass.clientEmail}&gt;</td></tr>
-      <tr><td style="color:#7c736a;padding-right:16px">Pass</td><td>${offer.name}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${esc(pass.clientName)} &lt;${esc(pass.clientEmail)}&gt;</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Pass</td><td>${esc(offer.name)}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Price</td><td>${price}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Includes</td><td>${credits} · ${expiry}</td></tr>
     </table>`);
@@ -251,5 +273,104 @@ export async function sendPassEmails({
   ]);
   for (const r of results) {
     if (r.status === "rejected") console.error("[email] pass email failed", r.reason);
+  }
+}
+
+// --- Cash-out flow -----------------------------------------------------------
+
+// To the founder: a teacher hit "Cash out". Everything needed to pay them is
+// in the email — send the money on the P2P app, then mark it paid in Operator
+// tools so the payout is recorded and the teacher gets the good-news email.
+export async function sendCashOutRequestedEmail({
+  teacher,
+  request,
+}: {
+  teacher: Teacher;
+  request: PayoutRequest;
+}): Promise<void> {
+  const amount = formatMoney(request.amountCents);
+  const method = payoutMethodLabel(request.method);
+
+  const text = [
+    `${teacher.name} requested a cash-out of ${amount}.`,
+    ``,
+    `Send it via ${method} to: ${request.handle}`,
+    ``,
+    `Then mark it paid in Operator tools on your dashboard`,
+    `(https://kuleo.io/dashboard) — that records the payout and`,
+    `emails ${teacher.name.split(" ")[0]} the good news.`,
+  ].join("\n");
+
+  const html = wrapHtml(`
+    <h1 style="font-size:18px">💸 Cash-out request: ${amount}</h1>
+    <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
+      <tr><td style="color:#7c736a;padding-right:16px">Teacher</td><td>${esc(teacher.name)} &lt;${esc(teacher.email)}&gt;</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Amount</td><td style="font-weight:600">${amount}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Send via</td><td>${method}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">To</td><td style="font-weight:600">${esc(request.handle)}</td></tr>
+    </table>
+    <p style="font-size:13px;margin-top:16px">
+      After you send it, <a href="https://kuleo.io/dashboard" style="color:#47645a">mark it paid in Operator tools</a>
+      — that records the payout and emails ${esc(teacher.name.split(" ")[0])} the good news.
+    </p>`);
+
+  try {
+    await send({
+      to: FOUNDER.email,
+      subject: `💸 Cash-out request: ${amount} — ${teacher.name}`,
+      html,
+      text,
+      replyTo: teacher.email,
+    });
+  } catch (err) {
+    // The request row is already saved (it shows in Operator tools), so a mail
+    // hiccup should never surface as a failed cash-out to the teacher.
+    console.error("[email] cash-out request notification failed", err);
+  }
+}
+
+// To the teacher: their money is on the way. This is the moment the product
+// is selling — keep it celebratory.
+export async function sendCashOutPaidEmail({
+  teacher,
+  request,
+}: {
+  teacher: Teacher;
+  request: PayoutRequest;
+}): Promise<void> {
+  const amount = formatMoney(request.amountCents);
+  const method = payoutMethodLabel(request.method);
+
+  const text = [
+    `${amount} is on its way to you! 🎉`,
+    ``,
+    `We sent your cash-out via ${method} to ${request.handle}.`,
+    `It should show up within 1–2 business days (often much sooner).`,
+    ``,
+    `Keep teaching — your earnings page always shows your live balance.`,
+  ].join("\n");
+
+  const html = wrapHtml(`
+    <h1 style="font-size:18px">💸 ${amount} is on its way! 🎉</h1>
+    <p style="font-size:14px;line-height:1.7">
+      We sent your cash-out via <strong>${method}</strong> to
+      <strong>${esc(request.handle)}</strong>. It should show up within 1–2 business
+      days — often much sooner.
+    </p>
+    <p style="font-size:13px;color:#7c736a">
+      Keep teaching — <a href="https://kuleo.io/dashboard/earnings" style="color:#47645a">your earnings page</a>
+      always shows your live balance.
+    </p>`);
+
+  try {
+    await send({
+      to: teacher.email,
+      subject: `💸 ${amount} is on its way to you!`,
+      html,
+      text,
+      replyTo: FOUNDER.email,
+    });
+  } catch (err) {
+    console.error("[email] cash-out paid notification failed", err);
   }
 }

@@ -6,21 +6,26 @@ import {
   listAvailability,
   listBookings,
   listAllTeachers,
+  listPendingPayoutRequests,
 } from "@/lib/repo";
 import { CopyLink } from "@/components/CopyLink";
-import { formatSlot } from "@/lib/format";
+import { formatSlot, formatMoney } from "@/lib/format";
+import { payoutMethodLabel } from "@/lib/types";
 import { headers } from "next/headers";
 import { FOUNDER } from "@/lib/founder";
-import { viewAsAction } from "./actions";
+import { viewAsAction, markPayoutRequestPaidAction } from "./actions";
 
 export default async function DashboardHome() {
   const ctx = await getViewerContext();
   if (!ctx) redirect("/login");
   const { teacher, isFounderViewer, impersonating } = ctx;
-  const otherTeachers =
-    isFounderViewer && !impersonating
-      ? (await listAllTeachers()).filter((t) => t.id !== teacher.id)
-      : [];
+  const showOperatorTools = isFounderViewer && !impersonating;
+  const [otherTeachers, cashOutQueue] = showOperatorTools
+    ? await Promise.all([
+        listAllTeachers().then((all) => all.filter((t) => t.id !== teacher.id)),
+        listPendingPayoutRequests(),
+      ])
+    : [[], []];
 
   const [sessionTypes, availability, bookings] = await Promise.all([
     listSessionTypes(teacher.id),
@@ -80,6 +85,48 @@ export default async function DashboardHome() {
                     {s.label}
                   </span>
                 </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Founder-only: open cash-out requests. Pay on the P2P app first, THEN
+          mark paid — that records the payout and emails the teacher. */}
+      {cashOutQueue.length > 0 && (
+        <div className="card border-accent">
+          <h2 className="font-semibold mb-1">💸 Cash-out requests</h2>
+          <p className="text-sm text-muted mb-3">
+            Send the money on the app they picked, then mark it paid — that
+            records the payout and emails them the good news.
+          </p>
+          <ul className="space-y-3">
+            {cashOutQueue.map(({ request, teacherName, teacherEmail }) => (
+              <li
+                key={request.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-4"
+              >
+                <div className="text-sm min-w-0">
+                  <p className="font-semibold">
+                    {formatMoney(request.amountCents)} → {teacherName}
+                  </p>
+                  <p className="text-muted break-words">
+                    {payoutMethodLabel(request.method)}:{" "}
+                    <span className="font-medium text-foreground">
+                      {request.handle}
+                    </span>{" "}
+                    · {teacherEmail}
+                  </p>
+                  <p className="text-xs text-muted">
+                    Requested {new Date(request.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <form action={markPayoutRequestPaidAction}>
+                  <input type="hidden" name="requestId" value={request.id} />
+                  <button type="submit" className="btn-primary text-sm">
+                    ✓ Mark paid
+                  </button>
+                </form>
               </li>
             ))}
           </ul>
