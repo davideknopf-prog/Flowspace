@@ -10,6 +10,8 @@ import type {
   Payout,
   PayoutMethod,
   PayoutRequest,
+  Review,
+  ReviewStats,
 } from "./types";
 import { passIsRedeemable } from "./types";
 
@@ -668,6 +670,86 @@ export async function createPayout(
     returning *
   `;
   return rowToPayout(rows[0]);
+}
+
+// --- Reviews -----------------------------------------------------------------
+
+function rowToReview(row: Record<string, unknown>): Review {
+  return {
+    id: row.id as string,
+    teacherId: row.teacher_id as string,
+    authorName: row.author_name as string,
+    rating: row.rating as number,
+    body: row.body as string,
+    source: (row.source as Review["source"]) ?? "manual",
+    clientEmail: (row.client_email as string) ?? "",
+    featured: row.featured as boolean,
+    published: row.published as boolean,
+    createdAt: toISO(row.created_at),
+  };
+}
+
+// Featured first, then newest. `onlyPublished` filters to what the public sees;
+// the dashboard passes false to manage hidden ones too.
+export async function listReviews(
+  teacherId: string,
+  onlyPublished = false,
+): Promise<Review[]> {
+  const rows = onlyPublished
+    ? await sql`
+        select * from reviews
+        where teacher_id = ${teacherId} and published = true
+        order by featured desc, created_at desc
+      `
+    : await sql`
+        select * from reviews
+        where teacher_id = ${teacherId}
+        order by featured desc, created_at desc
+      `;
+  return rows.map(rowToReview);
+}
+
+export async function getReviewStats(teacherId: string): Promise<ReviewStats> {
+  const [row] = await sql`
+    select coalesce(avg(rating), 0) as average, count(*) as count
+    from reviews
+    where teacher_id = ${teacherId} and published = true
+  `;
+  return { average: Number(row.average), count: Number(row.count) };
+}
+
+export async function createReview(
+  teacherId: string,
+  data: Pick<Review, "authorName" | "rating" | "body"> &
+    Partial<Pick<Review, "source" | "clientEmail" | "featured">>,
+): Promise<Review> {
+  const id = newId("rev");
+  const rating = Math.max(1, Math.min(5, Math.round(data.rating)));
+  const rows = await sql`
+    insert into reviews (id, teacher_id, author_name, rating, body, source, client_email, featured, published)
+    values (${id}, ${teacherId}, ${data.authorName}, ${rating}, ${data.body},
+            ${data.source ?? "manual"}, ${data.clientEmail ?? ""}, ${data.featured ?? false}, true)
+    returning *
+  `;
+  return rowToReview(rows[0]);
+}
+
+export async function deleteReview(teacherId: string, id: string): Promise<void> {
+  await sql`delete from reviews where id = ${id} and teacher_id = ${teacherId}`;
+}
+
+// Flip a single boolean flag (featured / published) with teacher-ownership guard.
+export async function setReviewFlag(
+  teacherId: string,
+  id: string,
+  flag: "featured" | "published",
+  value: boolean,
+): Promise<void> {
+  if (flag === "featured") {
+    await sql`update reviews set featured = ${value} where id = ${id} and teacher_id = ${teacherId}`;
+  } else {
+    await sql`update reviews set published = ${value} where id = ${id} and teacher_id = ${teacherId}`;
+  }
 }
 
 // --- Cash-out requests -------------------------------------------------------

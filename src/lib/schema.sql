@@ -159,3 +159,22 @@ create index if not exists passes_client_email_idx on passes(client_email);
 
 -- Bookings paid by redeeming a pass credit reference the pass.
 alter table bookings add column if not exists pass_id text references passes(id);
+
+-- Student reviews shown on a teacher's public profile. v1 is teacher-managed
+-- (teachers add testimonials they've already collected). `source` and
+-- `client_email` are here so a future after-class rating email can insert
+-- student-submitted rows without a migration. rating is 1-5.
+create table if not exists reviews (
+  id text primary key,
+  teacher_id text not null references teachers(id) on delete cascade,
+  author_name text not null,
+  rating integer not null,
+  body text not null default '',
+  source text not null default 'manual',
+  client_email text not null default '',
+  featured boolean not null default false,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists reviews_teacher_id_idx on reviews(teacher_id);

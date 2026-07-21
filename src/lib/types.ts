@@ -186,6 +186,26 @@ export interface PayoutRequest {
   paidAt: string | null;
 }
 
+// A review shown on a teacher's public profile. v1 is teacher-managed
+// ("manual"); a future after-class rating email will add "student" reviews.
+export interface Review {
+  id: string;
+  teacherId: string;
+  authorName: string;
+  rating: number; // 1-5
+  body: string;
+  source: "manual" | "student";
+  clientEmail: string;
+  featured: boolean;
+  published: boolean;
+  createdAt: string;
+}
+
+export interface ReviewStats {
+  average: number; // 0 when no reviews
+  count: number;
+}
+
 export interface Database {
   teachers: Teacher[];
   sessionTypes: SessionType[];

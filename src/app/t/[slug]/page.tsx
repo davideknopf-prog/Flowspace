@@ -7,9 +7,12 @@ import {
   listOffers,
   listAvailability,
   listBookings,
+  listReviews,
+  getReviewStats,
 } from "@/lib/repo";
 import { computeUpcomingClasses } from "@/lib/slots";
 import { Avatar } from "@/components/Avatar";
+import { Stars } from "@/components/Stars";
 import { formatPrice, formatDuration, formatSlot } from "@/lib/format";
 import { buyPassAction } from "./actions";
 
@@ -39,12 +42,15 @@ export default async function PublicProfile({
   const teacher = await getTeacherBySlug(slug);
   if (!teacher) notFound();
 
-  const [sessionTypesAll, offersAll, rules, bookings] = await Promise.all([
-    listSessionTypes(teacher.id),
-    listOffers(teacher.id),
-    listAvailability(teacher.id),
-    listBookings(teacher.id),
-  ]);
+  const [sessionTypesAll, offersAll, rules, bookings, reviews, reviewStats] =
+    await Promise.all([
+      listSessionTypes(teacher.id),
+      listOffers(teacher.id),
+      listAvailability(teacher.id),
+      listBookings(teacher.id),
+      listReviews(teacher.id, true),
+      getReviewStats(teacher.id),
+    ]);
   const sessionTypes = sessionTypesAll.filter((s) => s.active);
   const offers = offersAll.filter((o) => o.active);
 
@@ -74,6 +80,18 @@ export default async function PublicProfile({
               )}
               {teacher.location && (
                 <p className="text-sm text-muted mt-1">📍 {teacher.location}</p>
+              )}
+              {reviewStats.count > 0 && (
+                <p className="mt-1.5 flex items-center gap-1.5 text-sm">
+                  <Stars rating={reviewStats.average} className="text-sm" />
+                  <span className="font-medium">
+                    {reviewStats.average.toFixed(1)}
+                  </span>
+                  <span className="text-muted">
+                    ({reviewStats.count}{" "}
+                    {reviewStats.count === 1 ? "review" : "reviews"})
+                  </span>
+                </p>
               )}
             </div>
           </div>
@@ -144,6 +162,33 @@ export default async function PublicProfile({
           <section>
             <h2 className="text-sm font-semibold text-muted mb-2">About</h2>
             <p className="whitespace-pre-line leading-relaxed">{teacher.bio}</p>
+          </section>
+        )}
+
+        {reviews.length > 0 && (
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="text-lg font-semibold">What students say</h2>
+              <span className="flex items-center gap-1 text-sm">
+                <Stars rating={reviewStats.average} className="text-sm" />
+                <span className="text-muted">
+                  {reviewStats.average.toFixed(1)}
+                </span>
+              </span>
+            </div>
+            <ul className="space-y-3">
+              {reviews.map((r) => (
+                <li key={r.id} className="card !py-4">
+                  <Stars rating={r.rating} className="text-sm" />
+                  <p className="mt-2 leading-relaxed whitespace-pre-line">
+                    “{r.body}”
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-muted">
+                    — {r.authorName}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
 
