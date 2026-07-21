@@ -189,6 +189,18 @@ export async function getTeacherByClerkUserId(
   return rows[0] ? rowToTeacher(rows[0]) : null;
 }
 
+// Re-point a teacher row at a different Clerk user. Needed when the auth
+// instance changes (e.g. the dev -> production Clerk migration): the teacher
+// row survives, the Clerk user id doesn't.
+export async function setTeacherClerkUserId(
+  teacherId: string,
+  clerkUserId: string,
+): Promise<void> {
+  await sql`
+    update teachers set clerk_user_id = ${clerkUserId} where id = ${teacherId}
+  `;
+}
+
 export async function getTeacherByStripeCustomerId(
   customerId: string,
 ): Promise<Teacher | null> {

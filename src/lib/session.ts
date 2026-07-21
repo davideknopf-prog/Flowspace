@@ -1,5 +1,10 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { getTeacherByClerkUserId, createTeacher } from "./repo";
+import {
+  getTeacherByClerkUserId,
+  getTeacherByEmail,
+  setTeacherClerkUserId,
+  createTeacher,
+} from "./repo";
 import type { Teacher } from "./types";
 
 // Real auth via Clerk. Clerk owns the session cookie and login/signup UI;
@@ -19,6 +24,18 @@ export async function getCurrentTeacher(): Promise<Teacher | null> {
     [user.firstName, user.lastName].filter(Boolean).join(" ") ||
     email.split("@")[0] ||
     "Teacher";
+
+  // A teacher row may already exist for this (Clerk-verified) email but be
+  // linked to a different Clerk user id — e.g. after the dev -> production
+  // Clerk instance migration, or a user deleting and recreating their Clerk
+  // account. Relink instead of colliding with the unique email constraint.
+  if (email) {
+    const byEmail = await getTeacherByEmail(email);
+    if (byEmail) {
+      await setTeacherClerkUserId(byEmail.id, userId);
+      return { ...byEmail, clerkUserId: userId };
+    }
+  }
 
   // Next.js can invoke this from more than one place (middleware + layout)
   // for the same request burst, so two calls can race to create the same
