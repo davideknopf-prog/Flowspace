@@ -47,6 +47,53 @@ export async function getPlans(): Promise<Plan[]> {
   return plans;
 }
 
+// Stripe's hosted Billing Portal needs a portal "configuration". The Stripe
+// dashboard only creates a default one once you save portal settings by hand,
+// so we ensure one exists via API instead — works identically in test mode
+// now and live mode at launch. Cached at module scope like plans.
+let portalConfigCache: string | null = null;
+
+export async function getPortalConfigId(): Promise<string> {
+  if (portalConfigCache) return portalConfigCache;
+  const existing = await stripe.billingPortal.configurations.list({
+    active: true,
+    limit: 1,
+  });
+  if (existing.data.length > 0) {
+    portalConfigCache = existing.data[0].id;
+    return portalConfigCache;
+  }
+  const created = await stripe.billingPortal.configurations.create({
+    business_profile: {
+      headline: "Kuleo — manage your teacher subscription",
+    },
+    features: {
+      invoice_history: { enabled: true },
+      payment_method_update: { enabled: true },
+      customer_update: { enabled: true, allowed_updates: ["email", "address"] },
+      subscription_cancel: { enabled: true, mode: "at_period_end" },
+    },
+  });
+  portalConfigCache = created.id;
+  return portalConfigCache;
+}
+
+// The teacher's current Stripe subscription, if any. Used for the portal's
+// cancel deep link; the teacher row only mirrors status, not the sub id.
+export async function getActiveSubscriptionId(
+  customerId: string,
+): Promise<string | null> {
+  const subs = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "all",
+    limit: 5,
+  });
+  const current = subs.data.find((s) =>
+    ["active", "trialing", "past_due"].includes(s.status),
+  );
+  return current?.id ?? null;
+}
+
 // Mirror a Stripe subscription's current state onto the teacher row.
 // Called from the webhook and from post-checkout verification — both paths
 // read the subscription fresh from Stripe, so repeats/races are harmless

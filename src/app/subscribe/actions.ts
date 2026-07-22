@@ -40,6 +40,9 @@ export async function subscribeAction(formData: FormData) {
     mode: "subscription",
     customer: customerId,
     line_items: [{ price: plan!.priceId, quantity: 1 }],
+    // "Add promotion code" box on Stripe Checkout — codes themselves are
+    // created by scripts/setup-promos.mjs (yogafree / yoga10 / yoga25).
+    allow_promotion_codes: true,
     success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/subscribe`,
     metadata: { teacherId: teacher!.id },

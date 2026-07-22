@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "node scripts/migrate.mjs",
+    "stripe:promos": "node scripts/setup-promos.mjs",
     "payout": "node scripts/payout.mjs"
   },
   "dependencies": {
