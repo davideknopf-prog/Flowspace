@@ -8,7 +8,11 @@ import { useUser } from "@clerk/nextjs";
 // set in the environment — no key, no script, no tracking. Business KPIs
 // (revenue, bookings, teachers) live in Postgres; this covers what the DB
 // can't: visits, funnels, active users, time on platform.
-const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+// The PostHog project key is a public client-side identifier (it ships in the
+// browser bundle by design — not a secret). Env var still wins if set.
+const key =
+  process.env.NEXT_PUBLIC_POSTHOG_KEY ??
+  "phc_qHzis35VJKXavywhxMr9jwmcoKm3gicr3dx5ndKNJQar";
 const host = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
 
 export function AnalyticsProvider() {
