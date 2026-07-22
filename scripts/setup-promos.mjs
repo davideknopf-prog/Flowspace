@@ -46,6 +46,11 @@ const PROMOS = [
   },
 ];
 
+// Earlier runs may have created a coupon and then crashed before the code
+// (the promotion_codes API changed shape) — reuse a matching coupon when one
+// exists and clean up unredeemed duplicates, instead of minting more.
+const allCoupons = await stripe.coupons.list({ limit: 100 });
+
 for (const promo of PROMOS) {
   const existing = await stripe.promotionCodes.list({
     code: promo.code,
@@ -55,14 +60,27 @@ for (const promo of PROMOS) {
     console.log(`✓ ${promo.code} already exists (${existing.data[0].id})`);
     continue;
   }
-  const coupon = await stripe.coupons.create({
-    name: promo.name,
-    percent_off: promo.percentOff,
-    duration: "repeating",
-    duration_in_months: promo.durationMonths,
-  });
+
+  const matching = allCoupons.data.filter((c) => c.name === promo.name);
+  let coupon = matching[0] ?? null;
+  for (const dupe of matching.slice(1)) {
+    if (dupe.times_redeemed === 0) {
+      await stripe.coupons.del(dupe.id);
+      console.log(`  (cleaned up duplicate coupon ${dupe.id})`);
+    }
+  }
+  if (!coupon) {
+    coupon = await stripe.coupons.create({
+      name: promo.name,
+      percent_off: promo.percentOff,
+      duration: "repeating",
+      duration_in_months: promo.durationMonths,
+    });
+  }
+
+  // Current API shape: the coupon rides inside a `promotion` object.
   const code = await stripe.promotionCodes.create({
-    coupon: coupon.id,
+    promotion: { type: "coupon", coupon: coupon.id },
     code: promo.code,
   });
   console.log(`Created ${promo.code}: ${promo.percentOff}% off for ${promo.durationMonths} months (${code.id})`);
