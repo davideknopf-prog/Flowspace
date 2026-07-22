@@ -4,6 +4,7 @@ import type {
   Teacher,
   SessionType,
   AvailabilityRule,
+  ClassEvent,
   Booking,
   Offer,
   Pass,
@@ -63,6 +64,8 @@ function rowToTeacher(row: Record<string, unknown>): Teacher {
     avatarUrl: row.avatar_url as string,
     bannerUrl: (row.banner_url as string) ?? "",
     brandColor: (row.brand_color as string) ?? "",
+    contactPhone: (row.contact_phone as string) ?? "",
+    contactEmail: (row.contact_email as string) ?? "",
     timezone: row.timezone as string,
     defaultMeetingUrl: (row.default_meeting_url as string) ?? "",
     payoutMethod: ((row.payout_method as string) ?? "") as Teacher["payoutMethod"],
@@ -87,6 +90,8 @@ function rowToSessionType(row: Record<string, unknown>): SessionType {
     durationMinutes: row.duration_minutes as number,
     priceCents: row.price_cents as number,
     active: row.active as boolean,
+    scheduling: ((row.scheduling as string) ?? "events") as SessionType["scheduling"],
+    capacity: (row.capacity as number | null) ?? null,
     locationType: row.location_type as SessionType["locationType"],
     meetingUrl: row.meeting_url as string,
     locationNote: row.location_note as string,
@@ -111,7 +116,7 @@ function rowToBooking(row: Record<string, unknown>): Booking {
     clientName: row.client_name as string,
     clientEmail: row.client_email as string,
     note: row.note as string,
-    startISO: toISO(row.start_iso),
+    startISO: row.start_iso ? toISO(row.start_iso) : null,
     durationMinutes: row.duration_minutes as number,
     priceCents: row.price_cents as number,
     locationType: row.location_type as Booking["locationType"],
@@ -318,6 +323,8 @@ export async function updateTeacher(
       avatar_url = ${merged.avatarUrl},
       banner_url = ${merged.bannerUrl},
       brand_color = ${merged.brandColor},
+      contact_phone = ${merged.contactPhone},
+      contact_email = ${merged.contactEmail},
       timezone = ${merged.timezone},
       default_meeting_url = ${merged.defaultMeetingUrl},
       payout_method = ${merged.payoutMethod},
@@ -349,14 +356,16 @@ export async function createSessionType(
     | "locationType"
     | "meetingUrl"
     | "locationNote"
+    | "scheduling"
+    | "capacity"
   >,
 ): Promise<SessionType> {
   const id = newId("ses");
   const rows = await sql`
     insert into session_types
-      (id, teacher_id, name, description, duration_minutes, price_cents, active, location_type, meeting_url, location_note)
+      (id, teacher_id, name, description, duration_minutes, price_cents, active, location_type, meeting_url, location_note, scheduling, capacity)
     values
-      (${id}, ${teacherId}, ${data.name}, ${data.description}, ${data.durationMinutes}, ${data.priceCents}, true, ${data.locationType}, ${data.meetingUrl}, ${data.locationNote})
+      (${id}, ${teacherId}, ${data.name}, ${data.description}, ${data.durationMinutes}, ${data.priceCents}, true, ${data.locationType}, ${data.meetingUrl}, ${data.locationNote}, ${data.scheduling}, ${data.capacity})
     returning *
   `;
   return rowToSessionType(rows[0]);
@@ -372,6 +381,62 @@ export async function deleteSessionType(
 export async function getSessionType(id: string): Promise<SessionType | null> {
   const rows = await sql`select * from session_types where id = ${id}`;
   return rows[0] ? rowToSessionType(rows[0]) : null;
+}
+
+// --- Class events ------------------------------------------------------------
+// A class IS an event: weekly recurring (weekday + start_minutes in the
+// teacher's timezone) or a one-off (absolute start_at).
+
+function rowToClassEvent(row: Record<string, unknown>): ClassEvent {
+  return {
+    id: row.id as string,
+    teacherId: row.teacher_id as string,
+    sessionTypeId: row.session_type_id as string,
+    kind: (row.kind as ClassEvent["kind"]) ?? "weekly",
+    weekday: (row.weekday as number | null) ?? null,
+    startMinutes: (row.start_minutes as number | null) ?? null,
+    startAt: row.start_at ? toISO(row.start_at) : null,
+    active: row.active as boolean,
+    createdAt: toISO(row.created_at),
+  };
+}
+
+export async function listClassEvents(teacherId: string): Promise<ClassEvent[]> {
+  // Deploy-order guard: if this deploy reaches production before the
+  // class_events migration has run, behave as "no events yet" (legacy
+  // availability fallback) instead of erroring every public page.
+  try {
+    const rows = await sql`
+      select * from class_events where teacher_id = ${teacherId} and active = true
+      order by created_at
+    `;
+    return rows.map(rowToClassEvent);
+  } catch (err) {
+    if (err instanceof Error && /class_events.*does not exist/i.test(err.message)) {
+      return [];
+    }
+    throw err;
+  }
+}
+
+export async function createClassEvent(
+  teacherId: string,
+  data: Pick<ClassEvent, "sessionTypeId" | "kind" | "weekday" | "startMinutes" | "startAt">,
+): Promise<ClassEvent> {
+  const id = newId("evt");
+  const rows = await sql`
+    insert into class_events (id, teacher_id, session_type_id, kind, weekday, start_minutes, start_at)
+    values (${id}, ${teacherId}, ${data.sessionTypeId}, ${data.kind}, ${data.weekday}, ${data.startMinutes}, ${data.startAt})
+    returning *
+  `;
+  return rowToClassEvent(rows[0]);
+}
+
+export async function deleteClassEvent(
+  teacherId: string,
+  id: string,
+): Promise<void> {
+  await sql`delete from class_events where id = ${id} and teacher_id = ${teacherId}`;
 }
 
 // --- Availability ------------------------------------------------------------

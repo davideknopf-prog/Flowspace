@@ -102,6 +102,12 @@ export default async function BookedPage({
               <Row label="Session" value={sessionType?.name ?? "Session"} />
               <Row label="With" value={teacher.name} />
               <Row label="When" value={formatSlot(booking.startISO, teacher.timezone)} />
+              {!booking.startISO && (teacher.contactPhone || teacher.contactEmail) && (
+                <Row
+                  label="Scheduling"
+                  value={`Reach ${teacher.name.split(" ")[0]}: ${[teacher.contactPhone, teacher.contactEmail].filter(Boolean).join(" · ")}`}
+                />
+              )}
               <Row label="Duration" value={formatDuration(booking.durationMinutes)} />
               <Row label="Price" value={formatPrice(booking.priceCents)} />
               <Row label="Payment" value={paymentLabel} />

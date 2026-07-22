@@ -22,7 +22,8 @@ export function formatDuration(minutes: number): string {
   return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
 }
 
-export function formatSlot(startISO: string, timeZone: string): string {
+export function formatSlot(startISO: string | null, timeZone: string): string {
+  if (!startISO) return "Time to be scheduled together";
   const d = new Date(startISO);
   return new Intl.DateTimeFormat("en-US", {
     timeZone,

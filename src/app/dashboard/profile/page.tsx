@@ -42,6 +42,45 @@ export default async function ProfilePage({
           <BrandColorPicker initial={teacher.brandColor} />
         </div>
 
+        {/* Optional public contact — how flexible-offering students reach you */}
+        <div className="rounded-xl border border-border p-4 space-y-4">
+          <p className="text-sm font-semibold">
+            Public contact info{" "}
+            <span className="font-normal text-muted">
+              — optional; shown so students can reach you about flexible
+              bookings (like coaching)
+            </span>
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="label" htmlFor="contactPhone">
+                Phone (optional)
+              </label>
+              <input
+                id="contactPhone"
+                name="contactPhone"
+                type="tel"
+                defaultValue={teacher.contactPhone}
+                placeholder="(555) 123-4567"
+                className="input"
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="contactEmail">
+                Contact email (optional)
+              </label>
+              <input
+                id="contactEmail"
+                name="contactEmail"
+                type="email"
+                defaultValue={teacher.contactEmail}
+                placeholder="you@example.com"
+                className="input"
+              />
+            </div>
+          </div>
+        </div>
+
         <div>
           <label className="label" htmlFor="name">
             Name

@@ -123,7 +123,12 @@ export async function sendBookingEmails({
   teacher: Teacher;
   sessionType: SessionType;
 }): Promise<void> {
-  const when = formatSlot(booking.startISO, teacher.timezone);
+  const contactBits = [teacher.contactPhone, teacher.contactEmail]
+    .filter(Boolean)
+    .join(" · ");
+  const when = booking.startISO
+    ? formatSlot(booking.startISO, teacher.timezone)
+    : `To be scheduled together${contactBits ? ` — reach ${teacher.name.split(" ")[0]}: ${contactBits}` : ` — ${teacher.name.split(" ")[0]} will reach out`}`;
   const loc = locationBlock(booking);
   const price = formatPrice(booking.priceCents);
   const duration = formatDuration(booking.durationMinutes);

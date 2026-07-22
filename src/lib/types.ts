@@ -16,6 +16,10 @@ export interface Teacher {
   // page header. Empty string = Kuleo defaults.
   bannerUrl: string;
   brandColor: string;
+  // Optional public contact details, shown for flexible offerings so a
+  // student can arrange a time ("book, then we'll schedule together").
+  contactPhone: string;
+  contactEmail: string;
   timezone: string; // IANA, e.g. "America/New_York"
   // The teacher's reusable "virtual studio room" (Zoom/Meet link). Online
   // sessions without their own link fall back to this at booking time.
@@ -41,6 +45,13 @@ export function isSubscribed(teacher: Teacher): boolean {
 
 export type LocationType = "online" | "in_person";
 
+// How a session type gets its times:
+// - "events": the class happens at scheduled times (weekly or one-off) —
+//   the standard. Nothing bookable without a time.
+// - "flexible": bought first (coaching, 1:1s), then teacher & student pick
+//   a time together.
+export type SchedulingMode = "events" | "flexible";
+
 export interface SessionType {
   id: string;
   teacherId: string;
@@ -49,6 +60,9 @@ export interface SessionType {
   durationMinutes: number;
   priceCents: number; // stored in cents; 0 = free/donation
   active: boolean;
+  scheduling: SchedulingMode;
+  // Max seats per occurrence. null = unlimited (the default).
+  capacity: number | null;
   // How the class is delivered.
   locationType: LocationType;
   // For online: the teacher's own Zoom/Meet link (BYO — no video API yet).
@@ -75,6 +89,21 @@ export type BookingStatus = "confirmed" | "cancelled";
 // "pass" = paid by redeeming a credit from a purchased pass.
 export type PaymentStatus = "free" | "pending" | "paid" | "pass";
 
+// A scheduled occurrence of a class: weekly ("Tuesdays 6:00 PM" in the
+// teacher's timezone) or a one-off (absolute instant). A session type in
+// "events" mode is bookable ONLY at its events' occurrences.
+export interface ClassEvent {
+  id: string;
+  teacherId: string;
+  sessionTypeId: string;
+  kind: "weekly" | "once";
+  weekday: number | null; // 0=Sun..6=Sat (teacher tz) — weekly only
+  startMinutes: number | null; // minutes from midnight, teacher tz — weekly only
+  startAt: string | null; // UTC ISO — once only
+  active: boolean;
+  createdAt: string;
+}
+
 export interface Booking {
   id: string;
   teacherId: string;
@@ -82,7 +111,9 @@ export interface Booking {
   clientName: string;
   clientEmail: string;
   note: string;
-  startISO: string; // absolute start time (UTC ISO)
+  // Absolute start time (UTC ISO). null for flexible offerings — the student
+  // bought first; teacher & student pick the time together.
+  startISO: string | null;
   durationMinutes: number;
   priceCents: number;
   // Snapshot of delivery details at booking time, so editing a session type

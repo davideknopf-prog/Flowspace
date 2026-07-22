@@ -15,10 +15,10 @@ export default async function BookingsPage() {
 
   const now = Date.now();
   const upcoming = bookings.filter(
-    (b) => new Date(b.startISO).getTime() >= now && b.status === "confirmed",
+    (b) => b.status === "confirmed" && (!b.startISO || new Date(b.startISO).getTime() >= now),
   );
   const past = bookings.filter(
-    (b) => new Date(b.startISO).getTime() < now || b.status !== "confirmed",
+    (b) => b.status !== "confirmed" || (b.startISO != null && new Date(b.startISO).getTime() < now),
   );
 
   return (

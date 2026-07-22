@@ -5,9 +5,16 @@ import {
   getSessionType,
   listAvailability,
   listBookings,
+  listClassEvents,
 } from "@/lib/repo";
 import { computeSlots } from "@/lib/slots";
-import { formatDuration, formatPrice, formatDayHeading, formatTimeOnly } from "@/lib/format";
+import { computeOccurrences } from "@/lib/events";
+import {
+  formatDuration,
+  formatPrice,
+  formatDayHeading,
+  formatTimeOnly,
+} from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
 import { BookingForm } from "@/components/BookingForm";
 
@@ -26,28 +33,42 @@ export default async function BookPage({
   const sessionType = await getSessionType(sessionTypeId);
   if (!sessionType || sessionType.teacherId !== teacher.id) notFound();
 
-  const [rules, bookings] = await Promise.all([
-    listAvailability(teacher.id),
-    listBookings(teacher.id),
-  ]);
+  const flexible = sessionType.scheduling === "flexible";
 
-  const slots = computeSlots({
-    now: new Date(),
-    timeZone: teacher.timezone,
-    durationMinutes: sessionType.durationMinutes,
-    rules,
-    bookings,
-  });
+  // Scheduled classes: this class's real occurrences (spots-aware). Legacy
+  // fallback keeps availability-derived slots for teachers with no events yet.
+  let slots: { startISO: string; spotsLeft: number | null }[] = [];
+  if (!flexible) {
+    const [events, bookings] = await Promise.all([
+      listClassEvents(teacher.id),
+      listBookings(teacher.id),
+    ]);
+    if (events.length > 0) {
+      slots = computeOccurrences({
+        now: new Date(),
+        timeZone: teacher.timezone,
+        events,
+        sessionTypes: [sessionType],
+        bookings,
+        days: 21,
+      }).filter((o) => o.spotsLeft !== 0);
+    } else {
+      const rules = await listAvailability(teacher.id);
+      slots = computeSlots({
+        now: new Date(),
+        timeZone: teacher.timezone,
+        durationMinutes: sessionType.durationMinutes,
+        rules,
+        bookings,
+      }).map((s) => ({ startISO: s.startISO, spotsLeft: null }));
+    }
+  }
 
-  // Arriving from a specific event (teacher page / studio schedule) carries
-  // ?start=… — honor it only if that slot is still open, so a stale link
-  // (slot just got booked) degrades to the picker instead of a dead choice.
-  const preselect =
-    start && slots.some((s) => s.startISO === start) ? start : undefined;
-  const staleStart = Boolean(start && !preselect && slots.length > 0);
-
-  // Group slots by day-in-teacher-timezone for a clean picker.
-  const groups: { heading: string; slots: { startISO: string; label: string }[] }[] = [];
+  // Group by day-in-teacher-timezone for a clean picker.
+  const groups: {
+    heading: string;
+    slots: { startISO: string; label: string; spotsLeft: number | null }[];
+  }[] = [];
   let currentHeading = "";
   for (const s of slots) {
     const heading = formatDayHeading(s.startISO, teacher.timezone);
@@ -58,8 +79,15 @@ export default async function BookPage({
     groups[groups.length - 1].slots.push({
       startISO: s.startISO,
       label: formatTimeOnly(s.startISO, teacher.timezone),
+      spotsLeft: s.spotsLeft,
     });
   }
+
+  // Arriving from a specific event carries ?start=… — honor it only if that
+  // occurrence is still open, so a stale link degrades to the picker.
+  const preselect =
+    start && slots.some((s) => s.startISO === start) ? start : undefined;
+  const staleStart = Boolean(!flexible && start && !preselect && slots.length > 0);
 
   return (
     <main className="min-h-screen">
@@ -94,9 +122,9 @@ export default async function BookPage({
           </p>
         )}
 
-        {slots.length === 0 ? (
+        {!flexible && slots.length === 0 ? (
           <div className="card mt-6 text-center py-8 text-sm text-muted">
-            No open times in the next two weeks. Check back soon or reach out to{" "}
+            No upcoming times for this class. Check back soon or reach out to{" "}
             {teacher.name.split(" ")[0]} directly.
           </div>
         ) : (
@@ -107,6 +135,8 @@ export default async function BookPage({
             timezone={teacher.timezone}
             groups={groups}
             preselect={preselect}
+            flexible={flexible}
+            teacherFirstName={teacher.name.split(" ")[0]}
           />
         )}
       </div>

@@ -121,9 +121,9 @@ export function computeSlots(params: {
 
   const earliest = now.getTime() + leadMinutes * 60_000;
   const busy = bookings
-    .filter((b) => b.status === "confirmed")
+    .filter((b) => b.status === "confirmed" && b.startISO != null)
     .map((b) => {
-      const start = new Date(b.startISO).getTime();
+      const start = new Date(b.startISO!).getTime();
       return { start, end: start + b.durationMinutes * 60_000 };
     });
 

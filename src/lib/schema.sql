@@ -183,3 +183,33 @@ create table if not exists reviews (
 );
 
 create index if not exists reviews_teacher_id_idx on reviews(teacher_id);
+
+-- ---------------------------------------------------------------------------
+-- Event-based scheduling: a class IS an event with a time. Session types in
+-- 'events' mode are bookable only at their scheduled occurrences; 'flexible'
+-- mode (coaching) is bought first, scheduled together afterward.
+-- ---------------------------------------------------------------------------
+alter table session_types add column if not exists scheduling text not null default 'events';
+alter table session_types add column if not exists capacity integer;
+
+create table if not exists class_events (
+  id text primary key,
+  teacher_id text not null references teachers(id) on delete cascade,
+  session_type_id text not null references session_types(id) on delete cascade,
+  kind text not null default 'weekly',
+  weekday integer,
+  start_minutes integer,
+  start_at timestamptz,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create index if not exists class_events_teacher_id_idx on class_events(teacher_id);
+create index if not exists class_events_session_type_id_idx on class_events(session_type_id);
+
+-- Optional public contact details for flexible offerings ("book, then we'll
+-- find our time together"). Never required.
+alter table teachers add column if not exists contact_phone text not null default '';
+alter table teachers add column if not exists contact_email text not null default '';
+
+-- Flexible bookings have no time until teacher & student pick one.
+alter table bookings alter column start_iso drop not null;

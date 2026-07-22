@@ -1,16 +1,18 @@
 import {
   listAllTeachers,
   listSessionTypes,
+  listClassEvents,
   listAvailability,
   listBookings,
 } from "@/lib/repo";
-import { computeSlots } from "@/lib/slots";
+import { computeOccurrences } from "@/lib/events";
+import { computeUpcomingClasses } from "@/lib/slots";
 import { formatDayHeading, formatTimeOnly } from "@/lib/format";
 import type { Teacher } from "@/lib/types";
 
-// One "studio front desk" view of the whole platform: every teacher's next
-// bookable openings merged chronologically. Shared by the public schedule
-// page and the students page.
+// One "studio front desk" view of the whole platform: every teacher's
+// scheduled classes merged chronologically. Shared by the public schedule
+// page, the students page, and the landing strip.
 
 export interface StudioEntry {
   startISO: string;
@@ -24,6 +26,8 @@ export interface StudioEntry {
   priceCents: number;
   locationType: string;
   bookHref: string;
+  // null = unlimited seats; 0 = full (already filtered out of listings).
+  spotsLeft: number | null;
 }
 
 export function shortTz(tz: string): string {
@@ -45,31 +49,56 @@ export async function getStudioSchedule(limit = 40): Promise<{
 
   const nested = await Promise.all(
     teachers.map(async (t) => {
-      const [sessions, rules, bookings] = await Promise.all([
+      const [sessions, events, bookings] = await Promise.all([
         listSessionTypes(t.id),
-        listAvailability(t.id),
+        listClassEvents(t.id),
         listBookings(t.id),
       ]);
       const active = sessions.filter((s) => s.active);
-      const entries: StudioEntry[] = [];
-      for (const s of active) {
-        const slots = computeSlots({
+
+      // The real thing: scheduled occurrences of this teacher's classes.
+      let occurrences = computeOccurrences({
+        now,
+        timeZone: t.timezone,
+        events,
+        sessionTypes: active,
+        bookings,
+        days: 7,
+      }).filter((o) => o.spotsLeft !== 0);
+
+      // Legacy fallback: a teacher who hasn't scheduled events yet (pre-
+      // conversion) still shows availability-derived openings so their page
+      // never goes dark. Remove once every teacher runs on events.
+      if (occurrences.length === 0 && events.length === 0) {
+        const rules = await listAvailability(t.id);
+        const eventsMode = active.filter((s) => s.scheduling === "events");
+        occurrences = computeUpcomingClasses({
           now,
           timeZone: t.timezone,
-          durationMinutes: s.durationMinutes,
           rules,
           bookings,
+          sessionTypes: eventsMode,
+          limit: 6,
           days: 7,
-        });
-        // A class type's next few openings, not every slot — keeps the
-        // schedule a readable "what's coming up" not a wall of buttons.
-        for (const slot of slots.slice(0, 3)) {
-          entries.push({
-            startISO: slot.startISO,
+        }).map((u) => ({
+          startISO: u.startISO,
+          sessionTypeId: u.sessionTypeId,
+          eventId: "",
+          capacity: null,
+          spotsLeft: null,
+        }));
+      }
+
+      const byId = new Map(active.map((s) => [s.id, s]));
+      return occurrences.slice(0, 6).flatMap((o) => {
+        const s = byId.get(o.sessionTypeId);
+        if (!s) return [];
+        return [
+          {
+            startISO: o.startISO,
             timeLabel:
-              formatTimeOnly(slot.startISO, t.timezone) +
-              ` (${shortTz(t.timezone)})`,
-            dayHeading: formatDayHeading(slot.startISO, t.timezone),
+              formatTimeOnly(o.startISO, t.timezone) + ` (${shortTz(t.timezone)})`,
+            dayHeading: formatDayHeading(o.startISO, t.timezone),
             teacherName: t.name,
             teacherSlug: t.slug,
             teacherAvatar: t.avatarUrl,
@@ -77,30 +106,17 @@ export async function getStudioSchedule(limit = 40): Promise<{
             durationMinutes: s.durationMinutes,
             priceCents: s.priceCents,
             locationType: s.locationType,
-            bookHref: `/t/${t.slug}/book/${s.id}?start=${encodeURIComponent(slot.startISO)}`,
-          });
-        }
-      }
-      return entries;
+            bookHref: `/t/${t.slug}/book/${s.id}?start=${encodeURIComponent(o.startISO)}`,
+            spotsLeft: o.spotsLeft,
+          } satisfies StudioEntry,
+        ];
+      });
     }),
   );
 
-  // A teacher's class types all draw from the same availability, so the same
-  // opening can appear once per class type — which reads as one person
-  // teaching three classes at 9:00. Keep at most ONE entry per teacher per
-  // hour block; rotate which class type wins so variety still shows through.
-  const perTeacherHour = new Set<string>();
   const entries = nested
     .flat()
     .sort((a, b) => a.startISO.localeCompare(b.startISO))
-    .filter((e) => {
-      const hour = new Date(e.startISO);
-      hour.setUTCMinutes(0, 0, 0);
-      const key = `${e.teacherSlug}|${hour.toISOString()}`;
-      if (perTeacherHour.has(key)) return false;
-      perTeacherHour.add(key);
-      return true;
-    })
     .slice(0, limit);
 
   return { entries, teachers };

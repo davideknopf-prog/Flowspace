@@ -17,6 +17,9 @@ import {
   setAvailability,
   createOffer,
   deleteOffer,
+  createClassEvent,
+  deleteClassEvent,
+  getSessionType,
   markPayoutRequestPaid,
 } from "@/lib/repo";
 import { sendCashOutPaidEmail } from "@/lib/email";
@@ -60,6 +63,8 @@ export async function saveProfileAction(formData: FormData) {
       : "",
     timezone: String(formData.get("timezone") ?? "").trim() || teacher.timezone,
     defaultMeetingUrl: String(formData.get("defaultMeetingUrl") ?? "").trim(),
+    contactPhone: String(formData.get("contactPhone") ?? "").trim().slice(0, 30),
+    contactEmail: String(formData.get("contactEmail") ?? "").trim().slice(0, 200),
     specialties,
   });
 
@@ -91,11 +96,23 @@ export async function addSessionTypeAction(formData: FormData) {
       : "";
   const locationNote = String(formData.get("locationNote") ?? "").trim();
 
+  const scheduling =
+    String(formData.get("scheduling") ?? "events") === "flexible"
+      ? ("flexible" as const)
+      : ("events" as const);
+  const capacityRaw = Number(formData.get("capacity") ?? 0);
+  const capacity =
+    Number.isFinite(capacityRaw) && capacityRaw >= 1
+      ? Math.min(500, Math.round(capacityRaw))
+      : null;
+
   await createSessionType(teacher.id, {
     name,
     description: String(formData.get("description") ?? "").trim(),
     durationMinutes,
     priceCents,
+    scheduling,
+    capacity,
     locationType,
     meetingUrl,
     locationNote,
@@ -144,6 +161,85 @@ function parseHHMM(v: string): number | null {
   const min = Number(m[2]);
   if (h < 0 || h > 23 || min < 0 || min > 59) return null;
   return h * 60 + min;
+}
+
+// --- Class events -------------------------------------------------------------
+// A class IS an event. Teachers schedule weekly recurring times ("every
+// Tuesday, 6:00 PM") or one-off dates per class.
+
+export async function addClassEventAction(formData: FormData) {
+  const teacher = await requireTeacher();
+  const sessionTypeId = String(formData.get("sessionTypeId") ?? "");
+  const sessionType = await getSessionType(sessionTypeId);
+  if (!sessionType || sessionType.teacherId !== teacher.id) {
+    redirect("/dashboard/schedule?error=Class+not+found");
+  }
+
+  const kind = String(formData.get("kind") ?? "weekly");
+  if (kind === "once") {
+    // datetime-local arrives as wall-clock in the teacher's tz; convert.
+    const raw = String(formData.get("startAtLocal") ?? "");
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(raw);
+    if (!m) redirect("/dashboard/schedule?error=Pick+a+date+and+time");
+    const startAt = wallToUtcISO(
+      Number(m![1]), Number(m![2]), Number(m![3]),
+      Number(m![4]) * 60 + Number(m![5]),
+      teacher.timezone,
+    );
+    if (new Date(startAt).getTime() < Date.now()) {
+      redirect("/dashboard/schedule?error=That+date+is+in+the+past");
+    }
+    await createClassEvent(teacher.id, {
+      sessionTypeId,
+      kind: "once",
+      weekday: null,
+      startMinutes: null,
+      startAt,
+    });
+  } else {
+    const weekday = Math.max(0, Math.min(6, Number(formData.get("weekday") ?? 0)));
+    const start = parseHHMM(String(formData.get("time") ?? ""));
+    if (start === null) redirect("/dashboard/schedule?error=Pick+a+time");
+    await createClassEvent(teacher.id, {
+      sessionTypeId,
+      kind: "weekly",
+      weekday,
+      startMinutes: start,
+      startAt: null,
+    });
+  }
+
+  revalidatePath("/dashboard/schedule");
+  redirect("/dashboard/schedule");
+}
+
+export async function deleteClassEventAction(formData: FormData) {
+  const teacher = await requireTeacher();
+  const id = String(formData.get("id") ?? "");
+  if (id) await deleteClassEvent(teacher.id, id);
+  revalidatePath("/dashboard/schedule");
+  redirect("/dashboard/schedule");
+}
+
+// Wall-clock (Y/M/D + minutes) in an IANA timezone -> UTC ISO string.
+function wallToUtcISO(
+  year: number,
+  month: number,
+  day: number,
+  minutes: number,
+  timeZone: string,
+): string {
+  const naiveUtc = Date.UTC(year, month - 1, day) + minutes * 60_000;
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone, hour12: false, year: "numeric", month: "2-digit",
+    day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+  const parts = dtf.formatToParts(new Date(naiveUtc));
+  const map: Record<string, number> = {};
+  for (const p of parts) if (p.type !== "literal") map[p.type] = Number(p.value);
+  const asUTC = Date.UTC(map.year, map.month - 1, map.day,
+    map.hour === 24 ? 0 : map.hour, map.minute, map.second);
+  return new Date(naiveUtc - (asUTC - naiveUtc)).toISOString();
 }
 
 // --- Offers (multi-class passes) ---------------------------------------------
@@ -202,6 +298,8 @@ export async function addSessionTemplateAction(formData: FormData) {
       description: tpl.description,
       durationMinutes: tpl.durationMinutes,
       priceCents: Math.round(tpl.priceDollars * 100),
+      scheduling: "events",
+      capacity: null,
       locationType: tpl.locationType,
       meetingUrl: "",
       locationNote: "",

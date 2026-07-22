@@ -1,15 +1,17 @@
 import { getCurrentTeacher } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { listSessionTypes, listAvailability, listOffers } from "@/lib/repo";
+import { listSessionTypes, listAvailability, listOffers, listClassEvents } from "@/lib/repo";
 import {
   deleteSessionTypeAction,
-  saveAvailabilityAction,
+  addClassEventAction,
+  deleteClassEventAction,
   addOfferAction,
   deleteOfferAction,
   addSessionTemplateAction,
   addOfferTemplateAction,
 } from "../actions";
 import { formatPrice, formatDuration, WEEKDAYS } from "@/lib/format";
+import { describeEvent } from "@/lib/events";
 import { SessionTypeForm } from "@/components/SessionTypeForm";
 import { SESSION_TEMPLATES, OFFER_TEMPLATES } from "@/lib/sku-templates";
 
@@ -22,17 +24,24 @@ function toHHMM(minutes: number): string {
 export default async function SchedulePage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; error?: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const teacher = await getCurrentTeacher();
   if (!teacher) redirect("/login");
-  const { saved, error } = await searchParams;
+  const { error } = await searchParams;
 
-  const [sessionTypes, availability, offers] = await Promise.all([
+  const [sessionTypes, availability, offers, events] = await Promise.all([
     listSessionTypes(teacher.id),
     listAvailability(teacher.id),
     listOffers(teacher.id),
+    listClassEvents(teacher.id),
   ]);
+  const eventsBySession = new Map<string, typeof events>();
+  for (const ev of events) {
+    const list = eventsBySession.get(ev.sessionTypeId) ?? [];
+    list.push(ev);
+    eventsBySession.set(ev.sessionTypeId, list);
+  }
   const activeOffers = offers.filter((o) => o.active);
 
   const byWeekday = new Map(availability.map((a) => [a.weekday, a]));
@@ -42,8 +51,9 @@ export default async function SchedulePage({
       <div>
         <h1 className="text-2xl font-semibold mb-1">Schedule &amp; pricing</h1>
         <p className="text-muted text-sm">
-          Define what you offer and when you&apos;re available. Students book
-          against this on your public page.
+          Every class has its times — schedule them right on the class.
+          Flexible offerings (like 1:1 coaching) are booked first, scheduled
+          together after.
         </p>
       </div>
 
@@ -58,16 +68,20 @@ export default async function SchedulePage({
         ) : (
           <ul className="space-y-2 mb-4">
             {sessionTypes.map((s) => (
-              <li
-                key={s.id}
-                className="card flex items-center justify-between !p-4"
-              >
-                <div>
-                  <p className="font-medium flex items-center gap-2">
+              <li key={s.id} className="card !p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium flex items-center gap-2 flex-wrap">
                     {s.name}
                     <span className="pill">
                       {s.locationType === "online" ? "💻 Online" : "📍 In person"}
                     </span>
+                    {s.scheduling === "flexible" && (
+                      <span className="pill-accent">🤝 Flexible scheduling</span>
+                    )}
+                    {s.capacity != null && (
+                      <span className="pill">{s.capacity} spots</span>
+                    )}
                   </p>
                   <p className="text-sm text-muted">
                     {formatDuration(s.durationMinutes)} · {formatPrice(s.priceCents)}
@@ -93,6 +107,82 @@ export default async function SchedulePage({
                     Remove
                   </button>
                 </form>
+                </div>
+
+                {/* Class times — the heart of the events model. */}
+                {s.scheduling === "flexible" ? (
+                  <p className="text-xs text-muted border-t border-border pt-3">
+                    🤝 No fixed times — students book, then you schedule
+                    together. Make sure your contact info is set on your{" "}
+                    <a href="/dashboard/profile" className="underline">Profile</a>.
+                  </p>
+                ) : (
+                  <div className="border-t border-border pt-3 space-y-2">
+                    <p className="text-xs font-semibold text-muted">
+                      Class times
+                    </p>
+                    {(eventsBySession.get(s.id) ?? []).length === 0 ? (
+                      <p className="text-xs text-danger">
+                        ⚠ No times scheduled — this class isn&apos;t bookable
+                        until you add one below.
+                      </p>
+                    ) : (
+                      <ul className="flex flex-wrap gap-2">
+                        {(eventsBySession.get(s.id) ?? []).map((ev) => (
+                          <li
+                            key={ev.id}
+                            className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs"
+                          >
+                            {ev.kind === "weekly" ? "🔁" : "📅"}{" "}
+                            {describeEvent(ev, teacher.timezone)}
+                            <form action={deleteClassEventAction}>
+                              <input type="hidden" name="id" value={ev.id} />
+                              <button
+                                type="submit"
+                                className="text-muted hover:text-danger cursor-pointer"
+                                aria-label="Remove time"
+                              >
+                                ✕
+                              </button>
+                            </form>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="flex flex-wrap items-end gap-2">
+                      <form action={addClassEventAction} className="flex items-end gap-2">
+                        <input type="hidden" name="sessionTypeId" value={s.id} />
+                        <input type="hidden" name="kind" value="weekly" />
+                        <div>
+                          <label className="label !text-xs">Every</label>
+                          <select name="weekday" className="input !py-1.5 !text-xs">
+                            {WEEKDAYS.map((d, i) => (
+                              <option key={d} value={i}>{d}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label !text-xs">At</label>
+                          <input type="time" name="time" defaultValue="18:00" className="input !py-1.5 !text-xs" />
+                        </div>
+                        <button type="submit" className="btn-secondary text-xs">
+                          + Weekly
+                        </button>
+                      </form>
+                      <form action={addClassEventAction} className="flex items-end gap-2">
+                        <input type="hidden" name="sessionTypeId" value={s.id} />
+                        <input type="hidden" name="kind" value="once" />
+                        <div>
+                          <label className="label !text-xs">One-off</label>
+                          <input type="datetime-local" name="startAtLocal" className="input !py-1.5 !text-xs" />
+                        </div>
+                        <button type="submit" className="btn-secondary text-xs">
+                          + One-time
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -269,60 +359,22 @@ export default async function SchedulePage({
         </form>
       </section>
 
-      {/* ---- Weekly availability ---- */}
-      <section>
-        <h2 className="text-lg font-semibold mb-1">Weekly availability</h2>
-        <p className="text-muted text-sm mb-3">
-          Times are in your timezone ({teacher.timezone}). We generate bookable
-          slots inside these windows for the next two weeks.
-        </p>
-
-        {saved && (
-          <p className="mb-3 rounded-lg bg-brand-tint px-3 py-2 text-sm text-brand-dark">
-            Availability saved.
+      {/* ---- Legacy availability (pre-events teachers only) ---- */}
+      {events.length === 0 && availability.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold mb-1">Weekly availability (legacy)</h2>
+          <p className="text-muted text-sm mb-3">
+            Your page currently offers times from these availability windows.
+            Class-specific times (above) are the new standard — once you add a
+            scheduled time to a class, it takes over completely.
           </p>
-        )}
-
-        <form action={saveAvailabilityAction} className="card space-y-3">
-          {WEEKDAYS.map((day, weekday) => {
-            const rule = byWeekday.get(weekday);
-            return (
-              <div
-                key={weekday}
-                className="grid grid-cols-[1.2fr_1fr_auto_1fr] items-center gap-3"
-              >
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name={`enabled_${weekday}`}
-                    defaultChecked={!!rule}
-                    className="size-4 accent-[var(--brand)]"
-                  />
-                  {day}
-                </label>
-                <input
-                  type="time"
-                  name={`start_${weekday}`}
-                  defaultValue={toHHMM(rule?.startMinutes ?? 9 * 60)}
-                  className="input !py-1.5"
-                />
-                <span className="text-muted text-sm text-center">to</span>
-                <input
-                  type="time"
-                  name={`end_${weekday}`}
-                  defaultValue={toHHMM(rule?.endMinutes ?? 17 * 60)}
-                  className="input !py-1.5"
-                />
-              </div>
-            );
-          })}
-          <div className="flex justify-end pt-2">
-            <button type="submit" className="btn-primary">
-              Save availability
-            </button>
+          <div className="card !p-4 text-sm text-muted">
+            {availability
+              .map((a) => `${WEEKDAYS[a.weekday]} ${toHHMM(a.startMinutes)}–${toHHMM(a.endMinutes)}`)
+              .join(" · ")}
           </div>
-        </form>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   listSessionTypes,
   listAvailability,
   listBookings,
+  listClassEvents,
   listAllTeachers,
   listPendingPayoutRequests,
 } from "@/lib/repo";
@@ -27,10 +28,11 @@ export default async function DashboardHome() {
       ])
     : [[], []];
 
-  const [sessionTypes, availability, bookings] = await Promise.all([
+  const [sessionTypes, availability, bookings, events] = await Promise.all([
     listSessionTypes(teacher.id),
     listAvailability(teacher.id),
     listBookings(teacher.id),
+    listClassEvents(teacher.id),
   ]);
 
   const h = await headers();
@@ -41,7 +43,16 @@ export default async function DashboardHome() {
   const steps = [
     { done: teacher.bio.trim().length > 0, label: "Complete your profile", href: "/dashboard/profile" },
     { done: sessionTypes.length > 0, label: "Add a session type & price", href: "/dashboard/schedule" },
-    { done: availability.length > 0, label: "Set your weekly availability", href: "/dashboard/schedule" },
+    {
+      // Events are the standard; legacy availability still counts until the
+      // teacher converts. Flexible-only teachers pass automatically.
+      done:
+        events.length > 0 ||
+        availability.length > 0 ||
+        (sessionTypes.length > 0 && sessionTypes.every((s) => s.scheduling === "flexible")),
+      label: "Schedule your class times",
+      href: "/dashboard/schedule",
+    },
     // The finale — everything above exists so this moment can happen.
     { done: bookings.length > 0, label: "Share your link & get your first booking", href: "#share-link" },
   ];
@@ -49,7 +60,7 @@ export default async function DashboardHome() {
 
   const now = Date.now();
   const nextUp = bookings
-    .filter((b) => new Date(b.startISO).getTime() >= now && b.status === "confirmed")
+    .filter((b) => b.status === "confirmed" && (!b.startISO || new Date(b.startISO).getTime() >= now))
     .slice(0, 3);
 
   // "Set up" = the three build steps; the share step is the ongoing finale.

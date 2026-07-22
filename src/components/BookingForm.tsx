@@ -6,7 +6,7 @@ import { formatPrice } from "@/lib/format";
 
 interface Group {
   heading: string;
-  slots: { startISO: string; label: string }[];
+  slots: { startISO: string; label: string; spotsLeft: number | null }[];
 }
 
 export function BookingForm({
@@ -16,6 +16,8 @@ export function BookingForm({
   timezone,
   groups,
   preselect,
+  flexible = false,
+  teacherFirstName = "your teacher",
 }: {
   slug: string;
   sessionTypeId: string;
@@ -23,8 +25,11 @@ export function BookingForm({
   timezone: string;
   groups: Group[];
   preselect?: string;
+  flexible?: boolean;
+  teacherFirstName?: string;
 }) {
   const [selected, setSelected] = useState<string | null>(preselect ?? null);
+  const showDetails = flexible || selected !== null;
   // Arriving from a specific event means the time is already chosen — showing
   // the full picker again would be a redundant second "pick a time" step.
   // Collapse it to a summary with a "Change" escape hatch instead.
@@ -34,8 +39,18 @@ export function BookingForm({
 
   return (
     <div className="mt-6 space-y-6">
+      {flexible && (
+        <section className="card bg-brand-tint/40">
+          <h2 className="font-semibold mb-1">Flexible scheduling</h2>
+          <p className="text-sm text-muted">
+            Book now — after checkout, you and {teacherFirstName} will pick a
+            time together that fits you both.
+          </p>
+        </section>
+      )}
+
       {/* Step 1: the chosen time (picker only if no time chosen yet) */}
-      {!showPicker && selectedSlot ? (
+      {flexible ? null : !showPicker && selectedSlot ? (
         <section className="card flex items-center justify-between gap-4">
           <div>
             <h2 className="font-semibold">Your time</h2>
@@ -75,6 +90,11 @@ export function BookingForm({
                       }`}
                     >
                       {s.label}
+                      {s.spotsLeft != null && s.spotsLeft <= 5 && (
+                        <span className="ml-1.5 text-[10px] opacity-80">
+                          {s.spotsLeft} left
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -86,11 +106,11 @@ export function BookingForm({
       )}
 
       {/* Step 2: details + (stubbed) payment */}
-      {selected && (
+      {showDetails && (
         <form action={bookAction} className="card space-y-4">
           <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="sessionTypeId" value={sessionTypeId} />
-          <input type="hidden" name="startISO" value={selected} />
+          <input type="hidden" name="startISO" value={selected ?? ""} />
 
           <h2 className="font-semibold">Your details</h2>
           <div className="grid sm:grid-cols-2 gap-4">

@@ -7,10 +7,65 @@ export function SessionTypeForm() {
   const [locationType, setLocationType] = useState<"online" | "in_person">(
     "online",
   );
+  const [scheduling, setScheduling] = useState<"events" | "flexible">("events");
 
   return (
     <form action={addSessionTypeAction} className="card space-y-4">
-      <p className="font-medium text-sm">Add a session type</p>
+      <p className="font-medium text-sm">Add a class</p>
+
+      <div>
+        <label className="label">How is it scheduled?</label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setScheduling("events")}
+            className={`rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+              scheduling === "events"
+                ? "border-brand bg-brand-tint"
+                : "border-border hover:border-brand"
+            }`}
+          >
+            <span className="font-medium">📅 Scheduled class</span>
+            <span className="block text-xs text-muted mt-0.5">
+              Happens at set times you schedule (weekly or one-off). The
+              standard.
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setScheduling("flexible")}
+            className={`rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+              scheduling === "flexible"
+                ? "border-brand bg-brand-tint"
+                : "border-border hover:border-brand"
+            }`}
+          >
+            <span className="font-medium">🤝 Flexible (coaching)</span>
+            <span className="block text-xs text-muted mt-0.5">
+              Students book first, then you find a time together.
+            </span>
+          </button>
+        </div>
+        <input type="hidden" name="scheduling" value={scheduling} />
+      </div>
+
+      {scheduling === "events" && (
+        <div>
+          <label className="label" htmlFor="capacity">
+            Spots per class{" "}
+            <span className="font-normal text-muted">(blank = unlimited)</span>
+          </label>
+          <input
+            id="capacity"
+            name="capacity"
+            type="number"
+            min={1}
+            max={500}
+            placeholder="Unlimited"
+            className="input"
+          />
+        </div>
+      )}
 
       <div>
         <label className="label" htmlFor="name">

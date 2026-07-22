@@ -19,6 +19,8 @@ import {
   deletePendingPass,
 } from "@/lib/repo";
 import { computeSlots } from "@/lib/slots";
+import { computeOccurrences } from "@/lib/events";
+import { listClassEvents } from "@/lib/repo";
 import { sendBookingEmails } from "@/lib/email";
 import { stripe } from "@/lib/stripe";
 
@@ -57,22 +59,53 @@ export async function bookAction(formData: FormData) {
     redirect(`/t/${slug}?error=That+session+is+no+longer+available`);
   }
 
-  // Re-validate the chosen slot is still genuinely bookable (guards against a
-  // slot being taken between page load and submit).
-  const [rules, bookings] = await Promise.all([
-    listAvailability(teacher!.id),
-    listBookings(teacher!.id),
-  ]);
-  const slots = computeSlots({
-    now: new Date(),
-    timeZone: teacher!.timezone,
-    durationMinutes: sessionType!.durationMinutes,
-    rules,
-    bookings,
-  });
-  const stillOpen = slots.some((s) => s.startISO === startISO);
-  if (!startISO || !stillOpen) {
-    redirect(`${base}?error=That+time+was+just+taken.+Pick+another.`);
+  // Time validation depends on the scheduling model:
+  // - flexible: no time at all — student & teacher schedule together after.
+  // - events: the chosen time must be a real occurrence of this class's
+  //   scheduled events, with a seat left (guards races between page load and
+  //   submit). Legacy fallback: teachers with no events yet still validate
+  //   against availability-derived slots.
+  const flexible = sessionType!.scheduling === "flexible";
+  let start: string | null = null;
+
+  if (!flexible) {
+    const [events, bookings] = await Promise.all([
+      listClassEvents(teacher!.id),
+      listBookings(teacher!.id),
+    ]);
+
+    let ok = false;
+    let full = false;
+    if (events.length > 0) {
+      const occs = computeOccurrences({
+        now: new Date(),
+        timeZone: teacher!.timezone,
+        events,
+        sessionTypes: [sessionType!],
+        bookings,
+      });
+      const occ = occs.find((o) => o.startISO === startISO);
+      ok = Boolean(occ);
+      full = Boolean(occ && occ.spotsLeft === 0);
+    } else {
+      const rules = await listAvailability(teacher!.id);
+      const slots = computeSlots({
+        now: new Date(),
+        timeZone: teacher!.timezone,
+        durationMinutes: sessionType!.durationMinutes,
+        rules,
+        bookings,
+      });
+      ok = slots.some((s) => s.startISO === startISO);
+    }
+
+    if (!startISO || !ok) {
+      redirect(`${base}?error=That+time+was+just+taken.+Pick+another.`);
+    }
+    if (full) {
+      redirect(`${base}?error=That+class+just+filled+up.+Pick+another+time.`);
+    }
+    start = startISO;
   }
 
   const isFree = sessionType!.priceCents === 0;
@@ -98,7 +131,7 @@ export async function bookAction(formData: FormData) {
     clientName,
     clientEmail,
     note,
-    startISO,
+    startISO: start,
     durationMinutes: sessionType!.durationMinutes,
     priceCents: sessionType!.priceCents,
     // Snapshot delivery details so the student's link never changes under

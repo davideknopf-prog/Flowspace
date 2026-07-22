@@ -9,8 +9,10 @@ import {
   listBookings,
   listReviews,
   getReviewStats,
+  listClassEvents,
 } from "@/lib/repo";
 import { computeUpcomingClasses } from "@/lib/slots";
+import { computeOccurrences, describeEvent } from "@/lib/events";
 import { Avatar } from "@/components/Avatar";
 import { Stars } from "@/components/Stars";
 import { formatPrice, formatDuration, formatSlot } from "@/lib/format";
@@ -42,7 +44,7 @@ export default async function PublicProfile({
   const teacher = await getTeacherBySlug(slug);
   if (!teacher) notFound();
 
-  const [sessionTypesAll, offersAll, rules, bookings, reviews, reviewStats] =
+  const [sessionTypesAll, offersAll, rules, bookings, reviews, reviewStats, events] =
     await Promise.all([
       listSessionTypes(teacher.id),
       listOffers(teacher.id),
@@ -50,6 +52,7 @@ export default async function PublicProfile({
       listBookings(teacher.id),
       listReviews(teacher.id, true),
       getReviewStats(teacher.id),
+      listClassEvents(teacher.id),
     ]);
   const sessionTypes = sessionTypesAll.filter((s) => s.active);
   const offers = offersAll.filter((o) => o.active);
@@ -57,14 +60,39 @@ export default async function PublicProfile({
   // "Coming soon" fast-path: the next open times across all sessions, so a
   // prospect can book in two clicks without scrolling the full menu.
   const sessionById = new Map(sessionTypes.map((s) => [s.id, s]));
-  const upcoming = computeUpcomingClasses({
-    now: new Date(),
-    timeZone: teacher.timezone,
-    rules,
-    bookings,
-    sessionTypes,
-    limit: 3,
-  });
+  let upcoming: { startISO: string; sessionTypeId: string; spotsLeft: number | null }[] =
+    computeOccurrences({
+      now: new Date(),
+      timeZone: teacher.timezone,
+      events,
+      sessionTypes,
+      bookings,
+    })
+      .filter((o) => o.spotsLeft !== 0)
+      .slice(0, 3);
+  // Legacy fallback: availability-derived openings until this teacher
+  // schedules real class times.
+  if (upcoming.length === 0 && events.length === 0) {
+    upcoming = computeUpcomingClasses({
+      now: new Date(),
+      timeZone: teacher.timezone,
+      rules,
+      bookings,
+      sessionTypes,
+      limit: 3,
+    }).map((u) => ({ ...u, spotsLeft: null }));
+  }
+
+  // Human schedule lines per class ("Tuesdays · 6:00 PM"), for the class cards.
+  const scheduleLines = new Map<string, string[]>();
+  for (const ev of events) {
+    if (!ev.active) continue;
+    const line = describeEvent(ev, teacher.timezone);
+    if (!line) continue;
+    const list = scheduleLines.get(ev.sessionTypeId) ?? [];
+    if (list.length < 3) list.push(line);
+    scheduleLines.set(ev.sessionTypeId, list);
+  }
 
   // Page customization: teacher-chosen accent color tints the header band;
   // a cover photo (if set) crowns the page. brandColor is validated to a
@@ -182,7 +210,11 @@ export default async function PublicProfile({
                         <p className="font-semibold">
                           {formatPrice(s.priceCents)}
                         </p>
-                        <span className="text-xs text-brand-dark">Book →</span>
+                        <span className="text-xs text-brand-dark">
+                          {u.spotsLeft != null && u.spotsLeft <= 5
+                            ? `${u.spotsLeft} spots left · Book →`
+                            : "Book →"}
+                        </span>
                       </div>
                     </Link>
                   </li>
@@ -221,6 +253,17 @@ export default async function PublicProfile({
                         {formatDuration(s.durationMinutes)}
                         {s.description ? ` · ${s.description}` : ""}
                       </p>
+                      {s.scheduling === "flexible" ? (
+                        <p className="text-xs text-brand-dark mt-1">
+                          🤝 Flexible — book now, schedule together
+                        </p>
+                      ) : (
+                        (scheduleLines.get(s.id) ?? []).length > 0 && (
+                          <p className="text-xs text-brand-dark mt-1">
+                            🗓 {(scheduleLines.get(s.id) ?? []).join(" · ")}
+                          </p>
+                        )
+                      )}
                     </div>
                     <div className="text-right shrink-0 pl-4">
                       <p className="font-semibold">{formatPrice(s.priceCents)}</p>
@@ -321,6 +364,31 @@ export default async function PublicProfile({
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {(teacher.contactPhone || teacher.contactEmail) && (
+          <section className="card !p-4">
+            <h2 className="text-sm font-semibold mb-1">
+              Reach {teacher.name.split(" ")[0]} directly
+            </h2>
+            <p className="text-sm text-muted">
+              Questions, or booked a flexible session? Get in touch:
+              {teacher.contactPhone && (
+                <>
+                  {" "}
+                  <a href={`tel:${teacher.contactPhone.replace(/[^+\d]/g, "")}`} className="text-brand-dark font-medium">
+                    {teacher.contactPhone}
+                  </a>
+                </>
+              )}
+              {teacher.contactPhone && teacher.contactEmail && " · "}
+              {teacher.contactEmail && (
+                <a href={`mailto:${teacher.contactEmail}`} className="text-brand-dark font-medium">
+                  {teacher.contactEmail}
+                </a>
+              )}
+            </p>
           </section>
         )}
 
