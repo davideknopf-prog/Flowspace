@@ -251,6 +251,60 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* The math — the honest 5x story. Arithmetic, not claims. */}
+      <section className="mx-auto max-w-5xl px-4 py-14">
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <span className="pill-accent mb-4">The math</span>
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+            Same two classes. Five times the paycheck.
+          </h2>
+          <p className="mt-3 text-muted">
+            Teaching for an hourly rate caps what you earn. Teaching{" "}
+            <span className="font-medium text-foreground">your own classes</span>{" "}
+            means every student in the room pays you.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto items-stretch">
+          <div className="card !p-6">
+            <p className="text-sm font-semibold text-muted mb-1">
+              Teaching for a studio
+            </p>
+            <p className="text-3xl font-semibold">$100<span className="text-base font-normal text-muted">/week</span></p>
+            <ul className="mt-4 space-y-2 text-sm text-muted">
+              <li>2 classes · ~4 hours of work</li>
+              <li>Paid a flat hourly rate</li>
+              <li>The studio keeps the upside</li>
+              <li>Your ceiling is your hourly rate</li>
+            </ul>
+          </div>
+          <div className="card card-lift !p-6 border-brand ring-1 ring-[var(--ring)]">
+            <p className="text-sm font-semibold text-brand-dark mb-1">
+              Your studio on Kuleo
+            </p>
+            <p className="text-3xl font-semibold text-brand-dark">
+              $500<span className="text-base font-normal text-muted">/week</span>
+            </p>
+            <ul className="mt-4 space-y-2 text-sm text-muted">
+              <li>The same 2 classes — 10 students each at $25</li>
+              <li>Every student pays <span className="font-medium text-foreground">you</span> — no studio commission</li>
+              <li>Cash out whenever you like</li>
+              <li>No ceiling: your audience grows, your income grows</li>
+            </ul>
+          </div>
+        </div>
+        <p className="mt-6 text-center text-xs text-muted max-w-xl mx-auto">
+          An illustration — you set your own prices and class sizes. Standard
+          card processing (2.9% + 30¢) applies to student payments; Kuleo takes
+          no commission.
+        </p>
+        <div className="mt-8 text-center">
+          <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
+            {teacher ? "Go to your studio" : "Get booking today"}
+          </Link>
+        </div>
+      </section>
+
       {/* Pricing — outcomes first, then the numbers */}
       <section id="pricing" className="mx-auto max-w-5xl px-4 py-14 scroll-mt-16">
         <div className="text-center max-w-2xl mx-auto mb-4">

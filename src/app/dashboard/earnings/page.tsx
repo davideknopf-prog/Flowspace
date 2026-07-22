@@ -45,7 +45,9 @@ export default async function EarningsPage({
       <div>
         <h1 className="text-2xl font-semibold mb-1">Earnings</h1>
         <p className="text-muted text-sm">
-          Your money at a glance — cash out whenever you like.
+          {hasEarnings
+            ? "Your money at a glance — cash out whenever you like."
+            : "Every dollar a student pays lands here — Kuleo takes no cut. Your first booking starts the chart."}
         </p>
       </div>
 

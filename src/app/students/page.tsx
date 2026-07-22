@@ -20,7 +20,7 @@ export default async function StudentsPage() {
     <main className="min-h-screen">
       <header className="border-b border-border bg-surface/80 backdrop-blur sticky top-0 z-10">
         <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-brand-dark">
+          <Link href="/" className="flex items-center gap-2 font-semibold text-lg text-brand-dark [font-family:var(--font-display)]">
             <span className="text-xl">🧘</span> Kuleo
           </Link>
           <nav className="flex items-center gap-3">

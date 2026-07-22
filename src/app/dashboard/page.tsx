@@ -42,6 +42,8 @@ export default async function DashboardHome() {
     { done: teacher.bio.trim().length > 0, label: "Complete your profile", href: "/dashboard/profile" },
     { done: sessionTypes.length > 0, label: "Add a session type & price", href: "/dashboard/schedule" },
     { done: availability.length > 0, label: "Set your weekly availability", href: "/dashboard/schedule" },
+    // The finale — everything above exists so this moment can happen.
+    { done: bookings.length > 0, label: "Share your link & get your first booking", href: "#share-link" },
   ];
   const remaining = steps.filter((s) => !s.done).length;
 
@@ -50,6 +52,8 @@ export default async function DashboardHome() {
     .filter((b) => new Date(b.startISO).getTime() >= now && b.status === "confirmed")
     .slice(0, 3);
 
+  // "Set up" = the three build steps; the share step is the ongoing finale.
+  const setupDone = steps.slice(0, 3).every((s) => s.done);
   const ready = remaining === 0;
 
   return (
@@ -59,11 +63,25 @@ export default async function DashboardHome() {
         <p className="text-muted text-sm">Here&apos;s your studio at a glance.</p>
       </div>
 
+      {/* Live moment: setup finished, first booking still ahead. */}
+      {setupDone && bookings.length === 0 && (
+        <div className="card border-brand bg-brand-tint/50">
+          <h2 className="font-semibold mb-1">🎉 Your studio is live!</h2>
+          <p className="text-sm text-muted">
+            Students can book you right now at your link below. Drop it in your
+            Instagram bio and your next class announcement — first bookings
+            almost always follow the first share.
+          </p>
+        </div>
+      )}
+
       {/* Setup checklist */}
       {!ready && (
         <div className="card">
           <h2 className="font-semibold mb-3">
-            Finish setting up ({3 - remaining}/3)
+            {setupDone
+              ? "One step left — the fun one"
+              : `Set up your studio (${steps.filter((s) => s.done).length}/${steps.length})`}
           </h2>
           <ul className="space-y-2">
             {steps.map((s) => (
@@ -184,7 +202,7 @@ export default async function DashboardHome() {
       </div>
 
       {/* Share link */}
-      <div className="card">
+      <div className="card" id="share-link">
         <h2 className="font-semibold mb-1">Your booking link</h2>
         <p className="text-sm text-muted mb-3">
           {ready

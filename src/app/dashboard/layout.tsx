@@ -43,7 +43,7 @@ export default async function DashboardLayout({
         <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 font-semibold text-brand-dark"
+            className="flex items-center gap-2 font-semibold text-lg text-brand-dark [font-family:var(--font-display)]"
           >
             <span className="text-xl">🧘</span> Kuleo
           </Link>
