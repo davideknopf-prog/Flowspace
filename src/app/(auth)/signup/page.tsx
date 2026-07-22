@@ -31,6 +31,17 @@ export default function SignupPage() {
             Log in
           </Link>
         </p>
+        <p className="mt-4 text-center text-xs text-muted">
+          By creating an account you agree to Kuleo&apos;s{" "}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
     </main>
   );

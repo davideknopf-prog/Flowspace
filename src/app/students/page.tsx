@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getStudioSchedule } from "@/lib/studio";
 import { Avatar } from "@/components/Avatar";
 import { formatPrice, formatDuration } from "@/lib/format";
+import { LegalFooter } from "@/components/LegalFooter";
 
 export const metadata: Metadata = {
   title: "New to Kuleo? — take a class with a verified teacher",
@@ -169,11 +170,7 @@ export default async function StudentsPage() {
         </section>
       )}
 
-      <footer className="border-t border-border">
-        <div className="mx-auto max-w-5xl px-4 py-10 text-center text-sm text-muted">
-          Kuleo 🧘 — great yoga, straight from the teacher.
-        </div>
-      </footer>
+      <LegalFooter />
     </main>
   );
 }

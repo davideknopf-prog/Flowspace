@@ -56,7 +56,9 @@ export default async function SubscribePage({
           </h1>
           <p className="text-muted max-w-md mx-auto">
             One subscription, your whole teaching business: profile, booking
-            link, scheduling, and payments. Cancel anytime.
+            link, scheduling, and payments. Cancel anytime. Kuleo takes no
+            commission on your classes — only standard card processing
+            (2.9% + 30¢) applies to student payments.
           </p>
         </div>
 

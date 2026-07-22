@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getStudioSchedule, type StudioEntry } from "@/lib/studio";
 import { Avatar } from "@/components/Avatar";
+import { LegalFooter } from "@/components/LegalFooter";
 import { formatPrice, formatDuration } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -100,6 +101,7 @@ export default async function StudioSchedulePage() {
           </div>
         )}
       </div>
+      <LegalFooter />
     </main>
   );
 }

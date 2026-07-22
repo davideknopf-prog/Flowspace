@@ -296,7 +296,12 @@ export default async function PublicProfile({
           </section>
         )}
 
-        <footer className="pt-6 border-t border-border text-center text-xs text-muted">
+        <footer className="pt-6 border-t border-border text-center text-xs text-muted space-y-2">
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <Link href="/terms" className="hover:text-foreground">Terms of Service</Link>
+            <Link href="/privacy" className="hover:text-foreground">Privacy Policy</Link>
+            <Link href="/waiver" className="hover:text-foreground">Liability Waiver</Link>
+          </nav>
           Powered by <span className="font-medium">Kuleo</span> 🧘
         </footer>
       </div>

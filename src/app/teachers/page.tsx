@@ -7,6 +7,7 @@ import {
   getReviewStats,
 } from "@/lib/repo";
 import { Avatar } from "@/components/Avatar";
+import { LegalFooter } from "@/components/LegalFooter";
 import { Stars } from "@/components/Stars";
 
 export const metadata: Metadata = {
@@ -113,6 +114,7 @@ export default async function TeachersDirectory() {
           ))}
         </div>
       </div>
+      <LegalFooter />
     </main>
   );
 }

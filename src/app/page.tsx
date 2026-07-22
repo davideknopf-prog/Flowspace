@@ -319,6 +319,10 @@ export default async function Home() {
             <p className="text-center text-xs text-muted">
               Cancel anytime · your earnings are always yours to cash out.
             </p>
+            <p className="text-center text-xs text-muted">
+              Kuleo takes no commission. Standard card processing (2.9% + 30¢,
+              charged by the payment processor) applies to student payments.
+            </p>
           </div>
 
           <div className="card">
@@ -465,9 +469,14 @@ export default async function Home() {
               </ul>
             </div>
           </div>
-          <p className="mt-10 pt-6 border-t border-border text-center text-xs text-muted">
-            Kuleo 🧘 — great yoga, straight from the teacher.
-          </p>
+          <div className="mt-10 pt-6 border-t border-border text-center text-xs text-muted space-y-2">
+            <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+              <Link href="/terms" className="hover:text-foreground">Terms of Service</Link>
+              <Link href="/privacy" className="hover:text-foreground">Privacy Policy</Link>
+              <Link href="/waiver" className="hover:text-foreground">Liability Waiver</Link>
+            </nav>
+            <p>Kuleo 🧘 — great yoga, straight from the teacher.</p>
+          </div>
         </div>
       </footer>
     </main>

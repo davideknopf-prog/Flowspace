@@ -145,6 +145,17 @@ export function BookingForm({
               ? "Confirm booking"
               : `Continue to payment · ${formatPrice(priceCents)}`}
           </button>
+          <p className="text-center text-xs text-muted">
+            By booking you agree to Kuleo&apos;s{" "}
+            <a href="/terms" target="_blank" className="underline underline-offset-2 hover:text-foreground">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a href="/waiver" target="_blank" className="underline underline-offset-2 hover:text-foreground">
+              Liability Waiver &amp; Assumption of Risk
+            </a>
+            .
+          </p>
         </form>
       )}
     </div>
