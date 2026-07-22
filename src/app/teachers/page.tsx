@@ -1,7 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { listAllTeachers, listSessionTypes, listOffers } from "@/lib/repo";
+import {
+  listAllTeachers,
+  listSessionTypes,
+  listOffers,
+  getReviewStats,
+} from "@/lib/repo";
 import { Avatar } from "@/components/Avatar";
+import { Stars } from "@/components/Stars";
 
 export const metadata: Metadata = {
   title: "Teachers — Kuleo",
@@ -15,14 +21,20 @@ export default async function TeachersDirectory() {
   const cards = (
     await Promise.all(
       teachers.map(async (t) => {
-        const [sessions, offers] = await Promise.all([
+        const [sessions, offers, reviews] = await Promise.all([
           listSessionTypes(t.id),
           listOffers(t.id),
+          getReviewStats(t.id),
         ]);
         const activeSessions = sessions.filter((s) => s.active);
         const activeOffers = offers.filter((o) => o.active);
         if (activeSessions.length === 0 && activeOffers.length === 0) return null;
-        return { teacher: t, sessionCount: activeSessions.length, offerCount: activeOffers.length };
+        return {
+          teacher: t,
+          sessionCount: activeSessions.length,
+          offerCount: activeOffers.length,
+          reviews,
+        };
       }),
     )
   ).filter((c) => c !== null);
@@ -58,7 +70,7 @@ export default async function TeachersDirectory() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {cards.map(({ teacher, sessionCount, offerCount }) => (
+          {cards.map(({ teacher, sessionCount, offerCount, reviews }) => (
             <Link
               key={teacher.id}
               href={`/t/${teacher.slug}`}
@@ -68,6 +80,13 @@ export default async function TeachersDirectory() {
                 <Avatar name={teacher.name} src={teacher.avatarUrl} size={56} />
                 <div className="min-w-0">
                   <p className="font-semibold truncate">{teacher.name}</p>
+                  {reviews.count > 0 && (
+                    <p className="flex items-center gap-1 text-xs">
+                      <Stars rating={reviews.average} className="text-xs" />
+                      <span className="font-medium">{reviews.average.toFixed(1)}</span>
+                      <span className="text-muted">({reviews.count})</span>
+                    </p>
+                  )}
                   {teacher.location && (
                     <p className="text-xs text-muted truncate">📍 {teacher.location}</p>
                   )}

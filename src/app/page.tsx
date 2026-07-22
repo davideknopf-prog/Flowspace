@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getCurrentTeacher } from "@/lib/session";
 import { getPlans, type Plan } from "@/lib/billing";
-import { formatPrice } from "@/lib/format";
+import { getStudioSchedule, type StudioEntry } from "@/lib/studio";
+import { Avatar } from "@/components/Avatar";
+import { formatPrice, formatDuration } from "@/lib/format";
 
 const CALENDLY_URL = "https://calendly.com/david-knopf/onboarding-meeting";
 const PHONE_DISPLAY = "(508) 468-7829";
@@ -20,6 +22,20 @@ export default async function Home() {
       { lookupKey: "kuleo_monthly", priceId: "", amountCents: 1500, interval: "month" },
       { lookupKey: "kuleo_annual", priceId: "", amountCents: 9000, interval: "year" },
     ];
+  }
+
+  // Live marketplace proof: real upcoming classes and honest platform stats.
+  // A database hiccup degrades to hiding these sections, never a broken page.
+  let upcoming: StudioEntry[] = [];
+  let weekClassCount = 0;
+  let teacherCount = 0;
+  try {
+    const studio = await getStudioSchedule(100);
+    upcoming = studio.entries.slice(0, 4);
+    weekClassCount = studio.entries.length;
+    teacherCount = studio.teachers.length;
+  } catch {
+    // sections render conditionally below
   }
 
   return (
@@ -99,7 +115,91 @@ export default async function Home() {
           </a>
           .
         </p>
+
+        {/* Two doors in: every marketplace routes both sides on screen one. */}
+        <div className="mt-10 grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
+          <Link
+            href={teacher ? "/dashboard" : "/signup"}
+            className="card !p-5 hover:border-brand transition-colors"
+          >
+            <div className="text-2xl mb-2">🧘</div>
+            <p className="font-semibold">I&apos;m here to teach</p>
+            <p className="text-sm text-muted mt-1">
+              Open your studio, share one link, and keep everything you earn.
+            </p>
+            <p className="text-sm text-brand-dark font-medium mt-3">
+              Create your studio →
+            </p>
+          </Link>
+          <Link
+            href="/students"
+            className="card !p-5 hover:border-brand transition-colors"
+          >
+            <div className="text-2xl mb-2">✨</div>
+            <p className="font-semibold">I&apos;m here to practice</p>
+            <p className="text-sm text-muted mt-1">
+              Book live classes with independent, verified teachers — online or
+              in person.
+            </p>
+            <p className="text-sm text-brand-dark font-medium mt-3">
+              Find your class →
+            </p>
+          </Link>
+        </div>
+
+        {/* Honest, live numbers beat borrowed big ones. */}
+        {teacherCount > 0 && (
+          <p className="mt-8 text-sm text-muted">
+            <span className="font-semibold text-foreground">{teacherCount}</span>{" "}
+            verified teacher{teacherCount === 1 ? "" : "s"} ·{" "}
+            <span className="font-semibold text-foreground">{weekClassCount}</span>{" "}
+            bookable class{weekClassCount === 1 ? "" : "es"} this week ·{" "}
+            <span className="font-semibold text-foreground">100%</span> of class
+            earnings go to teachers
+          </p>
+        )}
       </section>
+
+      {/* Live inventory: the realest trust signal a marketplace has. */}
+      {upcoming.length > 0 && (
+        <section className="mx-auto max-w-3xl px-4 pb-20">
+          <div className="flex items-end justify-between mb-5">
+            <h2 className="text-2xl font-semibold">Happening this week</h2>
+            <Link href="/schedule" className="text-sm text-brand-dark font-medium">
+              Full schedule →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {upcoming.map((e, i) => (
+              <li key={e.bookHref + i}>
+                <Link
+                  href={e.bookHref}
+                  className="card !p-4 flex items-center gap-4 hover:border-brand transition-colors"
+                >
+                  <div className="w-36 shrink-0 text-sm font-semibold">
+                    {e.dayHeading} · {e.timeLabel}
+                  </div>
+                  <Avatar name={e.teacherName} src={e.teacherAvatar} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">
+                      {e.className}{" "}
+                      <span className="text-muted font-normal">· {e.teacherName}</span>
+                    </p>
+                    <p className="text-xs text-muted">
+                      {formatDuration(e.durationMinutes)} ·{" "}
+                      {e.locationType === "online" ? "💻 Online" : "📍 In person"}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-semibold">{formatPrice(e.priceCents)}</p>
+                    <span className="text-xs text-brand-dark">Book →</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Features */}
       <section className="mx-auto max-w-5xl px-4 pb-20">
@@ -298,31 +398,72 @@ export default async function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto max-w-5xl px-4 py-10 text-center text-sm text-muted space-y-3">
-          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            <Link href="/students" className="hover:text-foreground">New students</Link>
-            <Link href="/teachers" className="hover:text-foreground">Our teachers</Link>
-            <Link href="/schedule" className="hover:text-foreground">Today&apos;s classes</Link>
-            <Link href="/#pricing" className="hover:text-foreground">Pricing</Link>
-            <a
-              href={CALENDLY_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground"
-            >
-              Book a demo
-            </a>
-          </nav>
-          <p>
-            Questions? Call or text David at{" "}
-            <a href={PHONE_HREF} className="text-brand-dark font-medium">
-              {PHONE_DISPLAY}
-            </a>
-          </p>
-          <p>
-            Kuleo 🧘 — the online home for your yoga business. Teach yoga;
-            we&apos;ll handle the rest.
+      <footer className="border-t border-border bg-surface/50">
+        <div className="mx-auto max-w-5xl px-4 py-12">
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 text-sm">
+            <div>
+              <p className="flex items-center gap-2 font-semibold text-brand-dark mb-3">
+                <span className="text-xl">🧘</span> Kuleo
+              </p>
+              <p className="text-muted leading-relaxed">
+                The online home for your yoga business. Teach yoga; we&apos;ll
+                handle the rest.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold mb-3">For teachers</p>
+              <ul className="space-y-2 text-muted">
+                <li><Link href="/#pricing" className="hover:text-foreground">Pricing</Link></li>
+                <li><Link href="/signup" className="hover:text-foreground">Create your studio</Link></li>
+                <li><Link href="/login" className="hover:text-foreground">Log in</Link></li>
+                <li>
+                  <a
+                    href={CALENDLY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-foreground"
+                  >
+                    Book a free demo
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold mb-3">For students</p>
+              <ul className="space-y-2 text-muted">
+                <li><Link href="/students" className="hover:text-foreground">New to Kuleo?</Link></li>
+                <li><Link href="/schedule" className="hover:text-foreground">Today&apos;s classes</Link></li>
+                <li><Link href="/teachers" className="hover:text-foreground">Our teachers</Link></li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold mb-3">Talk to a human</p>
+              <ul className="space-y-2 text-muted">
+                <li>
+                  Call or text David:{" "}
+                  <a href={PHONE_HREF} className="text-brand-dark font-medium whitespace-nowrap">
+                    {PHONE_DISPLAY}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={CALENDLY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-dark font-medium"
+                  >
+                    Schedule a 1-on-1 →
+                  </a>
+                </li>
+                <li className="text-xs">
+                  Real founder, real phone. Free onboarding &amp; training with
+                  every plan.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <p className="mt-10 pt-6 border-t border-border text-center text-xs text-muted">
+            Kuleo 🧘 — great yoga, straight from the teacher.
           </p>
         </div>
       </footer>
