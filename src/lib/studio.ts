@@ -85,9 +85,22 @@ export async function getStudioSchedule(limit = 40): Promise<{
     }),
   );
 
+  // A teacher's class types all draw from the same availability, so the same
+  // opening can appear once per class type — which reads as one person
+  // teaching three classes at 9:00. Keep at most ONE entry per teacher per
+  // hour block; rotate which class type wins so variety still shows through.
+  const perTeacherHour = new Set<string>();
   const entries = nested
     .flat()
     .sort((a, b) => a.startISO.localeCompare(b.startISO))
+    .filter((e) => {
+      const hour = new Date(e.startISO);
+      hour.setUTCMinutes(0, 0, 0);
+      const key = `${e.teacherSlug}|${hour.toISOString()}`;
+      if (perTeacherHour.has(key)) return false;
+      perTeacherHour.add(key);
+      return true;
+    })
     .slice(0, limit);
 
   return { entries, teachers };

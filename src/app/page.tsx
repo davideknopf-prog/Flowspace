@@ -78,7 +78,7 @@ export default async function Home() {
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-5xl px-4 py-20 text-center">
+      <section className="mx-auto max-w-5xl px-4 py-12 sm:py-14 text-center">
         <span className="pill mb-5">For yoga teachers</span>
         <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight max-w-3xl mx-auto leading-tight">
           Grow your yoga business without growing your workload.
@@ -90,7 +90,7 @@ export default async function Home() {
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
           <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
-            {teacher ? "Go to your studio" : "Create your studio"}
+            {teacher ? "Go to your studio" : "Kick off your studio"}
           </Link>
           <Link href="/login" className="btn-secondary">
             Log in
@@ -128,7 +128,7 @@ export default async function Home() {
               Open your studio, share one link, and keep everything you earn.
             </p>
             <p className="text-sm text-brand-dark font-medium mt-3">
-              Create your studio →
+              Kick off your studio →
             </p>
           </Link>
           <Link
@@ -162,7 +162,7 @@ export default async function Home() {
 
       {/* Live inventory: the realest trust signal a marketplace has. */}
       {upcoming.length > 0 && (
-        <section className="mx-auto max-w-3xl px-4 pb-20">
+        <section className="mx-auto max-w-3xl px-4 pb-14">
           <div className="flex items-end justify-between mb-5">
             <h2 className="text-2xl font-semibold">Happening this week</h2>
             <Link href="/schedule" className="text-sm text-brand-dark font-medium">
@@ -202,7 +202,7 @@ export default async function Home() {
       )}
 
       {/* Features */}
-      <section className="mx-auto max-w-5xl px-4 pb-20">
+      <section className="mx-auto max-w-5xl px-4 pb-14">
         <div className="text-center max-w-xl mx-auto mb-10">
           <h2 className="text-2xl font-semibold">Less admin. More teaching.</h2>
           <p className="mt-2 text-muted">
@@ -232,7 +232,7 @@ export default async function Home() {
 
       {/* How it works */}
       <section className="bg-brand-tint border-y border-border">
-        <div className="mx-auto max-w-5xl px-4 py-16">
+        <div className="mx-auto max-w-5xl px-4 py-12">
           <h2 className="text-2xl font-semibold text-center mb-3">
             Set up this afternoon. Booked by this week.
           </h2>
@@ -249,7 +249,7 @@ export default async function Home() {
       </section>
 
       {/* Pricing — outcomes first, then the numbers */}
-      <section id="pricing" className="mx-auto max-w-5xl px-4 py-20 scroll-mt-16">
+      <section id="pricing" className="mx-auto max-w-5xl px-4 py-14 scroll-mt-16">
         <div className="text-center max-w-2xl mx-auto mb-4">
           <span className="pill mb-4">Pricing — for teachers</span>
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
@@ -263,7 +263,7 @@ export default async function Home() {
         </div>
 
         {/* The outcomes — the dream before the feature list */}
-        <div className="grid sm:grid-cols-3 gap-4 mt-10 mb-10">
+        <div className="grid sm:grid-cols-3 gap-4 mt-8 mb-8">
           <Outcome icon="📈" title="A full schedule" body="Teachers use Kuleo to fill 10+ bookings a week from one link in their bio — while they sleep, not while they DM." />
           <Outcome icon="💸" title="No studio fees. Keep all your earnings." body="Zero commission on your classes. Every dollar a student pays you is yours — Kuleo never takes a cut." />
           <Outcome icon="🌍" title="A global audience" body="Teach students across town or across the world. Your studio is open around the clock, wherever you are." />
@@ -311,7 +311,7 @@ export default async function Home() {
               href={teacher ? "/dashboard" : "/signup"}
               className="btn-primary w-full text-center"
             >
-              {teacher ? "Go to your studio" : "Start your studio today"}
+              {teacher ? "Go to your studio" : "Get booking today"}
             </Link>
             <p className="text-center text-xs text-muted">
               Cancel anytime · your earnings are always yours to cash out.
@@ -355,7 +355,7 @@ export default async function Home() {
       </section>
 
       {/* Why we built Kuleo — founder note */}
-      <section className="mx-auto max-w-2xl px-4 py-20">
+      <section className="mx-auto max-w-2xl px-4 py-14">
         <div className="text-center mb-8">
           <span className="pill mb-4">Why we built Kuleo</span>
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
@@ -393,7 +393,7 @@ export default async function Home() {
         <p className="mt-6 font-medium text-foreground">— David, founder of Kuleo</p>
         <div className="mt-8 text-center">
           <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
-            {teacher ? "Go to your studio" : "Create your studio"}
+            {teacher ? "Go to your studio" : "Kick off your studio"}
           </Link>
         </div>
       </section>
