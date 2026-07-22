@@ -42,10 +42,11 @@ for (const t of teachers) {
     continue;
   }
 
-  // Candidate (weekday, startMinutes) hours inside availability windows.
+  // Candidate (weekday, startMinutes) hours inside availability windows —
+  // sampled every 3 hours so assigned times are never back-to-back.
   const hours = [];
   for (const r of rules) {
-    for (let m = r.start_minutes; m + 60 <= r.end_minutes; m += 60) {
+    for (let m = r.start_minutes; m + 60 <= r.end_minutes; m += 180) {
       hours.push({ weekday: r.weekday, startMinutes: m });
     }
   }

@@ -72,15 +72,30 @@ export async function getStudioSchedule(limit = 40): Promise<{
       if (occurrences.length === 0 && events.length === 0) {
         const rules = await listAvailability(t.id);
         const eventsMode = active.filter((s) => s.scheduling === "events");
-        occurrences = computeUpcomingClasses({
+        const derived = computeUpcomingClasses({
           now,
           timeZone: t.timezone,
           rules,
           bookings,
           sessionTypes: eventsMode,
-          limit: 6,
+          limit: 20,
           days: 7,
-        }).map((u) => ({
+        });
+        // A fallback teacher must read like a curated schedule, not a wall of
+        // generated hours: at most 2 entries, at least 3h apart.
+        const spaced: typeof derived = [];
+        for (const u of derived) {
+          if (spaced.length >= 2) break;
+          const last = spaced[spaced.length - 1];
+          if (
+            !last ||
+            new Date(u.startISO).getTime() - new Date(last.startISO).getTime() >=
+              3 * 60 * 60_000
+          ) {
+            spaced.push(u);
+          }
+        }
+        occurrences = spaced.map((u) => ({
           startISO: u.startISO,
           sessionTypeId: u.sessionTypeId,
           eventId: "",
