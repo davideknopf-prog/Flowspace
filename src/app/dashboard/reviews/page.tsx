@@ -107,8 +107,9 @@ export default async function ReviewsPage({
           Add review
         </button>
         <p className="hint">
-          Adding reviews you&apos;ve already received by hand. Soon, students will
-          be able to leave a rating automatically after each class.
+          Add reviews you&apos;ve already received by hand — and after each
+          class, students are automatically emailed a review link. Their
+          submissions land here as &quot;Hidden&quot; until you publish them.
         </p>
       </form>
 

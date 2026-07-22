@@ -49,6 +49,7 @@ interface SendArgs {
   html: string;
   text: string;
   replyTo?: string;
+  attachments?: { filename: string; content: string }[]; // content = base64
 }
 
 async function send({
@@ -57,6 +58,7 @@ async function send({
   html,
   text,
   replyTo,
+  attachments,
 }: SendArgs): Promise<{ sent: boolean }> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM || "Kuleo <onboarding@resend.dev>";
@@ -81,6 +83,7 @@ async function send({
       html,
       text,
       ...(replyTo ? { reply_to: replyTo } : {}),
+      ...(attachments && attachments.length > 0 ? { attachments } : {}),
     }),
   });
 
@@ -103,6 +106,53 @@ function locationBlock(b: Booking): { label: string; value: string; link?: strin
     label: "Join link",
     value: b.meetingUrl || "Your teacher will share the link before the session.",
     link: b.meetingUrl || undefined,
+  };
+}
+
+// "Add to calendar": a Google Calendar link + a universal .ics attachment.
+function calendarBits(booking: Booking, teacher: Teacher, sessionName: string) {
+  if (!booking.startISO) return null;
+  const start = new Date(booking.startISO);
+  const end = new Date(start.getTime() + booking.durationMinutes * 60_000);
+  const stamp = (d: Date) =>
+    d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const title = `${sessionName} with ${teacher.name}`;
+  const details = booking.meetingUrl
+    ? `Join link: ${booking.meetingUrl}`
+    : booking.locationNote || "";
+  const gcal =
+    `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+    `&text=${encodeURIComponent(title)}` +
+    `&dates=${stamp(start)}/${stamp(end)}` +
+    `&details=${encodeURIComponent(details)}` +
+    (booking.locationType === "in_person" && booking.locationNote
+      ? `&location=${encodeURIComponent(booking.locationNote)}`
+      : "");
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Kuleo//Booking//EN",
+    "BEGIN:VEVENT",
+    `UID:${booking.id}@kuleo.io`,
+    `DTSTAMP:${stamp(new Date(booking.createdAt))}`,
+    `DTSTART:${stamp(start)}`,
+    `DTEND:${stamp(end)}`,
+    `SUMMARY:${title.replace(/[,;]/g, " ")}`,
+    details ? `DESCRIPTION:${details.replace(/[,;]/g, " ")}` : "",
+    booking.locationType === "in_person" && booking.locationNote
+      ? `LOCATION:${booking.locationNote.replace(/[,;]/g, " ")}`
+      : "",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ]
+    .filter(Boolean)
+    .join("\r\n");
+  return {
+    gcal,
+    attachment: {
+      filename: "class.ics",
+      content: Buffer.from(ics, "utf8").toString("base64"),
+    },
   };
 }
 
@@ -136,6 +186,10 @@ export async function sendBookingEmails({
     ? `<a href="${esc(loc.link)}" style="color:#47645a">${esc(loc.link)}</a>`
     : esc(loc.value);
 
+  // Teacher's welcome note: per-class first, teacher default second.
+  const welcome = (sessionType.confirmationNote || teacher.confirmationNote).trim();
+  const cal = calendarBits(booking, teacher, sessionType.name);
+
   // --- To the student -------------------------------------------------------
   const studentText = [
     `You're booked with ${teacher.name}!`,
@@ -145,9 +199,14 @@ export async function sendBookingEmails({
     `Duration: ${duration}`,
     `Price: ${price}`,
     `${loc.label}: ${loc.value}`,
+    cal ? `Add to calendar: ${cal.gcal}` : ``,
+    welcome ? `` : ``,
+    welcome ? `A note from ${teacher.name.split(" ")[0]}: ${welcome}` : ``,
     ``,
     `See you on the mat.`,
-  ].join("\n");
+  ]
+    .filter((l, i, a) => l !== `` || (a[i - 1] !== `` && i !== a.length - 1))
+    .join("\n");
 
   const studentHtml = wrapHtml(`
     <h1 style="font-size:18px">You're booked with ${esc(teacher.name)}! ✓</h1>
@@ -157,7 +216,9 @@ export async function sendBookingEmails({
       <tr><td style="color:#7c736a;padding-right:16px">Duration</td><td>${duration}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Price</td><td>${price}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px;vertical-align:top">${loc.label}</td><td>${locValueHtml}</td></tr>
-    </table>`);
+    </table>
+    ${cal ? `<p style="margin-top:16px"><a href="${cal.gcal}" style="display:inline-block;background:#5b7c6f;color:#ffffff;text-decoration:none;padding:9px 16px;border-radius:8px;font-size:14px">📅 Add to calendar</a> <span style="color:#7c736a;font-size:12px">(or open the attached class.ics)</span></p>` : ""}
+    ${welcome ? `<div style="margin-top:16px;padding:12px 14px;background:#edf2ef;border-radius:10px;font-size:14px"><span style="color:#47645a;font-weight:600">A note from ${esc(teacher.name.split(" ")[0])}:</span><br>${esc(welcome)}</div>` : ""}`);
 
   // --- To the teacher -------------------------------------------------------
   const teacherText = [
@@ -190,7 +251,8 @@ export async function sendBookingEmails({
       subject: `Booking confirmed: ${sessionType.name} with ${teacher.name}`,
       html: studentHtml,
       text: studentText,
-      replyTo: teacher.email,
+      replyTo: teacher.contactEmail || teacher.email,
+      attachments: cal ? [cal.attachment] : undefined,
     }),
     send({
       to: teacher.email,
@@ -266,7 +328,7 @@ export async function sendPassEmails({
       subject: `Pass confirmed: ${offer.name} with ${teacher.name}`,
       html: studentHtml,
       text: studentText,
-      replyTo: teacher.email,
+      replyTo: teacher.contactEmail || teacher.email,
     }),
     send({
       to: teacher.email,
@@ -378,4 +440,108 @@ export async function sendCashOutPaidEmail({
   } catch (err) {
     console.error("[email] cash-out paid notification failed", err);
   }
+}
+
+
+// --- Post-class follow-up ----------------------------------------------------
+// One email per attended booking, in the teacher's voice: review ask,
+// upcoming classes, and the pass/coaching upsell. Sent by the daily cron.
+
+export interface FollowupUpcoming {
+  label: string; // "Thu Jul 30 · 6:00 PM — Vinyasa Flow"
+  url: string;
+}
+
+export async function sendFollowupEmail({
+  booking,
+  teacher,
+  sessionType,
+  reviewUrl,
+  upcoming,
+  offers,
+  flexibleSessions,
+  siteOrigin,
+}: {
+  booking: Booking;
+  teacher: Teacher;
+  sessionType: SessionType;
+  reviewUrl: string;
+  upcoming: FollowupUpcoming[];
+  offers: Offer[];
+  flexibleSessions: SessionType[];
+  siteOrigin: string;
+}): Promise<void> {
+  const first = teacher.name.split(" ")[0];
+  const ps = teacher.followupNote.trim();
+  const pageUrl = `${siteOrigin}/t/${teacher.slug}`;
+
+  const upsellLines = [
+    ...offers.map(
+      (o) =>
+        `${o.name} — ${formatPrice(o.priceCents)}${o.creditCount != null ? ` (${o.creditCount} classes)` : ""}`,
+    ),
+    ...flexibleSessions.map(
+      (f) => `${f.name} — ${formatPrice(f.priceCents)} (flexible scheduling)`,
+    ),
+  ];
+
+  const text = [
+    `Hi ${booking.clientName.split(" ")[0]},`,
+    ``,
+    `Thanks so much for joining ${sessionType.name} — I hope it felt great.`,
+    ``,
+    `If you have 30 seconds, a quick review would mean the world: ${reviewUrl}`,
+    upcoming.length > 0 ? `` : ``,
+    upcoming.length > 0 ? `Coming up this week:` : ``,
+    ...upcoming.map((u) => `- ${u.label}: ${u.url}`),
+    upsellLines.length > 0 ? `` : ``,
+    upsellLines.length > 0
+      ? `Planning to practice more? These save you money:`
+      : ``,
+    ...upsellLines.map((l) => `- ${l} — ${pageUrl}`),
+    ps ? `` : ``,
+    ps ? `P.S. ${ps}` : ``,
+    ``,
+    `— ${first}`,
+  ]
+    .filter((l, i, a) => l !== `` || a[i - 1] !== ``)
+    .join(`\n`);
+
+  const html = wrapHtml(`
+    <h1 style="font-size:18px">Thanks for practicing with ${esc(first)} 🧘</h1>
+    <p style="font-size:14px;line-height:1.7">Hi ${esc(booking.clientName.split(" ")[0])},<br>
+    Thanks so much for joining <strong>${esc(sessionType.name)}</strong> — I hope it felt great.</p>
+    <p style="margin:18px 0"><a href="${esc(reviewUrl)}" style="display:inline-block;background:#5b7c6f;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-size:14px">⭐ Leave a quick review</a></p>
+    ${
+      upcoming.length > 0
+        ? `<p style="font-size:14px;font-weight:600;margin-bottom:6px">Coming up this week</p>
+           <table style="font-size:14px;line-height:1.9;border-collapse:collapse">` +
+          upcoming
+            .map(
+              (u) =>
+                `<tr><td>${esc(u.label)}</td><td style="padding-left:12px"><a href="${esc(u.url)}" style="color:#47645a">Book →</a></td></tr>`,
+            )
+            .join("") +
+          `</table>`
+        : ""
+    }
+    ${
+      upsellLines.length > 0
+        ? `<div style="margin-top:18px;padding:12px 14px;background:#edf2ef;border-radius:10px;font-size:14px">
+             <p style="font-weight:600;margin:0 0 6px">Planning to practice more?</p>
+             ${upsellLines.map((l) => `<p style="margin:2px 0">${esc(l)}</p>`).join("")}
+             <p style="margin:8px 0 0"><a href="${esc(pageUrl)}" style="color:#47645a;font-weight:600">See passes &amp; offerings →</a></p>
+           </div>`
+        : ""
+    }
+    ${ps ? `<p style="font-size:14px;line-height:1.7;margin-top:16px"><em>P.S. ${esc(ps)}</em></p>` : ""}
+    <p style="font-size:14px;margin-top:16px">— ${esc(first)}</p>`);
+
+  await send({
+    to: booking.clientEmail,
+    subject: `Thanks for joining ${sessionType.name}! 🙏`,
+    html,
+    text,
+    replyTo: teacher.contactEmail || teacher.email,
+  });
 }

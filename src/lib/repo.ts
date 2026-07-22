@@ -66,6 +66,8 @@ function rowToTeacher(row: Record<string, unknown>): Teacher {
     brandColor: (row.brand_color as string) ?? "",
     contactPhone: (row.contact_phone as string) ?? "",
     contactEmail: (row.contact_email as string) ?? "",
+    confirmationNote: (row.confirmation_note as string) ?? "",
+    followupNote: (row.followup_note as string) ?? "",
     timezone: row.timezone as string,
     defaultMeetingUrl: (row.default_meeting_url as string) ?? "",
     payoutMethod: ((row.payout_method as string) ?? "") as Teacher["payoutMethod"],
@@ -92,6 +94,7 @@ function rowToSessionType(row: Record<string, unknown>): SessionType {
     active: row.active as boolean,
     scheduling: ((row.scheduling as string) ?? "events") as SessionType["scheduling"],
     capacity: (row.capacity as number | null) ?? null,
+    confirmationNote: (row.confirmation_note as string) ?? "",
     locationType: row.location_type as SessionType["locationType"],
     meetingUrl: row.meeting_url as string,
     locationNote: row.location_note as string,
@@ -325,6 +328,8 @@ export async function updateTeacher(
       brand_color = ${merged.brandColor},
       contact_phone = ${merged.contactPhone},
       contact_email = ${merged.contactEmail},
+      confirmation_note = ${merged.confirmationNote},
+      followup_note = ${merged.followupNote},
       timezone = ${merged.timezone},
       default_meeting_url = ${merged.defaultMeetingUrl},
       payout_method = ${merged.payoutMethod},
@@ -358,14 +363,15 @@ export async function createSessionType(
     | "locationNote"
     | "scheduling"
     | "capacity"
+    | "confirmationNote"
   >,
 ): Promise<SessionType> {
   const id = newId("ses");
   const rows = await sql`
     insert into session_types
-      (id, teacher_id, name, description, duration_minutes, price_cents, active, location_type, meeting_url, location_note, scheduling, capacity)
+      (id, teacher_id, name, description, duration_minutes, price_cents, active, location_type, meeting_url, location_note, scheduling, capacity, confirmation_note)
     values
-      (${id}, ${teacherId}, ${data.name}, ${data.description}, ${data.durationMinutes}, ${data.priceCents}, true, ${data.locationType}, ${data.meetingUrl}, ${data.locationNote}, ${data.scheduling}, ${data.capacity})
+      (${id}, ${teacherId}, ${data.name}, ${data.description}, ${data.durationMinutes}, ${data.priceCents}, true, ${data.locationType}, ${data.meetingUrl}, ${data.locationNote}, ${data.scheduling}, ${data.capacity}, ${data.confirmationNote})
     returning *
   `;
   return rowToSessionType(rows[0]);
@@ -790,14 +796,14 @@ export async function getReviewStats(teacherId: string): Promise<ReviewStats> {
 export async function createReview(
   teacherId: string,
   data: Pick<Review, "authorName" | "rating" | "body"> &
-    Partial<Pick<Review, "source" | "clientEmail" | "featured">>,
+    Partial<Pick<Review, "source" | "clientEmail" | "featured" | "published">>,
 ): Promise<Review> {
   const id = newId("rev");
   const rating = Math.max(1, Math.min(5, Math.round(data.rating)));
   const rows = await sql`
     insert into reviews (id, teacher_id, author_name, rating, body, source, client_email, featured, published)
     values (${id}, ${teacherId}, ${data.authorName}, ${rating}, ${data.body},
-            ${data.source ?? "manual"}, ${data.clientEmail ?? ""}, ${data.featured ?? false}, true)
+            ${data.source ?? "manual"}, ${data.clientEmail ?? ""}, ${data.featured ?? false}, ${data.published ?? true})
     returning *
   `;
   return rowToReview(rows[0]);
@@ -805,6 +811,42 @@ export async function createReview(
 
 export async function deleteReview(teacherId: string, id: string): Promise<void> {
   await sql`delete from reviews where id = ${id} and teacher_id = ${teacherId}`;
+}
+
+export async function setReviewPublished(
+  teacherId: string,
+  id: string,
+  published: boolean,
+): Promise<void> {
+  await sql`
+    update reviews set published = ${published}
+    where id = ${id} and teacher_id = ${teacherId}
+  `;
+}
+
+// --- Follow-up automation ----------------------------------------------------
+
+// Bookings whose class recently ended and haven't been followed up: confirmed,
+// really attended-able (paid/free/pass — not pending checkout), ended between
+// 30 minutes and 3 days ago. The 3-day floor keeps a newly-enabled cron from
+// blasting ancient history.
+export async function listBookingsDueFollowup(limit = 50): Promise<Booking[]> {
+  const rows = await sql`
+    select * from bookings
+    where status = 'confirmed'
+      and payment_status in ('paid', 'free', 'pass')
+      and followup_sent_at is null
+      and start_iso is not null
+      and start_iso + (duration_minutes || ' minutes')::interval
+            between now() - interval '3 days' and now() - interval '30 minutes'
+    order by start_iso
+    limit ${limit}
+  `;
+  return rows.map(rowToBooking);
+}
+
+export async function markFollowupSent(id: string): Promise<void> {
+  await sql`update bookings set followup_sent_at = now() where id = ${id}`;
 }
 
 // Flip a single boolean flag (featured / published) with teacher-ownership guard.

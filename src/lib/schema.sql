@@ -213,3 +213,14 @@ alter table teachers add column if not exists contact_email text not null defaul
 
 -- Flexible bookings have no time until teacher & student pick one.
 alter table bookings alter column start_iso drop not null;
+
+-- ---------------------------------------------------------------------------
+-- Email automations.
+-- Confirmation: teacher-editable welcome note (per class, teacher default).
+-- Follow-up: post-class email (review ask + upcoming + upsell), sent once per
+-- booking by the daily cron; followup_sent_at is the idempotency marker.
+-- ---------------------------------------------------------------------------
+alter table session_types add column if not exists confirmation_note text not null default '';
+alter table teachers add column if not exists confirmation_note text not null default '';
+alter table teachers add column if not exists followup_note text not null default '';
+alter table bookings add column if not exists followup_sent_at timestamptz;

@@ -19,6 +19,7 @@ import {
   deletePendingPass,
 } from "@/lib/repo";
 import { computeSlots } from "@/lib/slots";
+import { createReview } from "@/lib/repo";
 import { computeOccurrences } from "@/lib/events";
 import { listClassEvents } from "@/lib/repo";
 import { sendBookingEmails } from "@/lib/email";
@@ -253,4 +254,33 @@ export async function buyPassAction(formData: FormData) {
 
   await attachPassStripeSession(pass.id, session.id);
   redirect(session.url!);
+}
+
+
+// Student review submission (linked from the post-class follow-up email).
+// Held unpublished until the teacher approves it in their dashboard.
+export async function submitReviewAction(formData: FormData) {
+  const slug = String(formData.get("slug") ?? "");
+  const teacher = await getTeacherBySlug(slug);
+  if (!teacher) redirect("/");
+
+  const authorName = String(formData.get("authorName") ?? "").trim().slice(0, 80);
+  const body = String(formData.get("body") ?? "").trim().slice(0, 1000);
+  const rating = Math.max(1, Math.min(5, Number(formData.get("rating") ?? 0) || 0));
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim().slice(0, 200);
+
+  if (!authorName || !body || rating < 1) {
+    redirect(`/t/${slug}/review?error=1&name=${encodeURIComponent(authorName)}&email=${encodeURIComponent(clientEmail)}`);
+  }
+
+  await createReview(teacher!.id, {
+    authorName,
+    rating,
+    body,
+    source: "student",
+    clientEmail,
+    published: false,
+  });
+
+  redirect(`/t/${slug}/review?done=1`);
 }

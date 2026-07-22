@@ -20,6 +20,10 @@ export interface Teacher {
   // student can arrange a time ("book, then we'll schedule together").
   contactPhone: string;
   contactEmail: string;
+  // Email automation voice: default welcome note in booking confirmations,
+  // and a personal P.S. in the post-class follow-up. Both optional.
+  confirmationNote: string;
+  followupNote: string;
   timezone: string; // IANA, e.g. "America/New_York"
   // The teacher's reusable "virtual studio room" (Zoom/Meet link). Online
   // sessions without their own link fall back to this at booking time.
@@ -63,6 +67,9 @@ export interface SessionType {
   scheduling: SchedulingMode;
   // Max seats per occurrence. null = unlimited (the default).
   capacity: number | null;
+  // Per-class welcome note in the confirmation email (falls back to the
+  // teacher's default note).
+  confirmationNote: string;
   // How the class is delivered.
   locationType: LocationType;
   // For online: the teacher's own Zoom/Meet link (BYO — no video API yet).

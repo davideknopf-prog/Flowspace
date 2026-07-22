@@ -197,7 +197,24 @@ export function SessionTypeForm() {
       </div>
 
       <div className="flex justify-end">
-        <button type="submit" className="btn-primary">
+        <div>
+        <label className="label" htmlFor="confirmationNote">
+          Welcome note for this class{" "}
+          <span className="font-normal text-muted">(optional)</span>
+        </label>
+        <textarea
+          id="confirmationNote"
+          name="confirmationNote"
+          placeholder="Bring a block and a strap — we'll move slow and deep."
+          className="textarea !min-h-16"
+        />
+        <p className="hint">
+          Added to the booking confirmation email. Falls back to your default
+          note from your Profile.
+        </p>
+      </div>
+
+      <button type="submit" className="btn-primary">
           Add session type
         </button>
       </div>

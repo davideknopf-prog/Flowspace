@@ -81,6 +81,48 @@ export default async function ProfilePage({
           </div>
         </div>
 
+        {/* Email automations — the teacher's voice in Kuleo's emails */}
+        <div className="rounded-xl border border-border p-4 space-y-4">
+          <p className="text-sm font-semibold">
+            Your emails, your voice{" "}
+            <span className="font-normal text-muted">
+              — Kuleo sends these for you automatically
+            </span>
+          </p>
+          <div>
+            <label className="label" htmlFor="confirmationNote">
+              Welcome note in booking confirmations (optional)
+            </label>
+            <textarea
+              id="confirmationNote"
+              name="confirmationNote"
+              defaultValue={teacher.confirmationNote}
+              placeholder="So happy you're joining! Grab a mat, two blocks, and some water — I'll let you in a few minutes early."
+              className="textarea !min-h-16"
+            />
+            <p className="hint">
+              Each class can override this with its own note when you create it.
+            </p>
+          </div>
+          <div>
+            <label className="label" htmlFor="followupNote">
+              P.S. in your post-class follow-up (optional)
+            </label>
+            <textarea
+              id="followupNote"
+              name="followupNote"
+              defaultValue={teacher.followupNote}
+              placeholder="New students: your second class is on me — just reply to this email."
+              className="textarea !min-h-16"
+            />
+            <p className="hint">
+              After each class, students automatically get a thank-you with a
+              review link, your upcoming classes, and your passes. This note is
+              added at the end.
+            </p>
+          </div>
+        </div>
+
         <div>
           <label className="label" htmlFor="name">
             Name

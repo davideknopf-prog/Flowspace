@@ -65,6 +65,8 @@ export async function saveProfileAction(formData: FormData) {
     defaultMeetingUrl: String(formData.get("defaultMeetingUrl") ?? "").trim(),
     contactPhone: String(formData.get("contactPhone") ?? "").trim().slice(0, 30),
     contactEmail: String(formData.get("contactEmail") ?? "").trim().slice(0, 200),
+    confirmationNote: String(formData.get("confirmationNote") ?? "").trim().slice(0, 1000),
+    followupNote: String(formData.get("followupNote") ?? "").trim().slice(0, 1000),
     specialties,
   });
 
@@ -113,6 +115,7 @@ export async function addSessionTypeAction(formData: FormData) {
     priceCents,
     scheduling,
     capacity,
+    confirmationNote: String(formData.get("confirmationNote") ?? "").trim(),
     locationType,
     meetingUrl,
     locationNote,
@@ -300,6 +303,7 @@ export async function addSessionTemplateAction(formData: FormData) {
       priceCents: Math.round(tpl.priceDollars * 100),
       scheduling: "events",
       capacity: null,
+      confirmationNote: "",
       locationType: tpl.locationType,
       meetingUrl: "",
       locationNote: "",
