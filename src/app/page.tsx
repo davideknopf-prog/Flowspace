@@ -1,8 +1,26 @@
 import Link from "next/link";
 import { getCurrentTeacher } from "@/lib/session";
+import { getPlans, type Plan } from "@/lib/billing";
+import { formatPrice } from "@/lib/format";
+
+const CALENDLY_URL = "https://calendly.com/david-knopf/onboarding-meeting";
+const PHONE_DISPLAY = "(508) 468-7829";
+const PHONE_HREF = "tel:+15084687829";
 
 export default async function Home() {
   const teacher = await getCurrentTeacher();
+  // Real prices from Stripe; a hiccup there shouldn't take down the landing
+  // page, so fall back to the known amounts.
+  let plans: Plan[] = [];
+  try {
+    plans = await getPlans();
+  } catch {
+    plans = [
+      { lookupKey: "kuleo_weekly", priceId: "", amountCents: 750, interval: "week" },
+      { lookupKey: "kuleo_monthly", priceId: "", amountCents: 1500, interval: "month" },
+      { lookupKey: "kuleo_annual", priceId: "", amountCents: 9000, interval: "year" },
+    ];
+  }
 
   return (
     <main className="min-h-screen">
@@ -13,11 +31,17 @@ export default async function Home() {
             <span className="text-xl">🧘</span> Kuleo
           </span>
           <nav className="flex items-center gap-3">
+            <Link href="/students" className="btn-ghost text-sm hidden md:inline-flex">
+              New students
+            </Link>
             <Link href="/teachers" className="btn-ghost text-sm hidden sm:inline-flex">
-              Teachers
+              Our teachers
             </Link>
             <Link href="/schedule" className="btn-ghost text-sm hidden sm:inline-flex">
-              Schedule
+              Today&apos;s classes
+            </Link>
+            <Link href="/#pricing" className="btn-ghost text-sm hidden sm:inline-flex">
+              Pricing
             </Link>
             {teacher ? (
               <Link href="/dashboard" className="btn-primary text-sm">
@@ -58,6 +82,22 @@ export default async function Home() {
         </div>
         <p className="mt-4 text-xs text-muted">
           No commission on your classes · nothing to download · cancel anytime.
+        </p>
+        <p className="mt-6 text-sm text-muted">
+          Want a walkthrough first?{" "}
+          <a
+            href={CALENDLY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-dark font-medium underline underline-offset-2"
+          >
+            Book a free demo
+          </a>{" "}
+          or call/text David directly at{" "}
+          <a href={PHONE_HREF} className="text-brand-dark font-medium">
+            {PHONE_DISPLAY}
+          </a>
+          .
         </p>
       </section>
 
@@ -108,6 +148,112 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Pricing — outcomes first, then the numbers */}
+      <section id="pricing" className="mx-auto max-w-5xl px-4 py-20 scroll-mt-16">
+        <div className="text-center max-w-2xl mx-auto mb-4">
+          <span className="pill mb-4">Pricing — for teachers</span>
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+            One flat subscription. Everything you earn is yours.
+          </h2>
+          <p className="mt-3 text-muted">
+            This is what <span className="font-medium text-foreground">teachers</span>{" "}
+            pay to run their studio on Kuleo. Students never pay Kuleo anything —
+            they just pay you for your classes.
+          </p>
+        </div>
+
+        {/* The outcomes — the dream before the feature list */}
+        <div className="grid sm:grid-cols-3 gap-4 mt-10 mb-10">
+          <Outcome icon="📈" title="A full schedule" body="Teachers use Kuleo to fill 10+ bookings a week from one link in their bio — while they sleep, not while they DM." />
+          <Outcome icon="💸" title="No studio fees. Keep all your earnings." body="Zero commission on your classes. Every dollar a student pays you is yours — Kuleo never takes a cut." />
+          <Outcome icon="🌍" title="A global audience" body="Teach students across town or across the world. Your studio is open around the clock, wherever you are." />
+          <Outcome icon="🧘" title="Tech, simplified" body="Bookings, payments, scheduling, reminders — quietly handled. You didn't train for years to do admin." />
+          <Outcome icon="🎓" title="Free onboarding & training" body="We set up your studio with you, one on one, and stay in your corner as you grow. Included, always." />
+          <Outcome icon="🤝" title="Students who come back" body="Class passes, reviews, and a student list that helps your regulars stay regulars." />
+        </div>
+
+        {/* The numbers + what's inside */}
+        <div className="grid md:grid-cols-[1fr_1.2fr] gap-6 items-start">
+          <div className="space-y-3">
+            {plans.map((p) => {
+              const copy: Record<string, { label: string; note: string; highlight?: boolean }> = {
+                kuleo_weekly: { label: "Weekly", note: "Great for trying things out." },
+                kuleo_monthly: { label: "Monthly", note: "Most popular with teachers.", highlight: true },
+                kuleo_annual: { label: "Annual", note: "Two months free vs. monthly." },
+              };
+              const c = copy[p.lookupKey] ?? { label: p.lookupKey, note: "" };
+              return (
+                <div
+                  key={p.lookupKey}
+                  className={`card !p-4 flex items-center justify-between ${
+                    c.highlight ? "border-brand" : ""
+                  }`}
+                >
+                  <div>
+                    <p className="font-semibold">
+                      {c.label}
+                      {c.highlight && (
+                        <span className="ml-2 rounded-full bg-brand-tint px-2 py-0.5 text-xs font-medium text-brand-dark">
+                          Most popular
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted">{c.note}</p>
+                  </div>
+                  <p className="text-xl font-semibold">
+                    {formatPrice(p.amountCents)}
+                    <span className="text-sm font-normal text-muted">/{p.interval}</span>
+                  </p>
+                </div>
+              );
+            })}
+            <Link
+              href={teacher ? "/dashboard" : "/signup"}
+              className="btn-primary w-full text-center"
+            >
+              {teacher ? "Go to your studio" : "Start your studio today"}
+            </Link>
+            <p className="text-center text-xs text-muted">
+              Cancel anytime · your earnings are always yours to cash out.
+            </p>
+          </div>
+
+          <div className="card">
+            <p className="font-semibold mb-3">Every plan includes the whole studio:</p>
+            <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted">
+              <Included>Your own studio page & booking link</Included>
+              <Included>Scheduling that runs itself</Included>
+              <Included>Secure student payments (Stripe)</Included>
+              <Included>Class passes & intro offers</Included>
+              <Included>Earnings dashboard & easy cash-out</Included>
+              <Included>Student list with your top fans</Included>
+              <Included>Reviews on your public page</Included>
+              <Included>Booking confirmations & emails</Included>
+              <Included>Online & in-person classes</Included>
+              <Included>Placement on the studio schedule</Included>
+            </ul>
+            <div className="mt-5 rounded-lg bg-brand-tint/50 p-4 text-sm">
+              <p className="font-medium">Rather see it before you decide?</p>
+              <p className="text-muted mt-1">
+                <a
+                  href={CALENDLY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-dark font-medium underline underline-offset-2"
+                >
+                  Book a free 1-on-1 demo
+                </a>{" "}
+                with David, Kuleo&apos;s founder — or call/text him at{" "}
+                <a href={PHONE_HREF} className="text-brand-dark font-medium">
+                  {PHONE_DISPLAY}
+                </a>
+                . He&apos;ll set up your studio with you.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Why we built Kuleo — founder note */}
       <section className="mx-auto max-w-2xl px-4 py-20">
         <div className="text-center mb-8">
@@ -152,11 +298,54 @@ export default async function Home() {
         </div>
       </section>
 
-      <footer className="mx-auto max-w-5xl px-4 py-10 text-center text-sm text-muted">
-        Kuleo 🧘 — the online home for your yoga business. Teach yoga; we&apos;ll
-        handle the rest.
+      <footer className="border-t border-border">
+        <div className="mx-auto max-w-5xl px-4 py-10 text-center text-sm text-muted space-y-3">
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <Link href="/students" className="hover:text-foreground">New students</Link>
+            <Link href="/teachers" className="hover:text-foreground">Our teachers</Link>
+            <Link href="/schedule" className="hover:text-foreground">Today&apos;s classes</Link>
+            <Link href="/#pricing" className="hover:text-foreground">Pricing</Link>
+            <a
+              href={CALENDLY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground"
+            >
+              Book a demo
+            </a>
+          </nav>
+          <p>
+            Questions? Call or text David at{" "}
+            <a href={PHONE_HREF} className="text-brand-dark font-medium">
+              {PHONE_DISPLAY}
+            </a>
+          </p>
+          <p>
+            Kuleo 🧘 — the online home for your yoga business. Teach yoga;
+            we&apos;ll handle the rest.
+          </p>
+        </div>
       </footer>
     </main>
+  );
+}
+
+function Outcome({ icon, title, body }: { icon: string; title: string; body: string }) {
+  return (
+    <div className="card !p-4">
+      <div className="text-xl mb-2">{icon}</div>
+      <h3 className="font-semibold text-sm mb-1">{title}</h3>
+      <p className="text-xs text-muted leading-relaxed">{body}</p>
+    </div>
+  );
+}
+
+function Included({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2">
+      <span className="text-brand-dark mt-0.5">✓</span>
+      {children}
+    </li>
   );
 }
 

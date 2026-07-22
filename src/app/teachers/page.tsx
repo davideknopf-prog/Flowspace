@@ -35,8 +35,11 @@ export default async function TeachersDirectory() {
             <span className="text-xl">🧘</span> Kuleo
           </Link>
           <nav className="flex items-center gap-3">
+            <Link href="/students" className="btn-ghost text-sm hidden sm:inline-flex">
+              New students
+            </Link>
             <Link href="/schedule" className="btn-ghost text-sm">
-              Studio schedule
+              Today&apos;s classes
             </Link>
             <Link href="/signup" className="btn-primary text-sm">
               Teach on Kuleo

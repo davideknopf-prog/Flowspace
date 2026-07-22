@@ -1,14 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import {
-  listAllTeachers,
-  listSessionTypes,
-  listAvailability,
-  listBookings,
-} from "@/lib/repo";
-import { computeSlots } from "@/lib/slots";
+import { getStudioSchedule, type StudioEntry } from "@/lib/studio";
 import { Avatar } from "@/components/Avatar";
-import { formatPrice, formatDuration, formatDayHeading, formatTimeOnly } from "@/lib/format";
+import { formatPrice, formatDuration } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Studio schedule — Kuleo",
@@ -20,71 +14,11 @@ export const metadata: Metadata = {
 // classes land, this page keeps its URL and simply gets better data.)
 export const revalidate = 300; // cache for 5 min — this fans out per teacher
 
-interface Entry {
-  startISO: string;
-  timeLabel: string;
-  dayHeading: string;
-  teacherName: string;
-  teacherSlug: string;
-  teacherAvatar: string;
-  className: string;
-  durationMinutes: number;
-  priceCents: number;
-  locationType: string;
-  bookHref: string;
-}
-
 export default async function StudioSchedulePage() {
-  const teachers = await listAllTeachers();
-  const now = new Date();
-
-  const nested = await Promise.all(
-    teachers.map(async (t) => {
-      const [sessions, rules, bookings] = await Promise.all([
-        listSessionTypes(t.id),
-        listAvailability(t.id),
-        listBookings(t.id),
-      ]);
-      const active = sessions.filter((s) => s.active);
-      const entries: Entry[] = [];
-      for (const s of active) {
-        const slots = computeSlots({
-          now,
-          timeZone: t.timezone,
-          durationMinutes: s.durationMinutes,
-          rules,
-          bookings,
-          days: 7,
-        });
-        // A class type's next few openings, not every slot — keeps the
-        // schedule a readable "what's coming up" not a wall of buttons.
-        for (const slot of slots.slice(0, 3)) {
-          entries.push({
-            startISO: slot.startISO,
-            timeLabel: formatTimeOnly(slot.startISO, t.timezone) + ` (${shortTz(t.timezone)})`,
-            dayHeading: formatDayHeading(slot.startISO, t.timezone),
-            teacherName: t.name,
-            teacherSlug: t.slug,
-            teacherAvatar: t.avatarUrl,
-            className: s.name,
-            durationMinutes: s.durationMinutes,
-            priceCents: s.priceCents,
-            locationType: s.locationType,
-            bookHref: `/t/${t.slug}/book/${s.id}?start=${encodeURIComponent(slot.startISO)}`,
-          });
-        }
-      }
-      return entries;
-    }),
-  );
-
-  const entries = nested
-    .flat()
-    .sort((a, b) => a.startISO.localeCompare(b.startISO))
-    .slice(0, 40);
+  const { entries } = await getStudioSchedule(40);
 
   // Group chronologically by day heading.
-  const groups: { heading: string; items: Entry[] }[] = [];
+  const groups: { heading: string; items: StudioEntry[] }[] = [];
   for (const e of entries) {
     const last = groups[groups.length - 1];
     if (last && last.heading === e.dayHeading) last.items.push(e);
@@ -99,8 +33,11 @@ export default async function StudioSchedulePage() {
             <span className="text-xl">🧘</span> Kuleo
           </Link>
           <nav className="flex items-center gap-3">
+            <Link href="/students" className="btn-ghost text-sm hidden sm:inline-flex">
+              New students
+            </Link>
             <Link href="/teachers" className="btn-ghost text-sm">
-              Teachers
+              Our teachers
             </Link>
             <Link href="/signup" className="btn-primary text-sm">
               Teach on Kuleo
@@ -165,14 +102,4 @@ export default async function StudioSchedulePage() {
       </div>
     </main>
   );
-}
-
-function shortTz(tz: string): string {
-  const map: Record<string, string> = {
-    "America/New_York": "ET",
-    "America/Chicago": "CT",
-    "America/Denver": "MT",
-    "America/Los_Angeles": "PT",
-  };
-  return map[tz] ?? tz.split("/").pop()?.replace("_", " ") ?? tz;
 }
