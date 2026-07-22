@@ -12,6 +12,10 @@ export interface Teacher {
   location: string;
   specialties: string[];
   avatarUrl: string; // may be empty; we render initials fallback
+  // Page customization: a cover photo and an accent hex color for the public
+  // page header. Empty string = Kuleo defaults.
+  bannerUrl: string;
+  brandColor: string;
   timezone: string; // IANA, e.g. "America/New_York"
   // The teacher's reusable "virtual studio room" (Zoom/Meet link). Online
   // sessions without their own link fall back to this at booking time.

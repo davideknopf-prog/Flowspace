@@ -86,6 +86,11 @@ create index if not exists bookings_teacher_id_idx on bookings(teacher_id);
 alter table teachers add column if not exists payout_method text not null default '';
 alter table teachers add column if not exists payout_handle text not null default '';
 
+-- Page customization: a banner/cover photo and an accent color for the
+-- teacher's public page header. Empty string = Kuleo defaults.
+alter table teachers add column if not exists banner_url text not null default '';
+alter table teachers add column if not exists brand_color text not null default '';
+
 -- Manual record of a payout the founder sent a teacher (bank transfer, Venmo,
 -- Stripe Payout, whatever). No automation yet — see repo.ts / scripts/payout.mjs.
 create table if not exists payouts (

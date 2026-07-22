@@ -53,6 +53,11 @@ export async function saveProfileAction(formData: FormData) {
     bio: String(formData.get("bio") ?? "").trim(),
     location: String(formData.get("location") ?? "").trim(),
     avatarUrl: String(formData.get("avatarUrl") ?? "").trim(),
+    bannerUrl: String(formData.get("bannerUrl") ?? "").trim(),
+    // Only a plain hex color ever reaches inline styles on the public page.
+    brandColor: /^#[0-9a-fA-F]{6}$/.test(String(formData.get("brandColor") ?? ""))
+      ? String(formData.get("brandColor"))
+      : "",
     timezone: String(formData.get("timezone") ?? "").trim() || teacher.timezone,
     defaultMeetingUrl: String(formData.get("defaultMeetingUrl") ?? "").trim(),
     specialties,

@@ -2,6 +2,8 @@ import { getCurrentTeacher } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { saveProfileAction } from "../actions";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { BannerUpload } from "@/components/BannerUpload";
+import { BrandColorPicker } from "@/components/BrandColorPicker";
 
 export default async function ProfilePage({
   searchParams,
@@ -27,6 +29,18 @@ export default async function ProfilePage({
 
       <form action={saveProfileAction} className="card space-y-5">
         <AvatarUpload name={teacher.name} initialUrl={teacher.avatarUrl} />
+
+        {/* Page style — make it feel like THEIR studio, not a template. */}
+        <div className="rounded-xl border border-border p-4 space-y-4">
+          <p className="text-sm font-semibold">
+            Your page style{" "}
+            <span className="font-normal text-muted">
+              — like a LinkedIn banner, for your studio
+            </span>
+          </p>
+          <BannerUpload initialUrl={teacher.bannerUrl} />
+          <BrandColorPicker initial={teacher.brandColor} />
+        </div>
 
         <div>
           <label className="label" htmlFor="name">

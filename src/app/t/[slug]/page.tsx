@@ -66,10 +66,38 @@ export default async function PublicProfile({
     limit: 3,
   });
 
+  // Page customization: teacher-chosen accent color tints the header band;
+  // a cover photo (if set) crowns the page. brandColor is validated to a
+  // 6-digit hex server-side before it ever reaches these inline styles.
+  const accent = teacher.brandColor || "";
+  const bandStyle = accent
+    ? { background: `color-mix(in srgb, ${accent} 16%, #ffffff)` }
+    : undefined;
+  const accentBarStyle = accent ? { background: accent } : undefined;
+
   return (
     <main className="min-h-screen">
+      {/* Cover photo */}
+      {teacher.bannerUrl && (
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={teacher.bannerUrl}
+            alt=""
+            className="h-40 sm:h-56 w-full object-cover"
+          />
+          <div
+            className="h-1.5 w-full bg-brand"
+            style={accentBarStyle}
+          />
+        </div>
+      )}
+
       {/* Header band */}
-      <div className="bg-brand-tint border-b border-border">
+      <div
+        className={`border-b border-border ${accent ? "" : "bg-brand-tint"}`}
+        style={bandStyle}
+      >
         <div className="mx-auto max-w-2xl px-4 py-10">
           <div className="flex items-start gap-4">
             <Avatar name={teacher.name} src={teacher.avatarUrl} size={72} />
