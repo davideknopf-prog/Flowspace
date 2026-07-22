@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Fraunces } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import "./globals.css";
@@ -7,6 +7,14 @@ import "./globals.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+});
+
+// Display serif for headlines — the "grounded premium" counterpoint to the
+// calm sans body. Warm, characterful, a little literary.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  axes: ["opsz", "SOFT", "WONK"],
 });
 
 export const metadata: Metadata = {
@@ -24,7 +32,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html
         lang="en"
-        className={`${geistSans.variable} h-full antialiased`}
+        className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col">
           {children}

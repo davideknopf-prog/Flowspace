@@ -43,7 +43,7 @@ export default async function Home() {
       {/* Nav */}
       <header className="border-b border-border bg-surface/80 backdrop-blur sticky top-0 z-10">
         <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
-          <span className="flex items-center gap-2 font-semibold text-brand-dark">
+          <span className="flex items-center gap-2 font-semibold text-lg text-brand-dark [font-family:var(--font-display)]">
             <span className="text-xl">🧘</span> Kuleo
           </span>
           <nav className="flex items-center gap-3">
@@ -78,17 +78,19 @@ export default async function Home() {
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-5xl px-4 py-12 sm:py-14 text-center">
+      <section className="hero-glow border-b border-border/60">
+        <div className="mx-auto max-w-5xl px-4 py-14 sm:py-16 text-center">
         <span className="pill mb-5">For yoga teachers</span>
-        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight max-w-3xl mx-auto leading-tight">
-          Grow your yoga business without growing your workload.
+        <h1 className="animate-fade-up text-4xl sm:text-6xl font-semibold tracking-tight max-w-3xl mx-auto leading-tight">
+          Grow your yoga business{" "}
+          <em className="text-brand-dark">without</em> growing your workload.
         </h1>
-        <p className="mt-5 text-lg text-muted max-w-2xl mx-auto">
+        <p className="animate-fade-up mt-5 text-lg text-muted max-w-2xl mx-auto">
           Kuleo gives yoga teachers one calm place to run their online yoga
           business — bookings, payments, scheduling, and student relationships,
           all from a single link you share. You teach. We&apos;ll handle the rest.
         </p>
-        <div className="mt-8 flex items-center justify-center gap-3">
+        <div className="animate-fade-up mt-8 flex items-center justify-center gap-3">
           <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
             {teacher ? "Go to your studio" : "Kick off your studio"}
           </Link>
@@ -117,10 +119,10 @@ export default async function Home() {
         </p>
 
         {/* Two doors in: every marketplace routes both sides on screen one. */}
-        <div className="mt-10 grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
+        <div className="animate-fade-up-late mt-10 grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
           <Link
             href={teacher ? "/dashboard" : "/signup"}
-            className="card !p-5 hover:border-brand transition-colors"
+            className="card card-lift !p-5 hover:border-brand"
           >
             <div className="text-2xl mb-2">🧘</div>
             <p className="font-semibold">I&apos;m here to teach</p>
@@ -133,7 +135,7 @@ export default async function Home() {
           </Link>
           <Link
             href="/students"
-            className="card !p-5 hover:border-brand transition-colors"
+            className="card card-lift !p-5 hover:border-brand"
           >
             <div className="text-2xl mb-2">✨</div>
             <p className="font-semibold">I&apos;m here to practice</p>
@@ -158,13 +160,14 @@ export default async function Home() {
             earnings go to teachers
           </p>
         )}
+        </div>
       </section>
 
       {/* Live inventory: the realest trust signal a marketplace has. */}
       {upcoming.length > 0 && (
-        <section className="mx-auto max-w-3xl px-4 pb-14">
+        <section className="mx-auto max-w-3xl px-4 pt-12 pb-14">
           <div className="flex items-end justify-between mb-5">
-            <h2 className="text-2xl font-semibold">Happening this week</h2>
+            <h2 className="heading-flourish text-2xl font-semibold">Happening this week</h2>
             <Link href="/schedule" className="text-sm text-brand-dark font-medium">
               Full schedule →
             </Link>
@@ -174,7 +177,7 @@ export default async function Home() {
               <li key={e.bookHref + i}>
                 <Link
                   href={e.bookHref}
-                  className="card !p-4 flex items-center gap-4 hover:border-brand transition-colors"
+                  className="card card-lift !p-4 flex items-center gap-4 hover:border-brand"
                 >
                   <div className="w-36 shrink-0 text-sm font-semibold">
                     {e.dayHeading} · {e.timeLabel}
@@ -204,7 +207,7 @@ export default async function Home() {
       {/* Features */}
       <section className="mx-auto max-w-5xl px-4 pb-14">
         <div className="text-center max-w-xl mx-auto mb-10">
-          <h2 className="text-2xl font-semibold">Less admin. More teaching.</h2>
+          <h2 className="heading-flourish heading-flourish-center text-2xl sm:text-3xl font-semibold">Less admin. More teaching.</h2>
           <p className="mt-2 text-muted">
             You didn&apos;t train for years to chase payments and answer booking
             DMs. Kuleo quietly runs the parts of your business that pull you off
@@ -251,7 +254,7 @@ export default async function Home() {
       {/* Pricing — outcomes first, then the numbers */}
       <section id="pricing" className="mx-auto max-w-5xl px-4 py-14 scroll-mt-16">
         <div className="text-center max-w-2xl mx-auto mb-4">
-          <span className="pill mb-4">Pricing — for teachers</span>
+          <span className="pill-accent mb-4">Pricing — for teachers</span>
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
             One flat subscription. Everything you earn is yours.
           </h2>
@@ -402,7 +405,7 @@ export default async function Home() {
         <div className="mx-auto max-w-5xl px-4 py-12">
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 text-sm">
             <div>
-              <p className="flex items-center gap-2 font-semibold text-brand-dark mb-3">
+              <p className="flex items-center gap-2 font-semibold text-lg text-brand-dark mb-3 [font-family:var(--font-display)]">
                 <span className="text-xl">🧘</span> Kuleo
               </p>
               <p className="text-muted leading-relaxed">

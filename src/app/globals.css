@@ -29,6 +29,15 @@
   --color-accent: var(--accent);
   --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-fraunces);
+}
+
+/* Headlines carry the display serif — the drama layer over the calm base.
+   h3 and below stay sans so UI density keeps its clarity. */
+h1,
+h2 {
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.01em;
 }
 
 body {
@@ -113,5 +122,83 @@ body {
   .pill {
     @apply inline-flex items-center rounded-full bg-brand-tint px-2.5 py-1
       text-xs font-medium text-brand-dark;
+  }
+  .pill-accent {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
+    background: rgba(201, 138, 94, 0.14);
+    color: #a06735;
+  }
+
+  /* Warm hero glow — linen base with sage + terracotta light. */
+  .hero-glow {
+    background:
+      radial-gradient(52rem 30rem at 18% -12%, rgba(91, 124, 111, 0.16), transparent 62%),
+      radial-gradient(46rem 28rem at 86% -6%, rgba(201, 138, 94, 0.14), transparent 60%),
+      var(--background);
+  }
+
+  /* Cards that lift — depth on hover without noise at rest. */
+  .card-lift {
+    @apply transition-all duration-200;
+  }
+  .card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px -10px rgba(38, 33, 28, 0.16);
+  }
+
+  /* Primary button, upgraded: gradient depth + a confident hover. */
+  .btn-primary {
+    background: linear-gradient(180deg, #63887a, var(--brand-dark));
+    box-shadow:
+      0 1px 2px rgba(38, 33, 28, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(180deg, #5b7c6f, #3e574e);
+    transform: translateY(-1px);
+  }
+
+  /* Accent underline flourish for section headings. */
+  .heading-flourish {
+    position: relative;
+    display: inline-block;
+  }
+  .heading-flourish::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.35rem;
+    width: 2.5rem;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--accent);
+  }
+  .heading-flourish-center::after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Gentle entrance for hero content. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.55s ease-out both;
+}
+.animate-fade-up-late {
+  animation: fade-up 0.55s ease-out 0.15s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-up-late {
+    animation: none;
   }
 }
