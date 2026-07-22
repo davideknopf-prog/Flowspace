@@ -12,7 +12,7 @@ import {
   listClassEvents,
 } from "@/lib/repo";
 import { computeUpcomingClasses } from "@/lib/slots";
-import { computeOccurrences, describeEvent } from "@/lib/events";
+import { computeOccurrences } from "@/lib/events";
 import { Avatar } from "@/components/Avatar";
 import { Stars } from "@/components/Stars";
 import { formatPrice, formatDuration, formatSlot } from "@/lib/format";
@@ -67,9 +67,10 @@ export default async function PublicProfile({
       events,
       sessionTypes,
       bookings,
+      days: 14,
     })
       .filter((o) => o.spotsLeft !== 0)
-      .slice(0, 3);
+      .slice(0, 8);
   // Legacy fallback: availability-derived openings until this teacher
   // schedules real class times.
   if (upcoming.length === 0 && events.length === 0) {
@@ -79,20 +80,27 @@ export default async function PublicProfile({
       rules,
       bookings,
       sessionTypes,
-      limit: 3,
+      limit: 20,
     }).map((u) => ({ ...u, spotsLeft: null }));
+    // Curated, never a wall: max 3, spaced >=3h.
+    const spaced: typeof upcoming = [];
+    for (const u of upcoming) {
+      if (spaced.length >= 3) break;
+      const last = spaced[spaced.length - 1];
+      if (
+        !last ||
+        new Date(u.startISO).getTime() - new Date(last.startISO).getTime() >=
+          3 * 60 * 60_000
+      ) {
+        spaced.push(u);
+      }
+    }
+    upcoming = spaced;
   }
 
-  // Human schedule lines per class ("Tuesdays · 6:00 PM"), for the class cards.
-  const scheduleLines = new Map<string, string[]>();
-  for (const ev of events) {
-    if (!ev.active) continue;
-    const line = describeEvent(ev, teacher.timezone);
-    if (!line) continue;
-    const list = scheduleLines.get(ev.sessionTypeId) ?? [];
-    if (list.length < 3) list.push(line);
-    scheduleLines.set(ev.sessionTypeId, list);
-  }
+  const flexibleOfferings = sessionTypes.filter(
+    (s) => s.scheduling === "flexible",
+  );
 
   // Page customization: teacher-chosen accent color tints the header band;
   // a cover photo (if set) crowns the page. brandColor is validated to a
@@ -177,13 +185,19 @@ export default async function PublicProfile({
           </section>
         )}
 
-        {/* Coming up — the soonest bookable times, front and center */}
+        {/* The booking surface: real scheduled classes, front and center */}
+        {upcoming.length === 0 && flexibleOfferings.length === 0 && (
+          <section className="card text-center py-8 text-sm text-muted">
+            {teacher.name.split(" ")[0]} has no upcoming classes right now —
+            check back soon.
+          </section>
+        )}
         {upcoming.length > 0 && (
           <section>
-            <h2 className="text-lg font-semibold mb-1">Coming up</h2>
+            <h2 className="text-lg font-semibold mb-1">Book a class</h2>
             <p className="text-sm text-muted mb-3">
-              Grab one of {teacher.name.split(" ")[0]}&apos;s next open times —
-              you&apos;ll pick it on the next screen.
+              {teacher.name.split(" ")[0]}&apos;s upcoming classes — tap one to
+              grab your spot.
             </p>
             <ul className="space-y-2">
               {upcoming.map((u) => {
@@ -225,16 +239,17 @@ export default async function PublicProfile({
           </section>
         )}
 
-        <section>
-          <h2 className="text-lg font-semibold mb-3">Book a session</h2>
-          {sessionTypes.length === 0 ? (
-            <div className="card text-center py-8 text-sm text-muted">
-              {teacher.name.split(" ")[0]} hasn&apos;t published any sessions
-              yet. Check back soon.
-            </div>
-          ) : (
+        {/* Flexible offerings only — scheduled classes are booked above,
+            straight from their times. No SKU-then-pick-a-time anywhere. */}
+        {flexibleOfferings.length > 0 && (
+          <section>
+            <h2 className="text-lg font-semibold mb-1">Coaching &amp; flexible sessions</h2>
+            <p className="text-sm text-muted mb-3">
+              Book now — then you and {teacher.name.split(" ")[0]} find a time
+              together.
+            </p>
             <ul className="space-y-3">
-              {sessionTypes.map((s) => (
+              {flexibleOfferings.map((s) => (
                 <li key={s.id}>
                   <Link
                     href={`/t/${teacher.slug}/book/${s.id}`}
@@ -253,17 +268,9 @@ export default async function PublicProfile({
                         {formatDuration(s.durationMinutes)}
                         {s.description ? ` · ${s.description}` : ""}
                       </p>
-                      {s.scheduling === "flexible" ? (
-                        <p className="text-xs text-brand-dark mt-1">
-                          🤝 Flexible — book now, schedule together
-                        </p>
-                      ) : (
-                        (scheduleLines.get(s.id) ?? []).length > 0 && (
-                          <p className="text-xs text-brand-dark mt-1">
-                            🗓 {(scheduleLines.get(s.id) ?? []).join(" · ")}
-                          </p>
-                        )
-                      )}
+                      <p className="text-xs text-brand-dark mt-1">
+                        🤝 Flexible — book now, schedule together
+                      </p>
                     </div>
                     <div className="text-right shrink-0 pl-4">
                       <p className="font-semibold">{formatPrice(s.priceCents)}</p>
@@ -273,8 +280,8 @@ export default async function PublicProfile({
                 </li>
               ))}
             </ul>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* Class passes */}
         {offers.length > 0 && (
