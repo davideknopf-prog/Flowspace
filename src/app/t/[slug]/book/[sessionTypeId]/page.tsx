@@ -39,6 +39,13 @@ export default async function BookPage({
     bookings,
   });
 
+  // Arriving from a specific event (teacher page / studio schedule) carries
+  // ?start=… — honor it only if that slot is still open, so a stale link
+  // (slot just got booked) degrades to the picker instead of a dead choice.
+  const preselect =
+    start && slots.some((s) => s.startISO === start) ? start : undefined;
+  const staleStart = Boolean(start && !preselect && slots.length > 0);
+
   // Group slots by day-in-teacher-timezone for a clean picker.
   const groups: { heading: string; slots: { startISO: string; label: string }[] }[] = [];
   let currentHeading = "";
@@ -81,6 +88,12 @@ export default async function BookPage({
           </p>
         )}
 
+        {staleStart && (
+          <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            That time was just taken — here are the next open times.
+          </p>
+        )}
+
         {slots.length === 0 ? (
           <div className="card mt-6 text-center py-8 text-sm text-muted">
             No open times in the next two weeks. Check back soon or reach out to{" "}
@@ -93,7 +106,7 @@ export default async function BookPage({
             priceCents={sessionType.priceCents}
             timezone={teacher.timezone}
             groups={groups}
-            preselect={start}
+            preselect={preselect}
           />
         )}
       </div>

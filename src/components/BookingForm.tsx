@@ -25,10 +25,34 @@ export function BookingForm({
   preselect?: string;
 }) {
   const [selected, setSelected] = useState<string | null>(preselect ?? null);
+  // Arriving from a specific event means the time is already chosen — showing
+  // the full picker again would be a redundant second "pick a time" step.
+  // Collapse it to a summary with a "Change" escape hatch instead.
+  const [showPicker, setShowPicker] = useState(!preselect);
+
+  const selectedSlot = selected ? findSlot(groups, selected) : null;
 
   return (
     <div className="mt-6 space-y-6">
-      {/* Step 1: pick a time */}
+      {/* Step 1: the chosen time (picker only if no time chosen yet) */}
+      {!showPicker && selectedSlot ? (
+        <section className="card flex items-center justify-between gap-4">
+          <div>
+            <h2 className="font-semibold">Your time</h2>
+            <p className="text-sm text-muted mt-0.5">
+              {selectedSlot.heading} · {selectedSlot.label}{" "}
+              <span className="text-xs">({timezone})</span>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPicker(true)}
+            className="btn-ghost text-sm shrink-0"
+          >
+            Change
+          </button>
+        </section>
+      ) : (
       <section className="card">
         <h2 className="font-semibold mb-1">Pick a time</h2>
         <p className="text-xs text-muted mb-4">Times shown in {timezone}.</p>
@@ -59,6 +83,7 @@ export function BookingForm({
           ))}
         </div>
       </section>
+      )}
 
       {/* Step 2: details + (stubbed) payment */}
       {selected && (
@@ -124,4 +149,15 @@ export function BookingForm({
       )}
     </div>
   );
+}
+
+function findSlot(
+  groups: Group[],
+  startISO: string,
+): { heading: string; label: string } | null {
+  for (const g of groups) {
+    const slot = g.slots.find((s) => s.startISO === startISO);
+    if (slot) return { heading: g.heading, label: slot.label };
+  }
+  return null;
 }
