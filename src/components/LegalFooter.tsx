@@ -10,6 +10,7 @@ export function LegalFooter() {
           <Link href="/terms" className="hover:text-foreground">Terms of Service</Link>
           <Link href="/privacy" className="hover:text-foreground">Privacy Policy</Link>
           <Link href="/waiver" className="hover:text-foreground">Liability Waiver</Link>
+          <Link href="/guide" className="hover:text-foreground">Free teacher guide</Link>
         </nav>
         <p>Kuleo 🧘 — great yoga, straight from the teacher.</p>
       </div>

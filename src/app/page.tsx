@@ -303,6 +303,18 @@ export default async function Home() {
             {teacher ? "Go to your studio" : "Get booking today"}
           </Link>
         </div>
+        <div className="mt-8 mx-auto max-w-xl card !p-4 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">📖 Free guide: The Yoga Teacher Economy</p>
+            <p className="text-xs text-muted">
+              The full numbers behind studio pay — and the first-year math of
+              owning your room. No email required.
+            </p>
+          </div>
+          <Link href="/guide" className="btn-secondary text-sm shrink-0">
+            Read it →
+          </Link>
+        </div>
       </section>
 
       {/* Pricing — outcomes first, then the numbers */}
@@ -475,6 +487,7 @@ export default async function Home() {
               <p className="font-semibold mb-3">For teachers</p>
               <ul className="space-y-2 text-muted">
                 <li><Link href="/#pricing" className="hover:text-foreground">Pricing</Link></li>
+                <li><Link href="/guide" className="hover:text-foreground">Free guide: The Yoga Teacher Economy</Link></li>
                 <li><Link href="/signup" className="hover:text-foreground">Create your studio</Link></li>
                 <li><Link href="/login" className="hover:text-foreground">Log in</Link></li>
                 <li>
