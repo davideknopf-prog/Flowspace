@@ -9,7 +9,9 @@
     "lint": "eslint",
     "db:migrate": "node scripts/migrate.mjs",
     "stripe:promos": "node scripts/setup-promos.mjs",
-    "payout": "node scripts/payout.mjs"
+    "payout": "node scripts/payout.mjs",
+    "audit:links": "node scripts/audit-links.mjs",
+    "crawl": "node scripts/crawl-runtime.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",
