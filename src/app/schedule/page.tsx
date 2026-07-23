@@ -32,7 +32,7 @@ export default async function StudioSchedulePage() {
     <main className="min-h-screen">
       <SiteHeader />
 
-      <div className="mx-auto max-w-3xl px-4 py-12">
+      <div className="mx-auto max-w-4xl px-4 py-12">
         <div className="mb-8">
           <h1 className="text-3xl font-semibold mb-2">Studio schedule</h1>
           <p className="text-muted">

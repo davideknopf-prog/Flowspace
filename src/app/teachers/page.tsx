@@ -46,7 +46,7 @@ export default async function TeachersDirectory() {
     <main className="min-h-screen">
       <SiteHeader />
 
-      <div className="mx-auto max-w-5xl px-4 py-12">
+      <div className="mx-auto max-w-7xl px-4 py-12">
         <div className="mb-8">
           <h1 className="text-3xl font-semibold mb-2">Our teachers</h1>
           <p className="text-muted">

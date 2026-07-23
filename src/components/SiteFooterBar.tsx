@@ -6,7 +6,7 @@ import Link from "next/link";
 export function SiteFooterBar() {
   return (
     <div className="sticky bottom-0 z-10 border-t border-border bg-brand-tint/90 backdrop-blur">
-      <div className="mx-auto max-w-5xl px-4 h-12 flex items-center justify-between gap-3">
+      <div className="mx-auto max-w-7xl px-4 h-12 flex items-center justify-between gap-3">
         <nav className="flex items-center gap-x-4 overflow-x-auto whitespace-nowrap text-sm">
           <Link href="/students" className="text-muted hover:text-foreground">
             New students

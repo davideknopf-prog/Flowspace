@@ -23,7 +23,7 @@ export default async function StudentsPage() {
       <SiteHeader />
 
       {/* What Kuleo is, for a student */}
-      <section className="mx-auto max-w-3xl px-4 py-16 text-center">
+      <section className="mx-auto max-w-4xl px-4 py-16 text-center">
         <span className="pill mb-5">New students</span>
         <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-tight">
           One studio. Independent teachers. Classes all week.
@@ -47,7 +47,7 @@ export default async function StudentsPage() {
 
       {/* How it works for students */}
       <section className="bg-brand-tint border-y border-border">
-        <div className="mx-auto max-w-5xl px-4 py-14">
+        <div className="mx-auto max-w-7xl px-4 py-14">
           <h2 className="text-2xl font-semibold text-center mb-10">
             How it works
           </h2>
@@ -88,7 +88,7 @@ export default async function StudentsPage() {
       </section>
 
       {/* Live teaser: next classes */}
-      <section className="mx-auto max-w-3xl px-4 py-16">
+      <section className="mx-auto max-w-4xl px-4 py-16">
         <div className="flex items-end justify-between mb-6">
           <h2 className="text-2xl font-semibold">Happening soon</h2>
           <Link href="/schedule" className="text-sm text-brand-dark font-medium">
@@ -136,7 +136,7 @@ export default async function StudentsPage() {
 
       {/* Teachers strip */}
       {teachers.length > 0 && (
-        <section className="mx-auto max-w-3xl px-4 pb-16">
+        <section className="mx-auto max-w-5xl px-4 pb-16">
           <div className="flex items-end justify-between mb-6">
             <h2 className="text-2xl font-semibold">The teachers</h2>
             <Link href="/teachers" className="text-sm text-brand-dark font-medium">

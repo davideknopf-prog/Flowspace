@@ -20,7 +20,7 @@ export default function GuidePage() {
     <main className="min-h-screen">
       <SiteHeader />
 
-      <article className="mx-auto max-w-2xl px-4 py-12">
+      <article className="mx-auto max-w-3xl px-4 py-12">
         <span className="pill-accent mb-4">Free guide for yoga teachers</span>
         <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-tight mb-3">
           The Yoga Teacher Economy

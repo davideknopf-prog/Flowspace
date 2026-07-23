@@ -47,7 +47,7 @@ export default async function Home() {
 
       {/* Hero */}
       <section className="hero-glow border-b border-border/60">
-        <div className="mx-auto max-w-5xl px-4 py-14 sm:py-16 text-center">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:py-16 text-center">
         <span className="pill mb-5">For yoga teachers</span>
         <h1 className="animate-fade-up text-4xl sm:text-6xl font-semibold tracking-tight max-w-3xl mx-auto leading-tight">
           Grow your yoga business{" "}
@@ -133,7 +133,7 @@ export default async function Home() {
 
       {/* Live inventory: the realest trust signal a marketplace has. */}
       {upcoming.length > 0 && (
-        <section className="mx-auto max-w-3xl px-4 pt-12 pb-14">
+        <section className="mx-auto max-w-5xl px-4 pt-12 pb-14">
           <div className="flex items-end justify-between mb-5">
             <h2 className="heading-flourish text-2xl font-semibold">Happening this week</h2>
             <Link href="/schedule" className="text-sm text-brand-dark font-medium">
@@ -173,7 +173,7 @@ export default async function Home() {
       )}
 
       {/* Features */}
-      <section className="mx-auto max-w-5xl px-4 pb-14">
+      <section className="mx-auto max-w-7xl px-4 pb-14">
         <div className="text-center max-w-xl mx-auto mb-10">
           <h2 className="heading-flourish heading-flourish-center text-2xl sm:text-3xl font-semibold">Less admin. More teaching.</h2>
           <p className="mt-2 text-muted">
@@ -203,7 +203,7 @@ export default async function Home() {
 
       {/* How it works */}
       <section className="bg-brand-tint border-y border-border">
-        <div className="mx-auto max-w-5xl px-4 py-12">
+        <div className="mx-auto max-w-7xl px-4 py-12">
           <h2 className="text-2xl font-semibold text-center mb-3">
             Set up this afternoon. Booked by this week.
           </h2>
@@ -220,7 +220,7 @@ export default async function Home() {
       </section>
 
       {/* The math — the honest 5x story. Arithmetic, not claims. */}
-      <section className="mx-auto max-w-5xl px-4 py-14">
+      <section className="mx-auto max-w-7xl px-4 py-14">
         <div className="text-center max-w-2xl mx-auto mb-10">
           <span className="pill-accent mb-4">The math</span>
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
@@ -233,7 +233,7 @@ export default async function Home() {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto items-stretch">
+        <div className="grid sm:grid-cols-2 gap-5 max-w-4xl mx-auto items-stretch">
           <div className="card !p-6">
             <p className="text-sm font-semibold text-muted mb-1">
               Teaching for a studio
@@ -285,112 +285,137 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Pricing — outcomes first, then the numbers */}
-      <section id="pricing" className="mx-auto max-w-5xl px-4 py-14 scroll-mt-16">
-        <div className="text-center max-w-2xl mx-auto mb-4">
+      {/* Pricing — anchored, juxtaposed, one click from checkout */}
+      <section id="pricing" className="mx-auto max-w-7xl px-4 py-14 scroll-mt-16">
+        <div className="text-center max-w-2xl mx-auto mb-10">
           <span className="pill-accent mb-4">Pricing — for teachers</span>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-            One flat subscription. Everything you earn is yours.
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+            One student covers it.<br />Everything else is yours.
           </h2>
-          <p className="mt-3 text-muted">
-            This is what <span className="font-medium text-foreground">teachers</span>{" "}
-            pay to run their studio on Kuleo. Students never pay Kuleo anything —
-            they just pay you for your classes.
+          <p className="mt-4 text-lg text-muted">
+            A single $25 booking pays for <em className="text-foreground">more than
+            a month</em> of Kuleo. Zero commission — students pay{" "}
+            <span className="font-semibold text-foreground">you</span>, never us.
           </p>
         </div>
 
-        {/* The outcomes — the dream before the feature list */}
-        <div className="grid sm:grid-cols-3 gap-4 mt-8 mb-8">
-          <Outcome icon="📈" title="A full schedule" body="Teachers use Kuleo to fill 10+ bookings a week from one link in their bio — while they sleep, not while they DM." />
-          <Outcome icon="💸" title="No studio fees. Keep all your earnings." body="Zero commission on your classes. Every dollar a student pays you is yours — Kuleo never takes a cut." />
-          <Outcome icon="🌍" title="A global audience" body="Teach students across town or across the world. Your studio is open around the clock, wherever you are." />
-          <Outcome icon="🧘" title="Tech, simplified" body="Bookings, payments, scheduling, reminders — quietly handled. You didn't train for years to do admin." />
-          <Outcome icon="🎓" title="Free onboarding & training" body="We set up your studio with you, one on one, and stay in your corner as you grow. Included, always." />
-          <Outcome icon="🤝" title="Students who come back" body="Class passes, reviews, and a student list that helps your regulars stay regulars." />
+        {/* Pick a plan → account → checkout. Three clicks, live today. */}
+        <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto items-stretch">
+          {plans.map((p) => {
+            const copy: Record<string, { label: string; anchor: string; cta: string; highlight?: boolean }> = {
+              kuleo_weekly: {
+                label: "Weekly",
+                anchor: "Less than a latte. Zero commitment.",
+                cta: "Start weekly",
+              },
+              kuleo_monthly: {
+                label: "Monthly",
+                anchor: "One $25 student covers it — with change.",
+                cta: "Start monthly",
+                highlight: true,
+              },
+              kuleo_annual: {
+                label: "Annual",
+                anchor: "Two months free. Fully committed.",
+                cta: "Start annual",
+              },
+            };
+            const c = copy[p.lookupKey] ?? { label: p.lookupKey, anchor: "", cta: "Start" };
+            return (
+              <Link
+                key={p.lookupKey}
+                href={`/subscribe/start?plan=${p.lookupKey}`}
+                className={`card card-lift !p-6 flex flex-col text-center relative ${
+                  c.highlight ? "border-brand ring-2 ring-[var(--ring)]" : ""
+                }`}
+              >
+                {c.highlight && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-0.5 text-[11px] font-semibold text-white whitespace-nowrap">
+                    MOST POPULAR
+                  </span>
+                )}
+                <p className="font-semibold text-muted">{c.label}</p>
+                <p className="mt-2 text-4xl font-semibold [font-family:var(--font-display)] text-foreground">
+                  {formatPrice(p.amountCents)}
+                  <span className="text-base font-normal text-muted [font-family:var(--font-sans)]">
+                    /{p.interval}
+                  </span>
+                </p>
+                <p className="mt-2 text-sm text-muted flex-1">{c.anchor}</p>
+                <span
+                  className={`mt-4 ${c.highlight ? "btn-primary" : "btn-secondary"} w-full text-sm`}
+                >
+                  {c.cta} →
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+        <p className="mt-4 text-center text-xs text-muted max-w-2xl mx-auto">
+          Set up this afternoon · cancel anytime · no commission, ever · standard
+          card processing (2.9% + 30¢) applies to student payments · your
+          earnings are always yours to cash out.
+        </p>
+
+        {/* The juxtaposition — what $15 actually buys you out of */}
+        <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto mt-12">
+          <div className="card !p-6">
+            <p className="font-semibold text-muted mb-3">Teaching without it</p>
+            <ul className="space-y-2.5 text-sm text-muted">
+              <li className="flex gap-2"><span className="text-danger">✗</span> Booking DMs at 10pm, spreadsheets, no-shows</li>
+              <li className="flex gap-2"><span className="text-danger">✗</span> Chasing Venmo requests after every class</li>
+              <li className="flex gap-2"><span className="text-danger">✗</span> A flat hourly rate — packed room, same pay</li>
+              <li className="flex gap-2"><span className="text-danger">✗</span> The studio owns your schedule and your students</li>
+            </ul>
+          </div>
+          <div className="card !p-6 border-brand bg-brand-tint/40">
+            <p className="font-semibold text-brand-dark mb-3">Teaching on Kuleo</p>
+            <ul className="space-y-2.5 text-sm text-muted">
+              <li className="flex gap-2"><span className="text-brand-dark">✓</span> Booked and paid while you sleep — one link does it all</li>
+              <li className="flex gap-2"><span className="text-brand-dark">✓</span> Every student pays you directly. 100% yours.</li>
+              <li className="flex gap-2"><span className="text-brand-dark">✓</span> Every extra student is extra income — no ceiling</li>
+              <li className="flex gap-2"><span className="text-brand-dark">✓</span> Your page, your prices, your audience — live this afternoon</li>
+            </ul>
+            <Link
+              href="/subscribe/start?plan=kuleo_monthly"
+              className="btn-primary w-full text-sm mt-5"
+            >
+              Get booking today →
+            </Link>
+          </div>
         </div>
 
-        {/* The numbers + what's inside */}
-        <div className="grid md:grid-cols-[1fr_1.2fr] gap-6 items-start">
-          <div className="space-y-3">
-            {plans.map((p) => {
-              const copy: Record<string, { label: string; note: string; highlight?: boolean }> = {
-                kuleo_weekly: { label: "Weekly", note: "Great for trying things out." },
-                kuleo_monthly: { label: "Monthly", note: "Most popular with teachers.", highlight: true },
-                kuleo_annual: { label: "Annual", note: "Two months free vs. monthly." },
-              };
-              const c = copy[p.lookupKey] ?? { label: p.lookupKey, note: "" };
-              return (
-                <div
-                  key={p.lookupKey}
-                  className={`card !p-4 flex items-center justify-between ${
-                    c.highlight ? "border-brand" : ""
-                  }`}
-                >
-                  <div>
-                    <p className="font-semibold">
-                      {c.label}
-                      {c.highlight && (
-                        <span className="ml-2 rounded-full bg-brand-tint px-2 py-0.5 text-xs font-medium text-brand-dark">
-                          Most popular
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-xs text-muted">{c.note}</p>
-                  </div>
-                  <p className="text-xl font-semibold">
-                    {formatPrice(p.amountCents)}
-                    <span className="text-sm font-normal text-muted">/{p.interval}</span>
-                  </p>
-                </div>
-              );
-            })}
-            <Link
-              href={teacher ? "/dashboard" : "/signup"}
-              className="btn-primary w-full text-center"
-            >
-              {teacher ? "Go to your studio" : "Get booking today"}
-            </Link>
-            <p className="text-center text-xs text-muted">
-              Cancel anytime · your earnings are always yours to cash out.
+        {/* Everything included + the human option */}
+        <div className="card max-w-4xl mx-auto mt-6">
+          <p className="font-semibold mb-3">Every plan includes the whole studio:</p>
+          <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-sm text-muted">
+            <Included>Your studio page &amp; booking link</Included>
+            <Included>Scheduled classes &amp; recurring events</Included>
+            <Included>Secure student payments (Stripe)</Included>
+            <Included>Class passes &amp; flexible coaching</Included>
+            <Included>Earnings dashboard &amp; easy cash-out</Included>
+            <Included>Automatic confirmations + calendar invites</Included>
+            <Included>Post-class follow-ups &amp; review collection</Included>
+            <Included>Student list with your top fans</Included>
+            <Included>Free 1-on-1 onboarding &amp; training</Included>
+          </ul>
+          <div className="mt-5 rounded-lg bg-brand-tint/50 p-4 text-sm">
+            <p className="text-muted">
+              <span className="font-medium text-foreground">Rather see it before you decide?</span>{" "}
+              <a
+                href={CALENDLY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-dark font-medium underline underline-offset-2"
+              >
+                Book a free 1-on-1 demo
+              </a>{" "}
+              with David, Kuleo&apos;s founder — or call/text him at{" "}
+              <a href={PHONE_HREF} className="text-brand-dark font-medium">
+                {PHONE_DISPLAY}
+              </a>
+              . He&apos;ll set up your studio with you.
             </p>
-            <p className="text-center text-xs text-muted">
-              Kuleo takes no commission. Standard card processing (2.9% + 30¢,
-              charged by the payment processor) applies to student payments.
-            </p>
-          </div>
-
-          <div className="card">
-            <p className="font-semibold mb-3">Every plan includes the whole studio:</p>
-            <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted">
-              <Included>Your own studio page & booking link</Included>
-              <Included>Scheduling that runs itself</Included>
-              <Included>Secure student payments (Stripe)</Included>
-              <Included>Class passes & intro offers</Included>
-              <Included>Earnings dashboard & easy cash-out</Included>
-              <Included>Student list with your top fans</Included>
-              <Included>Reviews on your public page</Included>
-              <Included>Booking confirmations & emails</Included>
-              <Included>Online & in-person classes</Included>
-              <Included>Placement on the studio schedule</Included>
-            </ul>
-            <div className="mt-5 rounded-lg bg-brand-tint/50 p-4 text-sm">
-              <p className="font-medium">Rather see it before you decide?</p>
-              <p className="text-muted mt-1">
-                <a
-                  href={CALENDLY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-brand-dark font-medium underline underline-offset-2"
-                >
-                  Book a free 1-on-1 demo
-                </a>{" "}
-                with David, Kuleo&apos;s founder — or call/text him at{" "}
-                <a href={PHONE_HREF} className="text-brand-dark font-medium">
-                  {PHONE_DISPLAY}
-                </a>
-                . He&apos;ll set up your studio with you.
-              </p>
-            </div>
           </div>
         </div>
       </section>
@@ -441,7 +466,7 @@ export default async function Home() {
 
       <SiteFooterBar />
       <footer className="border-t border-border bg-surface/50">
-        <div className="mx-auto max-w-5xl px-4 py-12">
+        <div className="mx-auto max-w-7xl px-4 py-12">
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 text-sm">
             <div>
               <p className="flex items-center gap-2 font-semibold text-lg text-brand-dark mb-3 [font-family:var(--font-display)]">
@@ -516,16 +541,6 @@ export default async function Home() {
         </div>
       </footer>
     </main>
-  );
-}
-
-function Outcome({ icon, title, body }: { icon: string; title: string; body: string }) {
-  return (
-    <div className="card !p-4">
-      <div className="text-xl mb-2">{icon}</div>
-      <h3 className="font-semibold text-sm mb-1">{title}</h3>
-      <p className="text-xs text-muted leading-relaxed">{body}</p>
-    </div>
   );
 }
 

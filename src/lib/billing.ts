@@ -47,6 +47,43 @@ export async function getPlans(): Promise<Plan[]> {
   return plans;
 }
 
+// Create a subscription Checkout Session for a teacher + plan. Shared by the
+// subscribe form action and the one-click /subscribe/start fast path, so the
+// funnel behaves identically wherever it begins.
+export async function createSubscribeCheckout(
+  teacher: import("./types").Teacher,
+  lookupKey: string,
+  origin: string,
+): Promise<string | null> {
+  const plans = await getPlans();
+  const plan = plans.find((p) => p.lookupKey === lookupKey);
+  if (!plan) return null;
+
+  // One Stripe customer per teacher, created lazily on first subscribe.
+  let customerId = teacher.stripeCustomerId;
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email: teacher.email,
+      name: teacher.name,
+      metadata: { teacherId: teacher.id },
+    });
+    customerId = customer.id;
+    const { setTeacherStripeCustomer } = await import("./repo");
+    await setTeacherStripeCustomer(teacher.id, customerId);
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    customer: customerId,
+    line_items: [{ price: plan.priceId, quantity: 1 }],
+    allow_promotion_codes: true,
+    success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/subscribe`,
+    metadata: { teacherId: teacher.id },
+  });
+  return session.url;
+}
+
 // Stripe's hosted Billing Portal needs a portal "configuration". The Stripe
 // dashboard only creates a default one once you save portal settings by hand,
 // so we ensure one exists via API instead — works identically in test mode

@@ -1,7 +1,18 @@
 import Link from "next/link";
 import { SignUp } from "@clerk/nextjs";
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
+  const { plan } = await searchParams;
+  // A plan chosen on the pricing page rides through signup straight into
+  // checkout; without one, new accounts land on the dashboard (whose gate
+  // shows the plan picker).
+  const afterSignup = plan
+    ? `/subscribe/start?plan=${encodeURIComponent(plan)}`
+    : "/dashboard";
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-sm">
@@ -14,7 +25,7 @@ export default function SignupPage() {
         <SignUp
           routing="hash"
           signInUrl="/login"
-          fallbackRedirectUrl="/dashboard"
+          fallbackRedirectUrl={afterSignup}
           appearance={{
             elements: {
               card: "shadow-none border border-[var(--border)] rounded-2xl",
