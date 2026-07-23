@@ -8,6 +8,7 @@ import {
   createTeacher,
 } from "./repo";
 import { isFounder } from "./founder";
+import { sendWelcomeEmail } from "./email";
 import type { Teacher } from "./types";
 
 const VIEW_AS_COOKIE = "kuleo_view_as";
@@ -58,7 +59,16 @@ async function resolveRealTeacher(): Promise<Teacher | null> {
   // first (the other call may have just won) before giving up.
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      return await createTeacher(email, name, userId);
+      const created = await createTeacher(email, name, userId);
+      // This branch runs exactly once per teacher (the very first sign-in that
+      // wins the insert), so it's the right place to send the welcome email.
+      // Never let an email failure break sign-in.
+      try {
+        await sendWelcomeEmail(created);
+      } catch (err) {
+        console.error("[welcome email] failed to send", err);
+      }
+      return created;
     } catch {
       const wonByOther = await getTeacherByClerkUserId(userId);
       if (wonByOther) return wonByOther;

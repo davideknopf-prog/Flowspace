@@ -5,6 +5,7 @@ import {
   listPayouts,
   getWeeklyNetEarnings,
   getPendingPayoutRequest,
+  platformFeePercent,
 } from "@/lib/repo";
 import { formatMoney } from "@/lib/format";
 import { payoutMethodLabel } from "@/lib/types";
@@ -31,11 +32,12 @@ export default async function EarningsPage({
     getPendingPayoutRequest(teacher.id),
   ]);
 
-  const earnedCents =
-    summary.totalPaidCents -
-    summary.totalPlatformFeeCents -
-    summary.totalStripeFeeCents;
-  const feeCents = summary.totalPlatformFeeCents + summary.totalStripeFeeCents;
+  // Teachers pay a single flat processing fee that covers card processing +
+  // platform. Stripe's actual cost is absorbed by Kuleo out of that fee, so it
+  // is NOT deducted separately from the teacher.
+  const feePct = platformFeePercent();
+  const earnedCents = summary.totalPaidCents - summary.totalPlatformFeeCents;
+  const feeCents = summary.totalPlatformFeeCents;
   const availableCents = Math.max(0, summary.balanceCents);
   const thisWeekCents = weekly[weekly.length - 1]?.netCents ?? 0;
   const hasEarnings = earnedCents > 0;
@@ -47,7 +49,7 @@ export default async function EarningsPage({
         <p className="text-muted text-sm">
           {hasEarnings
             ? "Your money at a glance — cash out whenever you like."
-            : "Every dollar a student pays lands here — Kuleo takes no cut. Your first booking starts the chart."}
+            : "Your earnings land here — your sale price, less a flat 6% processing fee. Your first booking starts the chart."}
         </p>
       </div>
 
@@ -169,12 +171,8 @@ export default async function EarningsPage({
             value={formatMoney(summary.totalPaidCents)}
           />
           <Row
-            label="Stripe processing fee"
-            value={`− ${formatMoney(summary.totalStripeFeeCents)}`}
-          />
-          <Row
-            label="Platform fee"
-            value={`− ${formatMoney(summary.totalPlatformFeeCents)}`}
+            label={`Processing fee (${feePct}%)`}
+            value={`− ${formatMoney(feeCents)}`}
           />
           <div className="border-t border-border my-2" />
           <Row label="Your earnings" value={formatMoney(earnedCents)} bold />
@@ -188,10 +186,10 @@ export default async function EarningsPage({
             bold
           />
           <p className="text-xs text-muted pt-2">
-            Payments are collected securely via Stripe, which charges its own
-            processing fee (typically ~2.9% + $0.30) on every transaction —
-            same as on any other payment platform. This page always reflects
-            your accurate live balance.
+            A flat {feePct}% processing fee is taken from each sale — that
+            covers secure card processing and keeps Kuleo running. There&apos;s
+            no separate per-class commission. This page always reflects your
+            accurate live balance.
           </p>
         </div>
       </details>

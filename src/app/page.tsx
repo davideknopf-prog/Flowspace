@@ -66,8 +66,8 @@ export default async function Home() {
         </h1>
         <p className="animate-fade-up mt-5 text-lg text-muted max-w-2xl mx-auto">
           Your own studio, run from one link: scheduled classes, bookings,
-          payments, passes, and student follow-ups — all automatic, with{" "}
-          <span className="font-semibold text-foreground">zero commission</span>.
+          payments, passes, and student follow-ups — all automatic, for{" "}
+          <span className="font-semibold text-foreground">$15/month plus a flat 6% fee</span>.
           You teach. Kuleo runs the business.
         </p>
         <div className="animate-fade-up mt-8 flex items-center justify-center gap-3">
@@ -79,7 +79,7 @@ export default async function Home() {
           </Link>
         </div>
         <p className="mt-4 text-xs text-muted">
-          No commission on your classes · nothing to download · cancel anytime.
+          $15/month + a flat 6% processing fee · nothing to download · cancel anytime.
         </p>
         <p className="mt-6 text-sm text-muted">
           Want a walkthrough first?{" "}
@@ -112,7 +112,7 @@ export default async function Home() {
             <div className="text-2xl mb-2">🧘</div>
             <p className="font-semibold">I&apos;m here to teach</p>
             <p className="text-sm text-muted mt-1">
-              Open your studio, share one link, and keep everything you earn.
+              Open your studio, share one link, and get paid directly for every class.
             </p>
             <p className="text-sm text-brand-dark font-medium mt-3">
               Kick off your studio →
@@ -216,8 +216,8 @@ export default async function Home() {
           />
           <Feature
             icon="💳"
-            title="Keep what you earn"
-            body="Students pay securely when they book, with class passes built in. Kuleo never takes a cut of your classes — you keep every dollar you teach for."
+            title="Fair, flat pricing"
+            body="Students pay securely when they book, with class passes built in. Just $15/month plus a flat 6% processing fee per sale — that covers card processing and keeps Kuleo running. No surprise commissions."
           />
         </div>
       </section>
@@ -342,12 +342,13 @@ export default async function Home() {
         <div className="text-center max-w-2xl mx-auto mb-10">
           <span className="pill-accent mb-4">Pricing — for teachers</span>
           <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-            One student covers it.<br />Everything else is yours.
+            One booking covers it.<br />The rest is yours.
           </h2>
           <p className="mt-4 text-lg text-muted">
-            A single $25 booking pays for <em className="text-foreground">more than
-            a month</em> of Kuleo. Zero commission — students pay{" "}
-            <span className="font-semibold text-foreground">you</span>, never us.
+            A single $25 booking more than covers a{" "}
+            <em className="text-foreground">month of Kuleo</em>. It&apos;s $15/month
+            plus a flat 6% processing fee per sale — students always pay{" "}
+            <span className="font-semibold text-foreground">you</span>.
           </p>
         </div>
 
@@ -404,9 +405,8 @@ export default async function Home() {
           })}
         </div>
         <p className="mt-4 text-center text-xs text-muted max-w-2xl mx-auto">
-          Set up this afternoon · cancel anytime · no commission, ever · standard
-          card processing (2.9% + 30¢) applies to student payments · your
-          earnings are always yours to cash out.
+          Set up this afternoon · cancel anytime · $15/month + a flat 6%
+          processing fee per sale · your earnings are always yours to cash out.
         </p>
 
         {/* The juxtaposition — what $15 actually buys you out of */}

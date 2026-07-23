@@ -51,11 +51,12 @@ export default function TermsPage() {
           effect at the end of the paid period.
         </li>
         <li>
-          <strong>Your earnings.</strong> Kuleo takes no commission on class
-          sales. Standard payment-processing fees charged by our payment
-          processor (currently 2.9% + $0.30 per card transaction) are deducted
-          from student payments before they reach your balance. Your balance is
-          always yours to cash out, whether or not your subscription is active.
+          <strong>Your earnings.</strong> A flat 6% processing fee is deducted
+          from each class or pass sale before it reaches your balance. This fee
+          covers third-party card-processing costs and platform maintenance;
+          there is no additional per-class commission. Your balance (your sale
+          price less this fee) is always yours to cash out, whether or not your
+          subscription is active.
         </li>
         <li>
           <strong>Payouts.</strong> Cash-outs are paid to the payout handle you
@@ -81,8 +82,8 @@ export default function TermsPage() {
         <li>
           <strong>Booking &amp; payment.</strong> When you book a class or buy a
           class pass, you pay the Teacher&apos;s listed price via our payment
-          processor. Your payment goes to the Teacher (less processing fees);
-          Kuleo does not add fees to Students.
+          processor. Your payment goes to the Teacher (less a flat 6% processing
+          fee); Kuleo does not add any extra fees on top for Students.
         </li>
         <li>
           <strong>Cancellations &amp; refunds.</strong> If a Teacher cancels a

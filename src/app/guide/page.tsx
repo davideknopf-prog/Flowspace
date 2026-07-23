@@ -173,12 +173,12 @@ export default function GuidePage() {
             follow-up after class that grows your reviews and rebookings while
             you sleep.{" "}
             <strong className="text-foreground">
-              Kuleo takes zero commission on your classes
+              Kuleo&apos;s pricing is simple and flat
             </strong>{" "}
-            — you pay a flat subscription ($7.50/week, $15/month, or $90/year)
-            and keep everything you earn, minus only standard card processing
-            (2.9% + 30¢). Free 1-on-1 onboarding with the founder is included
-            with every plan.
+            — a subscription ($7.50/week, $15/month, or $90/year) plus a flat
+            6% processing fee per sale that covers card processing and keeps the
+            platform running. No surprise commissions. Free 1-on-1 onboarding
+            with the founder is included with every plan.
           </p>
           <p className="text-muted leading-relaxed">
             When teachers earn properly, everyone wins: classes get more

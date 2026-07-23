@@ -17,13 +17,14 @@ import type {
 } from "./types";
 import { passIsRedeemable } from "./types";
 
-// Single knob for the platform's cut of each paid booking. A plain env var
-// (not a DB setting) is enough for now — changing it is a deliberate,
-// infrequent act, not something that needs a UI. Defaults to 0% (teachers
-// keep everything while we're still acquiring the first cohort).
+// The flat processing fee taken from each paid sale. This single fee covers
+// third-party card processing (Stripe's ~2.9% + 30¢) AND platform maintenance
+// — Kuleo absorbs the actual Stripe cost out of it, so the teacher only ever
+// sees this one number. A plain env var override is enough; changing it is a
+// deliberate, infrequent act. Defaults to 6%.
 export function platformFeePercent(): number {
-  const raw = Number(process.env.PLATFORM_FEE_PERCENT ?? "0");
-  return Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : 0;
+  const raw = Number(process.env.PLATFORM_FEE_PERCENT ?? "6");
+  return Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : 6;
 }
 
 export function computePlatformFeeCents(priceCents: number): number {
@@ -1107,14 +1108,14 @@ export async function getWeeklyNetEarnings(
 ): Promise<WeeklyEarnings[]> {
   const bookingRows = await sql`
     select date_trunc('week', least(start_iso, now())) as week,
-           coalesce(sum(price_cents - platform_fee_cents - stripe_fee_cents), 0) as net
+           coalesce(sum(price_cents - platform_fee_cents), 0) as net
     from bookings
     where teacher_id = ${teacherId} and payment_status = 'paid'
     group by 1
   `;
   const passRows = await sql`
     select date_trunc('week', created_at) as week,
-           coalesce(sum(price_cents - platform_fee_cents - stripe_fee_cents), 0) as net
+           coalesce(sum(price_cents - platform_fee_cents), 0) as net
     from passes
     where teacher_id = ${teacherId} and payment_status = 'paid'
     group by 1
@@ -1123,7 +1124,7 @@ export async function getWeeklyNetEarnings(
   try {
     quoteRows = await sql`
       select date_trunc('week', coalesce(paid_at, created_at)) as week,
-             coalesce(sum(price_cents - platform_fee_cents - stripe_fee_cents), 0) as net
+             coalesce(sum(price_cents - platform_fee_cents), 0) as net
       from quotes
       where teacher_id = ${teacherId} and status = 'paid'
       group by 1
@@ -1162,7 +1163,7 @@ export async function getWeeklyNetEarnings(
 export interface EarningsSummary {
   totalPaidCents: number; // gross: paid bookings + paid passes
   totalPlatformFeeCents: number;
-  totalStripeFeeCents: number; // Stripe's actual processing fee, absorbed by the teacher
+  totalStripeFeeCents: number; // Stripe's actual cost — absorbed by Kuleo out of the processing fee (NOT charged to the teacher on top)
   totalPayoutCents: number;
   balanceCents: number; // what's still owed to the teacher
   // Activity stats
@@ -1375,7 +1376,10 @@ export async function getEarningsSummary(
   const totalStripeFeeCents =
     Number(bookingRows.total_stripe_fee) + Number(passRows.total_stripe_fee) + Number(quoteRows.total_stripe_fee);
   const totalPayoutCents = Number(payoutRows.total_payout);
-  const owedTotal = totalPaidCents - totalPlatformFeeCents - totalStripeFeeCents;
+  // Teacher net = gross minus the single flat processing fee. Stripe's actual
+  // cost (totalStripeFeeCents) is absorbed by Kuleo out of that fee, so it is
+  // NOT subtracted from what the teacher is owed.
+  const owedTotal = totalPaidCents - totalPlatformFeeCents;
 
   return {
     totalPaidCents,

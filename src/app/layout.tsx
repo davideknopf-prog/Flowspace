@@ -20,7 +20,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Kuleo — the operating system for independent yoga teachers",
   description:
-    "Kuleo is the all-in-one business platform for solo yoga teachers — like Mindbody, rebuilt for the independent teacher. Scheduled classes, bookings, payments, class passes, and student follow-ups from one link, with zero commission. Make yoga available to everyone by making it pay to teach.",
+    "Kuleo is the all-in-one business platform for solo yoga teachers — like Mindbody, rebuilt for the independent teacher. Scheduled classes, bookings, payments, class passes, and student follow-ups from one link, for a flat $15/month plus a simple 6% processing fee. Make yoga available to everyone by making it pay to teach.",
 };
 
 export default function RootLayout({

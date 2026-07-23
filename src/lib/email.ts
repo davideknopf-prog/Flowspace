@@ -642,3 +642,57 @@ export async function sendQuotePaidEmails({
   const results = await Promise.allSettled(jobs);
   results.forEach((r) => { if (r.status === "rejected") console.error("[quote] email failed", r.reason); });
 }
+
+// Sent once, when a teacher's Kuleo profile is first created (see session.ts).
+// A warm welcome plus a fast-start guide so they know exactly what to do next,
+// and a plain statement of how pricing/payouts work.
+export async function sendWelcomeEmail(
+  teacher: Teacher,
+): Promise<{ sent: boolean }> {
+  const first = teacher.name.split(" ")[0] || "there";
+  const dash = "https://kuleo.io/dashboard";
+  const subject = `Welcome to Kuleo, ${first} 🧘`;
+
+  const text = [
+    `Welcome to Kuleo, ${first}!`,
+    ``,
+    `You just opened your own yoga studio — bookings, payments, class passes, and a shareable page, all from one link. Here's how to be live today:`,
+    ``,
+    `1. Complete your profile — add a photo, a short bio, and your specialties.`,
+    `2. Add a class and set your price.`,
+    `3. Set your class times so students can book.`,
+    `4. Share your booking link — first bookings almost always follow the first share.`,
+    ``,
+    `Set up here: ${dash}`,
+    ``,
+    `How you get paid: students pay you directly at checkout. Kuleo is a flat $15/month plus a 6% processing fee per sale — that covers card processing and keeps the platform running, with no surprise commissions. Cash out your balance anytime to Zelle, Venmo, or PayPal.`,
+    ``,
+    `I'm ${FOUNDER.name}, ${FOUNDER.title} of Kuleo — you have a direct line to me. Text or call ${FOUNDER.phone}, or just reply to this email. I highly recommend a quick, free onboarding call: ${FOUNDER.onboardingCallUrl}`,
+    ``,
+    `Welcome aboard,`,
+    `${FOUNDER.name}`,
+  ].join("\n");
+
+  const html = wrapHtml(`
+    <p style="font-size:16px;font-weight:600">Welcome to Kuleo, ${esc(first)}! 🎉</p>
+    <p style="color:#4a4b47;font-size:14px;line-height:1.6">You just opened your own yoga studio — bookings, payments, class passes, and a shareable page, all from one link. Here's how to be live <strong>today</strong>:</p>
+    <ol style="color:#26211c;font-size:14px;line-height:1.7;padding-left:18px;margin:12px 0">
+      <li><strong>Complete your profile</strong> — photo, short bio, specialties.</li>
+      <li><strong>Add a class &amp; set your price.</strong></li>
+      <li><strong>Set your class times</strong> so students can book.</li>
+      <li><strong>Share your booking link</strong> — first bookings follow the first share.</li>
+    </ol>
+    <p style="margin:20px 0">
+      <a href="${dash}" style="background:#4a7c59;color:#fff;text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:600;font-size:14px;display:inline-block">Set up your studio →</a>
+    </p>
+    <div style="margin-top:16px;padding:12px 14px;background:#edf2ef;border-radius:10px;font-size:13px;color:#26211c;line-height:1.6">
+      <strong style="color:#47645a">How you get paid:</strong> students pay you directly at checkout. Kuleo is a flat <strong>$15/month</strong> plus a <strong>6% processing fee</strong> per sale — that covers card processing and keeps the platform running, with no surprise commissions. Cash out anytime to Zelle, Venmo, or PayPal.
+    </div>
+    <p style="color:#4a4b47;font-size:14px;margin-top:16px;line-height:1.6">
+      I'm ${esc(FOUNDER.name)}, ${esc(FOUNDER.title)} of Kuleo — you've got a direct line to me. Text or call <strong>${esc(FOUNDER.phone)}</strong>, or just reply to this email. I highly recommend a quick, free <a href="${FOUNDER.onboardingCallUrl}" style="color:#47645a">onboarding call</a> so we get you earning fast.
+    </p>
+    <p style="color:#4a4b47;font-size:14px">Welcome aboard,<br>${esc(FOUNDER.name)}</p>
+  `);
+
+  return send({ to: teacher.email, subject, html, text, replyTo: FOUNDER.email });
+}

@@ -50,9 +50,7 @@ export default async function DashboardHome() {
 
   // --- KPIs — the eyes-on-the-prize numbers ---------------------------------
   const earnedCents =
-    summary.totalPaidCents -
-    summary.totalPlatformFeeCents -
-    summary.totalStripeFeeCents;
+    summary.totalPaidCents - summary.totalPlatformFeeCents;
   const availableCents = Math.max(0, summary.balanceCents);
   const thisWeekCents = weekly[weekly.length - 1]?.netCents ?? 0;
 

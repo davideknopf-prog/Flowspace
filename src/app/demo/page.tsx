@@ -81,7 +81,7 @@ export default async function DemoPage() {
         </h2>
         <p className="mt-3 text-muted">
           Set it up this afternoon — bookings, payments, and a page like this,
-          all from one link. Zero commission on your classes.
+          all from one link. $15/month plus a flat 6% processing fee per sale.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link href="/signup" className="btn-primary">
@@ -114,9 +114,7 @@ async function DemoDashboard({
     ]);
 
   const earnedCents =
-    summary.totalPaidCents -
-    summary.totalPlatformFeeCents -
-    summary.totalStripeFeeCents;
+    summary.totalPaidCents - summary.totalPlatformFeeCents;
   const availableCents = Math.max(0, summary.balanceCents);
   const thisWeekCents = weekly[weekly.length - 1]?.netCents ?? 0;
 
