@@ -388,7 +388,15 @@ export default async function DashboardHome() {
       {/* Founder-only operator tools */}
       {otherTeachers.length > 0 && (
         <div className="card border-dashed">
-          <h2 className="font-semibold mb-1">🛠 Operator tools</h2>
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <h2 className="font-semibold">🛠 Operator tools</h2>
+            <Link
+              href="/dashboard/roster"
+              className="text-xs text-brand-dark underline font-medium"
+            >
+              Open mission control →
+            </Link>
+          </div>
           <p className="text-sm text-muted mb-3">
             Step into any teacher&apos;s dashboard to demo their business. Only
             you can see this card.

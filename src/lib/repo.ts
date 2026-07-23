@@ -208,6 +208,71 @@ export async function listAllTeachers(): Promise<Teacher[]> {
   return rows.map(rowToTeacher);
 }
 
+// Founder mission-control: every teacher with rolled-up activity, in ONE
+// aggregate query (no N+1). Powers the /dashboard/roster page.
+export interface RosterEntry {
+  id: string;
+  slug: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  isDemo: boolean;
+  subscriptionStatus: string;
+  subscriptionPlan: string;
+  bookingCount: number;
+  studentCount: number;
+  grossCents: number;
+  lastActivityAt: string | null;
+  classCount: number;
+  hasBio: boolean;
+}
+
+export async function getFounderRoster(): Promise<RosterEntry[]> {
+  const rows = await sql`
+    select
+      t.id, t.slug, t.name, t.email, t.created_at, t.is_demo,
+      t.subscription_status, t.subscription_plan,
+      length(trim(t.bio)) as bio_len,
+      coalesce(b.booking_count, 0)  as booking_count,
+      coalesce(b.student_count, 0)  as student_count,
+      coalesce(b.gross_cents, 0)    as gross_cents,
+      b.last_activity_at,
+      coalesce(s.class_count, 0)    as class_count
+    from teachers t
+    left join (
+      select teacher_id,
+        count(*) filter (where payment_status in ('paid','free','pass')) as booking_count,
+        count(distinct client_email) as student_count,
+        coalesce(sum(price_cents) filter (where payment_status = 'paid'), 0) as gross_cents,
+        max(created_at) as last_activity_at
+      from bookings
+      group by teacher_id
+    ) b on b.teacher_id = t.id
+    left join (
+      select teacher_id, count(*) filter (where active) as class_count
+      from session_types
+      group by teacher_id
+    ) s on s.teacher_id = t.id
+    order by t.created_at desc
+  `;
+  return rows.map((r) => ({
+    id: r.id as string,
+    slug: r.slug as string,
+    name: r.name as string,
+    email: r.email as string,
+    createdAt: toISO(r.created_at),
+    isDemo: (r.is_demo as boolean) ?? false,
+    subscriptionStatus: (r.subscription_status as string) ?? "none",
+    subscriptionPlan: (r.subscription_plan as string) ?? "",
+    bookingCount: Number(r.booking_count ?? 0),
+    studentCount: Number(r.student_count ?? 0),
+    grossCents: Number(r.gross_cents ?? 0),
+    lastActivityAt: r.last_activity_at ? toISO(r.last_activity_at) : null,
+    classCount: Number(r.class_count ?? 0),
+    hasBio: Number(r.bio_len ?? 0) > 0,
+  }));
+}
+
 export async function getTeacherBySlug(slug: string): Promise<Teacher | null> {
   const rows = await sql`select * from teachers where slug = ${slug}`;
   return rows[0] ? rowToTeacher(rows[0]) : null;
