@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooterBar } from "@/components/SiteFooterBar";
 import type { Metadata } from "next";
 import { LegalFooter } from "@/components/LegalFooter";
 
@@ -227,6 +228,7 @@ export default function GuidePage() {
         </p>
       </article>
 
+      <SiteFooterBar />
       <LegalFooter />
     </main>
   );

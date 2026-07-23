@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooterBar } from "@/components/SiteFooterBar";
 import { getCurrentTeacher } from "@/lib/session";
 import { getPlans, type Plan } from "@/lib/billing";
 import { getStudioSchedule, type StudioEntry } from "@/lib/studio";
@@ -438,6 +439,7 @@ export default async function Home() {
         </div>
       </section>
 
+      <SiteFooterBar />
       <footer className="border-t border-border bg-surface/50">
         <div className="mx-auto max-w-5xl px-4 py-12">
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 text-sm">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooterBar } from "@/components/SiteFooterBar";
 import type { Metadata } from "next";
 import { getStudioSchedule, type StudioEntry } from "@/lib/studio";
 import { Avatar } from "@/components/Avatar";
@@ -85,6 +86,7 @@ export default async function StudioSchedulePage() {
           </div>
         )}
       </div>
+      <SiteFooterBar />
       <LegalFooter />
     </main>
   );

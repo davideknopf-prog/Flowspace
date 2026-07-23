@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooterBar } from "@/components/SiteFooterBar";
 import type { Metadata } from "next";
 import {
   listAllTeachers,
@@ -98,6 +99,7 @@ export default async function TeachersDirectory() {
           ))}
         </div>
       </div>
+      <SiteFooterBar />
       <LegalFooter />
     </main>
   );

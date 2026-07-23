@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteHeader } from "./SiteHeader";
+import { SiteFooterBar } from "./SiteFooterBar";
 
 // Shared shell for legal documents: consistent header, readable measure,
 // muted prose styling.
@@ -29,6 +30,7 @@ export function LegalPage({
           or call/text (508) 468-7829.
         </p>
       </article>
+      <SiteFooterBar />
     </main>
   );
 }

@@ -6,7 +6,7 @@ import { AuthNavButtons } from "./AuthNavButtons";
 // pages can share this header without going dynamic.
 export function SiteHeader() {
   return (
-    <header className="border-b border-border bg-surface/80 backdrop-blur sticky top-0 z-10">
+    <header className="border-b border-border bg-brand-tint/90 backdrop-blur sticky top-0 z-10">
       <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
         <Link
           href="/"
