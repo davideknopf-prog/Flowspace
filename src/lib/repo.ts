@@ -13,6 +13,7 @@ import type {
   PayoutRequest,
   Review,
   ReviewStats,
+  Quote,
 } from "./types";
 import { passIsRedeemable } from "./types";
 
@@ -1051,9 +1052,16 @@ export async function getWeeklyNetEarnings(
     where teacher_id = ${teacherId} and payment_status = 'paid'
     group by 1
   `;
+  const quoteRows = await sql`
+    select date_trunc('week', coalesce(paid_at, created_at)) as week,
+           coalesce(sum(price_cents - platform_fee_cents - stripe_fee_cents), 0) as net
+    from quotes
+    where teacher_id = ${teacherId} and status = 'paid'
+    group by 1
+  `;
 
   const byWeek = new Map<string, number>();
-  for (const row of [...bookingRows, ...passRows]) {
+  for (const row of [...bookingRows, ...passRows, ...quoteRows]) {
     const key = toISO(row.week).slice(0, 10);
     byWeek.set(key, (byWeek.get(key) ?? 0) + Number(row.net));
   }
@@ -1161,6 +1169,85 @@ export async function getAudience(teacherId: string): Promise<AudienceMember[]> 
   }));
 }
 
+// --- Custom quotes -----------------------------------------------------------
+
+function rowToQuote(row: Record<string, unknown>): Quote {
+  return {
+    id: row.id as string,
+    teacherId: row.teacher_id as string,
+    title: row.title as string,
+    description: (row.description as string) ?? "",
+    clientName: (row.client_name as string) ?? "",
+    clientEmail: (row.client_email as string) ?? "",
+    priceCents: row.price_cents as number,
+    status: (row.status as Quote["status"]) ?? "open",
+    platformFeeCents: (row.platform_fee_cents as number) ?? 0,
+    stripeFeeCents: (row.stripe_fee_cents as number) ?? 0,
+    stripeCheckoutSessionId: (row.stripe_checkout_session_id as string | null) ?? null,
+    expiresAt: row.expires_at ? toISO(row.expires_at) : null,
+    createdAt: toISO(row.created_at),
+    paidAt: row.paid_at ? toISO(row.paid_at) : null,
+  };
+}
+
+export async function createQuote(
+  teacherId: string,
+  data: Pick<Quote, "title" | "description" | "clientName" | "clientEmail" | "priceCents" | "platformFeeCents" | "expiresAt">,
+): Promise<Quote> {
+  const id = newId("qte");
+  const rows = await sql`
+    insert into quotes
+      (id, teacher_id, title, description, client_name, client_email, price_cents,
+       platform_fee_cents, expires_at)
+    values
+      (${id}, ${teacherId}, ${data.title}, ${data.description}, ${data.clientName},
+       ${data.clientEmail}, ${data.priceCents}, ${data.platformFeeCents}, ${data.expiresAt})
+    returning *
+  `;
+  return rowToQuote(rows[0]);
+}
+
+export async function getQuote(id: string): Promise<Quote | null> {
+  const rows = await sql`select * from quotes where id = ${id}`;
+  return rows[0] ? rowToQuote(rows[0]) : null;
+}
+
+export async function listQuotes(teacherId: string): Promise<Quote[]> {
+  const rows = await sql`
+    select * from quotes where teacher_id = ${teacherId} order by created_at desc
+  `;
+  return rows.map(rowToQuote);
+}
+
+export async function getQuoteByStripeSessionId(sid: string): Promise<Quote | null> {
+  const rows = await sql`select * from quotes where stripe_checkout_session_id = ${sid}`;
+  return rows[0] ? rowToQuote(rows[0]) : null;
+}
+
+export async function attachQuoteStripeSession(id: string, sid: string): Promise<void> {
+  await sql`update quotes set stripe_checkout_session_id = ${sid} where id = ${id}`;
+}
+
+export async function markQuotePaid(
+  id: string,
+  stripeFeeCents: number,
+): Promise<Quote | null> {
+  const rows = await sql`
+    update quotes set status = 'paid', stripe_fee_cents = ${stripeFeeCents}, paid_at = now()
+    where id = ${id} and status <> 'paid'
+    returning *
+  `;
+  return rows[0] ? rowToQuote(rows[0]) : null;
+}
+
+export async function backfillQuoteStripeFee(id: string, fee: number): Promise<void> {
+  await sql`update quotes set stripe_fee_cents = ${fee} where id = ${id} and stripe_fee_cents = 0`;
+}
+
+export async function voidQuote(teacherId: string, id: string): Promise<void> {
+  await sql`update quotes set status = 'void' where id = ${id} and teacher_id = ${teacherId} and status = 'open'`;
+}
+
 export async function getEarningsSummary(
   teacherId: string,
 ): Promise<EarningsSummary> {
@@ -1183,6 +1270,14 @@ export async function getEarningsSummary(
     from passes
     where teacher_id = ${teacherId} and payment_status = 'paid'
   `;
+  const [quoteRows] = await sql`
+    select
+      coalesce(sum(price_cents), 0) as total_price,
+      coalesce(sum(platform_fee_cents), 0) as total_platform_fee,
+      coalesce(sum(stripe_fee_cents), 0) as total_stripe_fee
+    from quotes
+    where teacher_id = ${teacherId} and status = 'paid'
+  `;
   const [payoutRows] = await sql`
     select coalesce(sum(amount_cents), 0) as total_payout
     from payouts
@@ -1190,11 +1285,11 @@ export async function getEarningsSummary(
   `;
 
   const totalPaidCents =
-    Number(bookingRows.total_price) + Number(passRows.total_price);
+    Number(bookingRows.total_price) + Number(passRows.total_price) + Number(quoteRows.total_price);
   const totalPlatformFeeCents =
-    Number(bookingRows.total_platform_fee) + Number(passRows.total_platform_fee);
+    Number(bookingRows.total_platform_fee) + Number(passRows.total_platform_fee) + Number(quoteRows.total_platform_fee);
   const totalStripeFeeCents =
-    Number(bookingRows.total_stripe_fee) + Number(passRows.total_stripe_fee);
+    Number(bookingRows.total_stripe_fee) + Number(passRows.total_stripe_fee) + Number(quoteRows.total_stripe_fee);
   const totalPayoutCents = Number(payoutRows.total_payout);
   const owedTotal = totalPaidCents - totalPlatformFeeCents - totalStripeFeeCents;
 

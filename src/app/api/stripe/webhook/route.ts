@@ -14,9 +14,12 @@ import {
   backfillPassStripeFee,
   deletePendingPass,
   getOffer,
+  getQuoteByStripeSessionId,
+  markQuotePaid,
+  backfillQuoteStripeFee,
 } from "@/lib/repo";
 import { syncSubscriptionToTeacher } from "@/lib/billing";
-import { sendBookingEmails, sendPassEmails } from "@/lib/email";
+import { sendBookingEmails, sendPassEmails, sendQuotePaidEmails } from "@/lib/email";
 
 // Stripe's source of truth for payment state. Confirms bookings (and sends
 // the confirmation emails) once Checkout actually succeeds, and frees the
@@ -46,6 +49,7 @@ export async function POST(req: NextRequest) {
     // each confirm helper no-ops if the session isn't theirs.
     await confirmBookingForSession(session.id);
     await confirmPassForSession(session.id);
+    await confirmQuoteForSession(session.id);
   }
 
   if (event.type === "checkout.session.expired") {
@@ -198,5 +202,33 @@ export async function confirmPassForSession(
     await sendPassEmails({ pass: justPaid, teacher, offer });
   } catch (err) {
     console.error("[pass] email send failed", err);
+  }
+}
+
+// Quote twin of the above — same idempotency contract.
+export async function confirmQuoteForSession(
+  stripeSessionId: string,
+): Promise<void> {
+  const existing = await getQuoteByStripeSessionId(stripeSessionId);
+  if (!existing) return;
+
+  if (existing.status === "paid") {
+    if (existing.stripeFeeCents === 0) {
+      const feeCents = await fetchStripeFeeCents(stripeSessionId);
+      if (feeCents > 0) await backfillQuoteStripeFee(existing.id, feeCents);
+    }
+    return;
+  }
+
+  const stripeFeeCents = await fetchStripeFeeCents(stripeSessionId);
+  const justPaid = await markQuotePaid(existing.id, stripeFeeCents);
+  if (!justPaid) return;
+
+  const teacher = await getTeacherById(justPaid.teacherId);
+  if (!teacher) return;
+  try {
+    await sendQuotePaidEmails({ quote: justPaid, teacher });
+  } catch (err) {
+    console.error("[quote] email send failed", err);
   }
 }

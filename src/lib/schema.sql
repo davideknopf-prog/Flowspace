@@ -224,3 +224,24 @@ alter table session_types add column if not exists confirmation_note text not nu
 alter table teachers add column if not exists confirmation_note text not null default '';
 alter table teachers add column if not exists followup_note text not null default '';
 alter table bookings add column if not exists followup_sent_at timestamptz;
+
+-- Custom quotes: a teacher builds a one-off priced offer (e.g. a private
+-- party) and sends the client a pay link. Paid quotes flow into earnings like
+-- a booking. status: 'open' -> 'paid' (or 'void').
+create table if not exists quotes (
+  id text primary key,
+  teacher_id text not null references teachers(id) on delete cascade,
+  title text not null,
+  description text not null default '',
+  client_name text not null default '',
+  client_email text not null default '',
+  price_cents integer not null,
+  status text not null default 'open',
+  platform_fee_cents integer not null default 0,
+  stripe_fee_cents integer not null default 0,
+  stripe_checkout_session_id text unique,
+  expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  paid_at timestamptz
+);
+create index if not exists quotes_teacher_id_idx on quotes(teacher_id);

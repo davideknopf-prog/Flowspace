@@ -5,6 +5,7 @@ import type {
   Pass,
   Offer,
   PayoutRequest,
+  Quote,
 } from "./types";
 import { payoutMethodLabel } from "./types";
 import { formatSlot, formatPrice, formatDuration, formatMoney } from "./format";
@@ -544,4 +545,100 @@ export async function sendFollowupEmail({
     text,
     replyTo: teacher.contactEmail || teacher.email,
   });
+}
+
+
+// --- Custom quotes -----------------------------------------------------------
+
+// Sent to the client when a teacher issues a quote with a client email — a
+// clean, payable summary.
+export async function sendQuoteCreatedEmail({
+  quote,
+  teacher,
+  payUrl,
+}: {
+  quote: Quote;
+  teacher: Teacher;
+  payUrl: string;
+}): Promise<void> {
+  const first = teacher.name.split(" ")[0];
+  const price = formatPrice(quote.priceCents);
+  const text = [
+    `${teacher.name} sent you a quote via Kuleo.`,
+    ``,
+    `${quote.title} — ${price}`,
+    quote.description ? `` : ``,
+    quote.description ? quote.description : ``,
+    ``,
+    `Pay securely here: ${payUrl}`,
+    ``,
+    `— ${first}`,
+  ].filter((l, i, a) => l !== `` || a[i - 1] !== ``).join("\n");
+
+  const html = wrapHtml(`
+    <h1 style="font-size:18px">${esc(teacher.name)} sent you a quote</h1>
+    <div style="margin:14px 0;padding:14px;border:1px solid #ece7e0;border-radius:12px">
+      <p style="font-size:16px;font-weight:600;margin:0">${esc(quote.title)}</p>
+      ${quote.description ? `<p style="font-size:14px;color:#7c736a;margin:6px 0 0;white-space:pre-line">${esc(quote.description)}</p>` : ""}
+      <p style="font-size:22px;font-weight:700;color:#47645a;margin:10px 0 0">${price}</p>
+    </div>
+    <p style="margin:18px 0"><a href="${esc(payUrl)}" style="display:inline-block;background:#5b7c6f;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:8px;font-size:15px">Pay ${price} securely →</a></p>
+    <p style="font-size:13px;color:#7c736a">Paid securely via Stripe. — ${esc(first)}</p>`);
+
+  await send({
+    to: quote.clientEmail,
+    subject: `${teacher.name} sent you a quote: ${quote.title}`,
+    html,
+    text,
+    replyTo: teacher.contactEmail || teacher.email,
+  });
+}
+
+// On payment: receipt to the client + heads-up to the teacher.
+export async function sendQuotePaidEmails({
+  quote,
+  teacher,
+}: {
+  quote: Quote;
+  teacher: Teacher;
+}): Promise<void> {
+  const price = formatPrice(quote.priceCents);
+  const clientHtml = wrapHtml(`
+    <h1 style="font-size:18px">Payment received ✓</h1>
+    <p style="font-size:14px">Thanks! Your payment to ${esc(teacher.name)} is confirmed.</p>
+    <table style="font-size:14px;line-height:1.9;border-collapse:collapse;margin-top:8px">
+      <tr><td style="color:#7c736a;padding-right:16px">For</td><td>${esc(quote.title)}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Paid</td><td>${price}</td></tr>
+    </table>
+    <p style="font-size:13px;color:#7c736a;margin-top:12px">This email is your receipt. ${esc(teacher.name.split(" ")[0])} will be in touch.</p>`);
+  const clientText = `Payment received. ${quote.title} — ${price} paid to ${teacher.name}. This is your receipt.`;
+
+  const teacherHtml = wrapHtml(`
+    <h1 style="font-size:18px">💰 Quote paid</h1>
+    <p style="font-size:14px">${esc(quote.clientName || quote.clientEmail || "A client")} just paid your quote.</p>
+    <table style="font-size:14px;line-height:1.9;border-collapse:collapse;margin-top:8px">
+      <tr><td style="color:#7c736a;padding-right:16px">Quote</td><td>${esc(quote.title)}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">Amount</td><td>${price}</td></tr>
+    </table>
+    <p style="font-size:13px;color:#7c736a;margin-top:12px">It's in your Kuleo balance, ready to cash out.</p>`);
+  const teacherText = `Quote paid: ${quote.title} — ${price}. It's in your Kuleo balance.`;
+
+  const jobs = [];
+  if (quote.clientEmail) {
+    jobs.push(send({
+      to: quote.clientEmail,
+      subject: `Receipt: ${quote.title} — ${price}`,
+      html: clientHtml,
+      text: clientText,
+      replyTo: teacher.contactEmail || teacher.email,
+    }));
+  }
+  jobs.push(send({
+    to: teacher.email,
+    subject: `Quote paid: ${quote.title} (${price})`,
+    html: teacherHtml,
+    text: teacherText,
+  }));
+  const results = await Promise.allSettled(jobs);
+  results.forEach((r) => { if (r.status === "rejected") console.error("[quote] email failed", r.reason); });
 }

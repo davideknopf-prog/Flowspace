@@ -22,9 +22,13 @@ import {
   createClassEvent,
   deleteClassEvent,
   getSessionType,
+  createQuote,
+  voidQuote,
+  computePlatformFeeCents,
   markPayoutRequestPaid,
 } from "@/lib/repo";
-import { sendCashOutPaidEmail } from "@/lib/email";
+import { sendCashOutPaidEmail, sendQuoteCreatedEmail } from "@/lib/email";
+import { headers } from "next/headers";
 import { slugify } from "@/lib/db";
 import { SESSION_TEMPLATES, OFFER_TEMPLATES } from "@/lib/sku-templates";
 import type { ClassEvent } from "@/lib/types";
@@ -417,4 +421,57 @@ export async function markPayoutRequestPaidAction(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/earnings");
   redirect("/dashboard");
+}
+
+
+// --- Custom quotes -----------------------------------------------------------
+
+export async function createQuoteAction(formData: FormData) {
+  const teacher = await requireTeacher();
+  const title = String(formData.get("title") ?? "").trim().slice(0, 140);
+  const dollars = Math.max(0, Number(formData.get("price") ?? 0) || 0);
+  const priceCents = Math.round(dollars * 100);
+  if (!title || priceCents < 100) {
+    redirect("/dashboard/quotes?error=Add+a+title+and+a+price+of+at+least+%241");
+  }
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim().toLowerCase().slice(0, 200);
+  const validDaysRaw = Number(formData.get("validDays") ?? 0) || 0;
+  const expiresAt =
+    validDaysRaw > 0
+      ? new Date(Date.now() + validDaysRaw * 86400_000).toISOString()
+      : null;
+
+  const quote = await createQuote(teacher.id, {
+    title,
+    description: String(formData.get("description") ?? "").trim().slice(0, 2000),
+    clientName: String(formData.get("clientName") ?? "").trim().slice(0, 140),
+    clientEmail,
+    priceCents,
+    platformFeeCents: computePlatformFeeCents(priceCents),
+    expiresAt,
+  });
+
+  // Email the client the pay link if they gave one.
+  if (clientEmail.includes("@")) {
+    const h = await headers();
+    const host = h.get("host") ?? "localhost:3000";
+    const proto = host.startsWith("localhost") ? "http" : "https";
+    const payUrl = `${proto}://${host}/q/${quote.id}`;
+    try {
+      await sendQuoteCreatedEmail({ quote, teacher, payUrl });
+    } catch (err) {
+      console.error("[quote] created email failed", err);
+    }
+  }
+
+  revalidatePath("/dashboard/quotes");
+  redirect(`/dashboard/quotes?created=${quote.id}`);
+}
+
+export async function voidQuoteAction(formData: FormData) {
+  const teacher = await requireTeacher();
+  const id = String(formData.get("id") ?? "");
+  if (id) await voidQuote(teacher.id, id);
+  revalidatePath("/dashboard/quotes");
+  redirect("/dashboard/quotes");
 }

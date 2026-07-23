@@ -187,6 +187,25 @@ export function passIsRedeemable(pass: Pass, now: Date): boolean {
   return true;
 }
 
+// A custom quote a teacher issues to a client (private party, workshop, ...)
+// outside the public class schedule. Paid quotes flow into earnings.
+export interface Quote {
+  id: string;
+  teacherId: string;
+  title: string;
+  description: string;
+  clientName: string;
+  clientEmail: string;
+  priceCents: number;
+  status: "open" | "paid" | "void";
+  platformFeeCents: number;
+  stripeFeeCents: number;
+  stripeCheckoutSessionId: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  paidAt: string | null;
+}
+
 // A manual record that the founder paid a teacher out (bank transfer, Venmo,
 // etc). No automated payout rail yet — see scripts/payout.mjs.
 export interface Payout {

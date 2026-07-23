@@ -11,6 +11,7 @@ const ITEMS = [
   { href: "/dashboard/audience", label: "Audience" },
   { href: "/dashboard/reviews", label: "Reviews" },
   { href: "/dashboard/earnings", label: "Earnings" },
+  { href: "/dashboard/quotes", label: "Quotes" },
   { href: "/dashboard/billing", label: "Billing" },
 ];
 
