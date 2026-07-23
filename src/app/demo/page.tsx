@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     "Take a look inside a real Kuleo teacher's dashboard: earnings, upcoming classes, bookings, and audience. This is what running your yoga studio on Kuleo looks like.",
 };
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 // Pick the most demo-worthy teacher: prefer Maya, else the richest by
 // audience then bookings. Keeps the showcase compelling as data changes.

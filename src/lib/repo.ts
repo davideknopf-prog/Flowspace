@@ -1052,13 +1052,18 @@ export async function getWeeklyNetEarnings(
     where teacher_id = ${teacherId} and payment_status = 'paid'
     group by 1
   `;
-  const quoteRows = await sql`
-    select date_trunc('week', coalesce(paid_at, created_at)) as week,
-           coalesce(sum(price_cents - platform_fee_cents - stripe_fee_cents), 0) as net
-    from quotes
-    where teacher_id = ${teacherId} and status = 'paid'
-    group by 1
-  `;
+  let quoteRows: Record<string, unknown>[] = [];
+  try {
+    quoteRows = await sql`
+      select date_trunc('week', coalesce(paid_at, created_at)) as week,
+             coalesce(sum(price_cents - platform_fee_cents - stripe_fee_cents), 0) as net
+      from quotes
+      where teacher_id = ${teacherId} and status = 'paid'
+      group by 1
+    `;
+  } catch (err) {
+    if (!(err instanceof Error && /quotes.*does not exist/i.test(err.message))) throw err;
+  }
 
   const byWeek = new Map<string, number>();
   for (const row of [...bookingRows, ...passRows, ...quoteRows]) {
@@ -1270,14 +1275,26 @@ export async function getEarningsSummary(
     from passes
     where teacher_id = ${teacherId} and payment_status = 'paid'
   `;
-  const [quoteRows] = await sql`
-    select
-      coalesce(sum(price_cents), 0) as total_price,
-      coalesce(sum(platform_fee_cents), 0) as total_platform_fee,
-      coalesce(sum(stripe_fee_cents), 0) as total_stripe_fee
-    from quotes
-    where teacher_id = ${teacherId} and status = 'paid'
-  `;
+  // Deploy-order guard: this code may reach production before the quotes
+  // migration runs. Treat a missing table as "no paid quotes yet" instead of
+  // throwing (which would break every page that reads earnings, incl. the
+  // statically-prerendered /demo — and thus the whole build).
+  let quoteRows: { total_price: number; total_platform_fee: number; total_stripe_fee: number } = {
+    total_price: 0, total_platform_fee: 0, total_stripe_fee: 0,
+  };
+  try {
+    const [row] = await sql`
+      select
+        coalesce(sum(price_cents), 0) as total_price,
+        coalesce(sum(platform_fee_cents), 0) as total_platform_fee,
+        coalesce(sum(stripe_fee_cents), 0) as total_stripe_fee
+      from quotes
+      where teacher_id = ${teacherId} and status = 'paid'
+    `;
+    quoteRows = row as typeof quoteRows;
+  } catch (err) {
+    if (!(err instanceof Error && /quotes.*does not exist/i.test(err.message))) throw err;
+  }
   const [payoutRows] = await sql`
     select coalesce(sum(amount_cents), 0) as total_payout
     from payouts
