@@ -31,12 +31,15 @@ export default async function SchedulePage({
   if (!teacher) redirect("/login");
   const { error, saved } = await searchParams;
 
-  const [sessionTypes, availability, offers, events] = await Promise.all([
+  const [allSessionTypes, availability, offers, events] = await Promise.all([
     listSessionTypes(teacher.id),
     listAvailability(teacher.id),
     listOffers(teacher.id),
     listClassEvents(teacher.id),
   ]);
+  // Hide soft-deleted (inactive) classes — "Remove" deactivates a class that
+  // has booking history, and it should disappear from management too.
+  const sessionTypes = allSessionTypes.filter((s) => s.active);
   const eventsBySession = new Map<string, typeof events>();
   for (const ev of events) {
     const list = eventsBySession.get(ev.sessionTypeId) ?? [];

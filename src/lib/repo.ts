@@ -381,7 +381,20 @@ export async function deleteSessionType(
   teacherId: string,
   id: string,
 ): Promise<void> {
-  await sql`delete from session_types where id = ${id} and teacher_id = ${teacherId}`;
+  // A class with booking history can't be hard-deleted — bookings reference it
+  // (and blowing away that row would corrupt earnings). Soft-delete instead:
+  // deactivate it and remove its scheduled times so it vanishes from the
+  // public page, the schedule, and the dashboard, while history stays intact.
+  // Never-booked classes are removed outright (class_events cascade).
+  const booked = await sql`
+    select 1 from bookings where session_type_id = ${id} limit 1
+  `;
+  if (booked.length > 0) {
+    await sql`delete from class_events where session_type_id = ${id} and teacher_id = ${teacherId}`;
+    await sql`update session_types set active = false where id = ${id} and teacher_id = ${teacherId}`;
+  } else {
+    await sql`delete from session_types where id = ${id} and teacher_id = ${teacherId}`;
+  }
 }
 
 export async function getSessionType(id: string): Promise<SessionType | null> {
