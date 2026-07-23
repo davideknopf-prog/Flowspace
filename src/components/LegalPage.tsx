@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteHeader } from "./SiteHeader";
 
 // Shared shell for legal documents: consistent header, readable measure,
 // muted prose styling.
@@ -13,21 +14,7 @@ export function LegalPage({
 }) {
   return (
     <main className="min-h-screen">
-      <header className="border-b border-border bg-surface/80 backdrop-blur sticky top-0 z-10">
-        <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-semibold text-lg text-brand-dark [font-family:var(--font-display)]"
-          >
-            <span className="text-xl">🧘</span> Kuleo
-          </Link>
-          <nav className="flex items-center gap-3 text-sm">
-            <Link href="/terms" className="btn-ghost text-sm">Terms</Link>
-            <Link href="/privacy" className="btn-ghost text-sm">Privacy</Link>
-            <Link href="/waiver" className="btn-ghost text-sm">Waiver</Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
       <article className="mx-auto max-w-2xl px-4 py-12">
         <h1 className="text-3xl font-semibold mb-1">{title}</h1>
         <p className="text-sm text-muted mb-8">Last updated: {updated}</p>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteHeader } from "@/components/SiteHeader";
 import type { Metadata } from "next";
 import { LegalFooter } from "@/components/LegalFooter";
 
@@ -16,24 +17,7 @@ export const metadata: Metadata = {
 export default function GuidePage() {
   return (
     <main className="min-h-screen">
-      <header className="border-b border-border bg-surface/80 backdrop-blur sticky top-0 z-10">
-        <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-semibold text-lg text-brand-dark [font-family:var(--font-display)]"
-          >
-            <span className="text-xl">🧘</span> Kuleo
-          </Link>
-          <nav className="flex items-center gap-3">
-            <Link href="/#pricing" className="btn-ghost text-sm hidden sm:inline-flex">
-              Pricing
-            </Link>
-            <Link href="/signup" className="btn-primary text-sm">
-              Start your studio
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <article className="mx-auto max-w-2xl px-4 py-12">
         <span className="pill-accent mb-4">Free guide for yoga teachers</span>

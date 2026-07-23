@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteHeader } from "@/components/SiteHeader";
 import type { Metadata } from "next";
 import {
   listAllTeachers,
@@ -42,24 +43,7 @@ export default async function TeachersDirectory() {
 
   return (
     <main className="min-h-screen">
-      <header className="border-b border-border bg-surface/80 backdrop-blur sticky top-0 z-10">
-        <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-semibold text-lg text-brand-dark [font-family:var(--font-display)]">
-            <span className="text-xl">🧘</span> Kuleo
-          </Link>
-          <nav className="flex items-center gap-3">
-            <Link href="/students" className="btn-ghost text-sm hidden sm:inline-flex">
-              New students
-            </Link>
-            <Link href="/schedule" className="btn-ghost text-sm">
-              Today&apos;s classes
-            </Link>
-            <Link href="/signup" className="btn-primary text-sm">
-              Teach on Kuleo
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <div className="mx-auto max-w-5xl px-4 py-12">
         <div className="mb-8">

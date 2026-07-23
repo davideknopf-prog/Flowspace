@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteHeader } from "@/components/SiteHeader";
 import { getCurrentTeacher } from "@/lib/session";
 import { getPlans, type Plan } from "@/lib/billing";
 import { getStudioSchedule, type StudioEntry } from "@/lib/studio";
@@ -41,41 +42,7 @@ export default async function Home() {
   return (
     <main className="min-h-screen">
       {/* Nav */}
-      <header className="border-b border-border bg-surface/80 backdrop-blur sticky top-0 z-10">
-        <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
-          <span className="flex items-center gap-2 font-semibold text-lg text-brand-dark [font-family:var(--font-display)]">
-            <span className="text-xl">🧘</span> Kuleo
-          </span>
-          <nav className="flex items-center gap-3">
-            <Link href="/students" className="btn-ghost text-sm hidden md:inline-flex">
-              New students
-            </Link>
-            <Link href="/teachers" className="btn-ghost text-sm hidden sm:inline-flex">
-              Our teachers
-            </Link>
-            <Link href="/schedule" className="btn-ghost text-sm hidden sm:inline-flex">
-              Today&apos;s classes
-            </Link>
-            <Link href="/#pricing" className="btn-ghost text-sm hidden sm:inline-flex">
-              Pricing
-            </Link>
-            {teacher ? (
-              <Link href="/dashboard" className="btn-primary text-sm">
-                Go to dashboard
-              </Link>
-            ) : (
-              <>
-                <Link href="/login" className="btn-ghost text-sm">
-                  Log in
-                </Link>
-                <Link href="/signup" className="btn-primary text-sm">
-                  Get started
-                </Link>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* Hero */}
       <section className="hero-glow border-b border-border/60">
