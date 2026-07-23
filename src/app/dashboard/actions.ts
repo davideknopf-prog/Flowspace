@@ -13,6 +13,8 @@ import {
   getTeacherBySlug,
   getTeacherById,
   createSessionType,
+  updateSessionType,
+  updateClassEvent,
   deleteSessionType,
   setAvailability,
   createOffer,
@@ -25,6 +27,7 @@ import {
 import { sendCashOutPaidEmail } from "@/lib/email";
 import { slugify } from "@/lib/db";
 import { SESSION_TEMPLATES, OFFER_TEMPLATES } from "@/lib/sku-templates";
+import type { ClassEvent } from "@/lib/types";
 
 async function requireTeacher() {
   const teacher = await getCurrentTeacher();
@@ -75,29 +78,23 @@ export async function saveProfileAction(formData: FormData) {
   redirect("/dashboard/profile?saved=1");
 }
 
-export async function addSessionTypeAction(formData: FormData) {
-  const teacher = await requireTeacher();
-
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) redirect("/dashboard/schedule?error=Name+is+required");
-
+// Shared field parsing for add + edit, so both forms stay identical.
+function parseClassFields(formData: FormData) {
   const durationMinutes = Math.max(
     5,
     Math.min(480, Number(formData.get("durationMinutes") ?? 60) || 60),
   );
   const dollars = Math.max(0, Number(formData.get("price") ?? 0) || 0);
   const priceCents = Math.round(dollars * 100);
-
   const locationType =
     String(formData.get("locationType") ?? "online") === "in_person"
-      ? "in_person"
-      : "online";
+      ? ("in_person" as const)
+      : ("online" as const);
   const meetingUrl =
     locationType === "online"
       ? String(formData.get("meetingUrl") ?? "").trim()
       : "";
   const locationNote = String(formData.get("locationNote") ?? "").trim();
-
   const scheduling =
     String(formData.get("scheduling") ?? "events") === "flexible"
       ? ("flexible" as const)
@@ -107,9 +104,7 @@ export async function addSessionTypeAction(formData: FormData) {
     Number.isFinite(capacityRaw) && capacityRaw >= 1
       ? Math.min(500, Math.round(capacityRaw))
       : null;
-
-  await createSessionType(teacher.id, {
-    name,
+  return {
     description: String(formData.get("description") ?? "").trim(),
     durationMinutes,
     priceCents,
@@ -119,10 +114,34 @@ export async function addSessionTypeAction(formData: FormData) {
     locationType,
     meetingUrl,
     locationNote,
-  });
+  };
+}
+
+export async function addSessionTypeAction(formData: FormData) {
+  const teacher = await requireTeacher();
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) redirect("/dashboard/schedule?error=Name+is+required");
+
+  await createSessionType(teacher.id, { name, ...parseClassFields(formData) });
 
   revalidatePath("/dashboard/schedule");
   redirect("/dashboard/schedule");
+}
+
+// Edit an existing class in place.
+export async function editSessionTypeAction(formData: FormData) {
+  const teacher = await requireTeacher();
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!id) redirect("/dashboard/schedule");
+  if (!name) redirect(`/dashboard/schedule/${id}/edit?error=Name+is+required`);
+
+  await updateSessionType(teacher.id, id, { name, ...parseClassFields(formData) });
+
+  revalidatePath("/dashboard/schedule");
+  revalidatePath(`/dashboard/schedule/${id}/edit`);
+  redirect("/dashboard/schedule?saved=1");
 }
 
 export async function deleteSessionTypeAction(formData: FormData) {
@@ -170,58 +189,85 @@ function parseHHMM(v: string): number | null {
 // A class IS an event. Teachers schedule weekly recurring times ("every
 // Tuesday, 6:00 PM") or one-off dates per class.
 
+// Class-event actions can return either to the schedule overview or to a
+// specific class's edit page. Only same-area paths are honored (no open
+// redirect).
+function eventReturnTo(formData: FormData): string {
+  const raw = String(formData.get("returnTo") ?? "");
+  return raw.startsWith("/dashboard/schedule") ? raw : "/dashboard/schedule";
+}
+
+// Parse a weekly (weekday+time) or one-off (datetime-local) event from a form.
+// Returns null with a reason on invalid input.
+function parseEventFields(
+  formData: FormData,
+  timezone: string,
+): { data: Pick<ClassEvent, "kind" | "weekday" | "startMinutes" | "startAt">; error?: string } {
+  const kind = String(formData.get("kind") ?? "weekly");
+  if (kind === "once") {
+    const raw = String(formData.get("startAtLocal") ?? "");
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(raw);
+    if (!m) return { data: emptyEvent(), error: "Pick+a+date+and+time" };
+    const startAt = wallToUtcISO(
+      Number(m[1]), Number(m[2]), Number(m[3]),
+      Number(m[4]) * 60 + Number(m[5]),
+      timezone,
+    );
+    if (new Date(startAt).getTime() < Date.now()) {
+      return { data: emptyEvent(), error: "That+date+is+in+the+past" };
+    }
+    return { data: { kind: "once", weekday: null, startMinutes: null, startAt } };
+  }
+  const weekday = Math.max(0, Math.min(6, Number(formData.get("weekday") ?? 0)));
+  const start = parseHHMM(String(formData.get("time") ?? ""));
+  if (start === null) return { data: emptyEvent(), error: "Pick+a+time" };
+  return { data: { kind: "weekly", weekday, startMinutes: start, startAt: null } };
+}
+function emptyEvent(): Pick<ClassEvent, "kind" | "weekday" | "startMinutes" | "startAt"> {
+  return { kind: "weekly", weekday: null, startMinutes: null, startAt: null };
+}
+
 export async function addClassEventAction(formData: FormData) {
   const teacher = await requireTeacher();
+  const back = eventReturnTo(formData);
   const sessionTypeId = String(formData.get("sessionTypeId") ?? "");
   const sessionType = await getSessionType(sessionTypeId);
   if (!sessionType || sessionType.teacherId !== teacher.id) {
-    redirect("/dashboard/schedule?error=Class+not+found");
+    redirect(`${back}?error=Class+not+found`);
   }
 
-  const kind = String(formData.get("kind") ?? "weekly");
-  if (kind === "once") {
-    // datetime-local arrives as wall-clock in the teacher's tz; convert.
-    const raw = String(formData.get("startAtLocal") ?? "");
-    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(raw);
-    if (!m) redirect("/dashboard/schedule?error=Pick+a+date+and+time");
-    const startAt = wallToUtcISO(
-      Number(m![1]), Number(m![2]), Number(m![3]),
-      Number(m![4]) * 60 + Number(m![5]),
-      teacher.timezone,
-    );
-    if (new Date(startAt).getTime() < Date.now()) {
-      redirect("/dashboard/schedule?error=That+date+is+in+the+past");
-    }
-    await createClassEvent(teacher.id, {
-      sessionTypeId,
-      kind: "once",
-      weekday: null,
-      startMinutes: null,
-      startAt,
-    });
-  } else {
-    const weekday = Math.max(0, Math.min(6, Number(formData.get("weekday") ?? 0)));
-    const start = parseHHMM(String(formData.get("time") ?? ""));
-    if (start === null) redirect("/dashboard/schedule?error=Pick+a+time");
-    await createClassEvent(teacher.id, {
-      sessionTypeId,
-      kind: "weekly",
-      weekday,
-      startMinutes: start,
-      startAt: null,
-    });
-  }
+  const { data, error } = parseEventFields(formData, teacher.timezone);
+  if (error) redirect(`${back}?error=${error}`);
+  await createClassEvent(teacher.id, { sessionTypeId, ...data });
 
   revalidatePath("/dashboard/schedule");
-  redirect("/dashboard/schedule");
+  revalidatePath(back);
+  redirect(back);
+}
+
+export async function editClassEventAction(formData: FormData) {
+  const teacher = await requireTeacher();
+  const back = eventReturnTo(formData);
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect(back);
+
+  const { data, error } = parseEventFields(formData, teacher.timezone);
+  if (error) redirect(`${back}?error=${error}`);
+  await updateClassEvent(teacher.id, id, data);
+
+  revalidatePath("/dashboard/schedule");
+  revalidatePath(back);
+  redirect(back);
 }
 
 export async function deleteClassEventAction(formData: FormData) {
   const teacher = await requireTeacher();
+  const back = eventReturnTo(formData);
   const id = String(formData.get("id") ?? "");
   if (id) await deleteClassEvent(teacher.id, id);
   revalidatePath("/dashboard/schedule");
-  redirect("/dashboard/schedule");
+  revalidatePath(back);
+  redirect(back);
 }
 
 // Wall-clock (Y/M/D + minutes) in an IANA timezone -> UTC ISO string.

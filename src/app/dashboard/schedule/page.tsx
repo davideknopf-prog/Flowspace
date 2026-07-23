@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getCurrentTeacher } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { listSessionTypes, listAvailability, listOffers, listClassEvents } from "@/lib/repo";
@@ -24,11 +25,11 @@ function toHHMM(minutes: number): string {
 export default async function SchedulePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
   const teacher = await getCurrentTeacher();
   if (!teacher) redirect("/login");
-  const { error } = await searchParams;
+  const { error, saved } = await searchParams;
 
   const [sessionTypes, availability, offers, events] = await Promise.all([
     listSessionTypes(teacher.id),
@@ -48,6 +49,11 @@ export default async function SchedulePage({
 
   return (
     <div className="max-w-2xl space-y-8">
+      {saved && (
+        <p className="rounded-lg bg-brand-tint px-3 py-2 text-sm text-brand-dark">
+          Class saved.
+        </p>
+      )}
       <div>
         <h1 className="text-2xl font-semibold mb-1">Schedule &amp; pricing</h1>
         <p className="text-muted text-sm">
@@ -101,12 +107,20 @@ export default async function SchedulePage({
                       </p>
                     ))}
                 </div>
-                <form action={deleteSessionTypeAction}>
-                  <input type="hidden" name="id" value={s.id} />
-                  <button className="btn-danger text-xs" type="submit">
-                    Remove
-                  </button>
-                </form>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    href={`/dashboard/schedule/${s.id}/edit`}
+                    className="btn-secondary text-xs"
+                  >
+                    Edit
+                  </Link>
+                  <form action={deleteSessionTypeAction}>
+                    <input type="hidden" name="id" value={s.id} />
+                    <button className="btn-danger text-xs" type="submit">
+                      Remove
+                    </button>
+                  </form>
+                </div>
                 </div>
 
                 {/* Class times — the heart of the events model. */}

@@ -1,17 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { addSessionTypeAction } from "@/app/dashboard/actions";
+import {
+  addSessionTypeAction,
+  editSessionTypeAction,
+} from "@/app/dashboard/actions";
+import type { SessionType } from "@/lib/types";
 
-export function SessionTypeForm() {
+export function SessionTypeForm({ initial }: { initial?: SessionType }) {
+  const editing = Boolean(initial);
   const [locationType, setLocationType] = useState<"online" | "in_person">(
-    "online",
+    initial?.locationType ?? "online",
   );
-  const [scheduling, setScheduling] = useState<"events" | "flexible">("events");
+  const [scheduling, setScheduling] = useState<"events" | "flexible">(
+    initial?.scheduling ?? "events",
+  );
 
   return (
-    <form action={addSessionTypeAction} className="card space-y-4">
-      <p className="font-medium text-sm">Add a class</p>
+    <form
+      action={editing ? editSessionTypeAction : addSessionTypeAction}
+      className="card space-y-4"
+    >
+      {editing && <input type="hidden" name="id" value={initial!.id} />}
+      <p className="font-medium text-sm">
+        {editing ? "Class details" : "Add a class"}
+      </p>
 
       <div>
         <label className="label">How is it scheduled?</label>
@@ -62,6 +75,7 @@ export function SessionTypeForm() {
             min={1}
             max={500}
             placeholder="Unlimited"
+            defaultValue={initial?.capacity ?? undefined}
             className="input"
           />
         </div>
@@ -75,6 +89,7 @@ export function SessionTypeForm() {
           id="name"
           name="name"
           placeholder="Private Vinyasa (1:1)"
+          defaultValue={initial?.name ?? ""}
           className="input"
           required
         />
@@ -92,7 +107,7 @@ export function SessionTypeForm() {
             min={5}
             max={480}
             step={5}
-            defaultValue={60}
+            defaultValue={initial?.durationMinutes ?? 60}
             className="input"
           />
         </div>
@@ -106,7 +121,7 @@ export function SessionTypeForm() {
             type="number"
             min={0}
             step="0.01"
-            defaultValue={0}
+            defaultValue={initial ? (initial.priceCents / 100).toString() : 0}
             className="input"
           />
           <p className="hint">0 = free / donation-based.</p>
@@ -149,6 +164,7 @@ export function SessionTypeForm() {
               name="meetingUrl"
               type="url"
               placeholder="https://us02web.zoom.us/j/1234567890"
+              defaultValue={initial?.meetingUrl ?? ""}
               className="input"
             />
             <p className="hint">
@@ -165,6 +181,7 @@ export function SessionTypeForm() {
               id="locationNote"
               name="locationNote"
               placeholder="I'll admit you from the waiting room a few minutes early."
+              defaultValue={locationType === "online" ? (initial?.locationNote ?? "") : ""}
               className="input"
             />
           </div>
@@ -178,6 +195,7 @@ export function SessionTypeForm() {
             id="locationNote"
             name="locationNote"
             placeholder="123 Lotus St, Studio B, Austin TX"
+            defaultValue={locationType === "in_person" ? (initial?.locationNote ?? "") : ""}
             className="input"
           />
           <p className="hint">Shown to students after they book.</p>
@@ -192,6 +210,7 @@ export function SessionTypeForm() {
           id="description"
           name="description"
           placeholder="60 min tailored to your goals"
+          defaultValue={initial?.description ?? ""}
           className="input"
         />
       </div>
@@ -206,6 +225,7 @@ export function SessionTypeForm() {
           id="confirmationNote"
           name="confirmationNote"
           placeholder="Bring a block and a strap — we'll move slow and deep."
+          defaultValue={initial?.confirmationNote ?? ""}
           className="textarea !min-h-16"
         />
         <p className="hint">
@@ -215,7 +235,7 @@ export function SessionTypeForm() {
       </div>
 
       <button type="submit" className="btn-primary">
-          Add session type
+          {editing ? "Save changes" : "Add class"}
         </button>
       </div>
     </form>

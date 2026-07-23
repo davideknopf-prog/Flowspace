@@ -389,6 +389,43 @@ export async function getSessionType(id: string): Promise<SessionType | null> {
   return rows[0] ? rowToSessionType(rows[0]) : null;
 }
 
+// Edit an existing class in place (all fields except active/teacher). Scoped
+// to teacher_id so a teacher can only ever edit their own.
+export async function updateSessionType(
+  teacherId: string,
+  id: string,
+  data: Pick<
+    SessionType,
+    | "name"
+    | "description"
+    | "durationMinutes"
+    | "priceCents"
+    | "locationType"
+    | "meetingUrl"
+    | "locationNote"
+    | "scheduling"
+    | "capacity"
+    | "confirmationNote"
+  >,
+): Promise<SessionType | null> {
+  const rows = await sql`
+    update session_types set
+      name = ${data.name},
+      description = ${data.description},
+      duration_minutes = ${data.durationMinutes},
+      price_cents = ${data.priceCents},
+      location_type = ${data.locationType},
+      meeting_url = ${data.meetingUrl},
+      location_note = ${data.locationNote},
+      scheduling = ${data.scheduling},
+      capacity = ${data.capacity},
+      confirmation_note = ${data.confirmationNote}
+    where id = ${id} and teacher_id = ${teacherId}
+    returning *
+  `;
+  return rows[0] ? rowToSessionType(rows[0]) : null;
+}
+
 // --- Class events ------------------------------------------------------------
 // A class IS an event: weekly recurring (weekday + start_minutes in the
 // teacher's timezone) or a one-off (absolute start_at).
@@ -443,6 +480,25 @@ export async function deleteClassEvent(
   id: string,
 ): Promise<void> {
   await sql`delete from class_events where id = ${id} and teacher_id = ${teacherId}`;
+}
+
+// Move an existing class time — change the weekday/time (weekly) or the
+// date/time (one-off) without deleting and recreating. Scoped to teacher_id.
+export async function updateClassEvent(
+  teacherId: string,
+  id: string,
+  data: Pick<ClassEvent, "kind" | "weekday" | "startMinutes" | "startAt">,
+): Promise<ClassEvent | null> {
+  const rows = await sql`
+    update class_events set
+      kind = ${data.kind},
+      weekday = ${data.weekday},
+      start_minutes = ${data.startMinutes},
+      start_at = ${data.startAt}
+    where id = ${id} and teacher_id = ${teacherId}
+    returning *
+  `;
+  return rows[0] ? rowToClassEvent(rows[0]) : null;
 }
 
 // --- Availability ------------------------------------------------------------
