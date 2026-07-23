@@ -182,6 +182,7 @@ export async function bookAction(formData: FormData) {
         },
       ],
       customer_email: clientEmail,
+      payment_intent_data: { receipt_email: clientEmail },
       success_url: `${origin}/t/${slug}/booked/${booking.id}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/api/stripe/cancel?bookingId=${booking.id}&slug=${slug}&sessionTypeId=${sessionTypeId}`,
       expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30 min, Stripe's minimum
@@ -241,6 +242,7 @@ export async function buyPassAction(formData: FormData) {
         },
       ],
       customer_email: clientEmail,
+      payment_intent_data: { receipt_email: clientEmail },
       success_url: `${origin}/t/${slug}/pass-success/${pass.id}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/api/stripe/cancel?passId=${pass.id}&slug=${slug}`,
       expires_at: Math.floor(Date.now() / 1000) + 30 * 60,

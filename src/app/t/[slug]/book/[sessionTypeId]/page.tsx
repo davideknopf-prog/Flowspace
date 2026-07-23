@@ -6,6 +6,7 @@ import {
   listAvailability,
   listBookings,
   listClassEvents,
+  listOffers,
 } from "@/lib/repo";
 import { computeSlots } from "@/lib/slots";
 import { computeOccurrences } from "@/lib/events";
@@ -34,6 +35,37 @@ export default async function BookPage({
   if (!sessionType || sessionType.teacherId !== teacher.id) notFound();
 
   const flexible = sessionType.scheduling === "flexible";
+
+  // Pass upsell: if the teacher sells a pass whose per-class price beats this
+  // class, nudge the student toward it (recurring revenue for the teacher,
+  // savings for the student). Also surface an unlimited pass as a nudge.
+  const offers = (await listOffers(teacher.id)).filter((o) => o.active);
+  const passNudge = (() => {
+    if (sessionType.priceCents <= 0) return null;
+    let best: { label: string; sub: string } | null = null;
+    let bestPer = sessionType.priceCents;
+    for (const o of offers) {
+      if (o.creditCount && o.creditCount > 1) {
+        const per = Math.round(o.priceCents / o.creditCount);
+        if (per < bestPer) {
+          bestPer = per;
+          best = {
+            label: `Save with the ${o.name}`,
+            sub: `${o.creditCount} classes for ${formatPrice(o.priceCents)} — that's ${formatPrice(per)}/class vs ${formatPrice(sessionType.priceCents)}.`,
+          };
+        }
+      }
+    }
+    if (best) return best;
+    const unlimited = offers.find((o) => o.creditCount == null);
+    if (unlimited) {
+      return {
+        label: `Practicing a lot? Go unlimited`,
+        sub: `${unlimited.name} — ${formatPrice(unlimited.priceCents)}${unlimited.validDays ? ` for ${unlimited.validDays} days` : ""} of classes.`,
+      };
+    }
+    return null;
+  })();
 
   // Scheduled classes: this class's real occurrences (spots-aware). Legacy
   // fallback keeps availability-derived slots for teachers with no events yet.
@@ -109,6 +141,27 @@ export default async function BookPage({
             </p>
           </div>
         </div>
+
+        {/* Description carried from the class */}
+        {sessionType.description && (
+          <p className="mt-3 text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+            {sessionType.description}
+          </p>
+        )}
+
+        {/* Recurring-revenue nudge: a pass beats paying per class */}
+        {passNudge && (
+          <Link
+            href={`/t/${teacher.slug}#passes`}
+            className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-brand bg-brand-tint/50 px-4 py-3 hover:bg-brand-tint transition-colors"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-brand-dark">✨ {passNudge.label}</p>
+              <p className="text-xs text-muted">{passNudge.sub}</p>
+            </div>
+            <span className="text-sm text-brand-dark font-medium shrink-0">See passes →</span>
+          </Link>
+        )}
 
         {error && (
           <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-danger">

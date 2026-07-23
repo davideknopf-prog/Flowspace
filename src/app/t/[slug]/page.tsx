@@ -285,7 +285,7 @@ export default async function PublicProfile({
 
         {/* Class passes */}
         {offers.length > 0 && (
-          <section>
+          <section id="passes" className="scroll-mt-20">
             <h2 className="text-lg font-semibold mb-1">Class passes</h2>
             <p className="text-sm text-muted mb-3">
               Buy a bundle and save — then book any class with the same email
