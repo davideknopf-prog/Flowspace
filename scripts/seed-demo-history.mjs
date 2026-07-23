@@ -29,6 +29,18 @@ const STUDENTS = [
   ["Amara Diallo", "amara.diallo@example.com"],
   ["Beth Nguyen", "beth.nguyen@example.com"],
   ["Jordan Wells", "jordan.wells@example.com"],
+  ["Nadia Haddad", "nadia.haddad@example.com"],
+  ["Owen Bright", "owen.bright@example.com"],
+  ["Grace Liu", "grace.liu@example.com"],
+  ["Marcus Bell", "marcus.bell@example.com"],
+  ["Sofia Romano", "sofia.romano@example.com"],
+  ["Kai Andersson", "kai.andersson@example.com"],
+  ["Elena Petrova", "elena.petrova@example.com"],
+  ["Devon Clarke", "devon.clarke@example.com"],
+  ["Aisha Rahman", "aisha.rahman@example.com"],
+  ["Ben Carter", "ben.carter@example.com"],
+  ["Yuki Tanaka", "yuki.tanaka@example.com"],
+  ["Hannah Weiss", "hannah.weiss@example.com"],
 ];
 
 const removeMode = process.argv.includes("--remove");
@@ -49,7 +61,7 @@ if (existing.length > 0) {
 
 const stripeFee = (cents) => Math.round(cents * 0.029) + 30;
 
-async function seedTeacher(slug, weeks, perWeek) {
+async function seedTeacher(slug, weeks, perWeek, passCount = 3, payoutFraction = 0.4) {
   const teachers = await sql.query("select id, name from teachers where slug = $1", [slug]);
   const teacher = teachers[0];
   if (!teacher) return console.log(`! ${slug} not found — skipping`);
@@ -95,7 +107,7 @@ async function seedTeacher(slug, weeks, perWeek) {
   }
 
   // A few passes sold (some partially used).
-  for (let i = 0; i < Math.min(3, offers.length * 2); i++) {
+  for (let i = 0; i < (offers.length > 0 ? passCount : 0); i++) {
     const o = offers[i % offers.length];
     const student = STUDENTS[(i * 5 + 1) % STUDENTS.length];
     const created = new Date();
@@ -118,7 +130,7 @@ async function seedTeacher(slug, weeks, perWeek) {
   }
 
   // One payout on record so the payout history isn't empty.
-  const paidOut = Math.round(gross * 0.4);
+  const paidOut = Math.round(gross * payoutFraction);
   await sql.query(
     `insert into payouts (id, teacher_id, amount_cents, note, created_at)
      values ($1,$2,$3,'Bi-weekly payout',$4)`,
@@ -131,8 +143,11 @@ async function seedTeacher(slug, weeks, perWeek) {
 }
 
 // Maya is the showcase (busiest); the others get lighter histories.
-await seedTeacher("maya-chen", 6, 9);
-await seedTeacher("james-okafor", 6, 5);
-await seedTeacher("sofia-reyes", 6, 6);
+// Maya is the showcase — busy studio, lots of passes, most earnings still
+// available to cash out (low payout fraction) so the "ready to cash out"
+// number lands big on the demo.
+await seedTeacher("maya-chen", 8, 14, 8, 0.2);
+await seedTeacher("james-okafor", 6, 6, 3, 0.4);
+await seedTeacher("sofia-reyes", 6, 7, 3, 0.4);
 
 console.log("\nDone. Remove any time: node scripts/seed-demo-history.mjs --remove");
