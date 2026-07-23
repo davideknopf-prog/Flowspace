@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   description: "Browse every yoga teacher on Kuleo and book directly.",
 };
 
+// Render on each request so newly added teachers appear immediately. Without
+// this the directory is statically prerendered at build time and freezes to
+// whatever roster existed at deploy — new teachers never show up.
+export const dynamic = "force-dynamic";
+
 export default async function TeachersDirectory() {
   const teachers = await listAllTeachers();
 
