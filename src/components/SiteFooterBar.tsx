@@ -23,6 +23,9 @@ export function SiteFooterBar() {
           <Link href="/guide" className="text-muted hover:text-foreground hidden sm:inline">
             Free guide
           </Link>
+          <Link href="/demo" className="text-muted hover:text-foreground hidden md:inline">
+            Live demo
+          </Link>
         </nav>
         <a
           href="https://calendly.com/david-knopf/onboarding-meeting"

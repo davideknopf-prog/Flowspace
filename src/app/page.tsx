@@ -86,6 +86,11 @@ export default async function Home() {
           </a>
           .
         </p>
+        <p className="mt-3 text-sm">
+          <Link href="/demo" className="text-brand-dark font-medium underline underline-offset-2">
+            👀 Peek inside a live teacher&apos;s dashboard →
+          </Link>
+        </p>
 
         {/* Two doors in: every marketplace routes both sides on screen one. */}
         <div className="animate-fade-up-late mt-10 grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
