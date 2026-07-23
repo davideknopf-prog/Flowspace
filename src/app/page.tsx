@@ -4,8 +4,9 @@ import { SiteFooterBar } from "@/components/SiteFooterBar";
 import { getCurrentTeacher } from "@/lib/session";
 import { getPlans, type Plan } from "@/lib/billing";
 import { getStudioSchedule, type StudioEntry } from "@/lib/studio";
+import { pickDemoTeacher, getDemoSnapshot, type DemoSnapshot } from "@/lib/demo";
 import { Avatar } from "@/components/Avatar";
-import { formatPrice, formatDuration } from "@/lib/format";
+import { formatPrice, formatDuration, formatMoney } from "@/lib/format";
 
 const CALENDLY_URL = "https://calendly.com/david-knopf/onboarding-meeting";
 const PHONE_DISPLAY = "(508) 468-7829";
@@ -38,6 +39,16 @@ export default async function Home() {
     teacherCount = studio.teachers.length;
   } catch {
     // sections render conditionally below
+  }
+
+  // Live demo snapshot — a real teacher's real numbers, embedded on the home
+  // page (show, don't tell). Degrades to hidden if unavailable.
+  let demo: DemoSnapshot | null = null;
+  try {
+    const demoTeacher = await pickDemoTeacher();
+    if (demoTeacher) demo = await getDemoSnapshot(demoTeacher);
+  } catch {
+    // section hidden below
   }
 
   return (
@@ -229,71 +240,102 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* The math — the honest 5x story. Arithmetic, not claims. */}
-      <section className="mx-auto max-w-7xl px-4 py-14">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <span className="pill-accent mb-4">The math</span>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-            Same two classes. Five times the paycheck.
-          </h2>
-          <p className="mt-3 text-muted">
-            Teaching for an hourly rate caps what you earn. Teaching{" "}
-            <span className="font-medium text-foreground">your own classes</span>{" "}
-            means every student in the room pays you.
-          </p>
-        </div>
+      {/* Live demo embed — a real teacher's real numbers. Show, don't tell. */}
+      {demo && demo.earnedCents > 0 && (
+        <section className="mx-auto max-w-5xl px-4 py-14">
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <span className="pill-accent mb-4">A real Kuleo studio</span>
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+              This is what a studio on Kuleo looks like.
+            </h2>
+            <p className="mt-3 text-muted">
+              A live look at {demo.teacher.name.split(" ")[0]}&apos;s dashboard —
+              real classes, real passes, real earnings. No mockups.
+            </p>
+          </div>
 
-        <div className="grid sm:grid-cols-2 gap-5 max-w-4xl mx-auto items-stretch">
-          <div className="card !p-6">
-            <p className="text-sm font-semibold text-muted mb-1">
-              Teaching for a studio
-            </p>
-            <p className="text-3xl font-semibold">$100<span className="text-base font-normal text-muted">/week</span></p>
-            <ul className="mt-4 space-y-2 text-sm text-muted">
-              <li>2 classes · ~4 hours of work</li>
-              <li>Paid a flat hourly rate</li>
-              <li>The studio keeps the upside</li>
-              <li>Your ceiling is your hourly rate</li>
-            </ul>
+          {/* Framed mini-dashboard */}
+          <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-surface shadow-[0_10px_40px_-15px_rgba(38,33,28,0.2)] overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-border bg-brand-tint/50 px-4 py-2">
+              <span className="size-2.5 rounded-full bg-danger/60" />
+              <span className="size-2.5 rounded-full bg-accent/60" />
+              <span className="size-2.5 rounded-full bg-brand/60" />
+              <span className="ml-2 text-xs text-muted">
+                {demo.teacher.name}&apos;s studio · Kuleo dashboard
+              </span>
+            </div>
+            <div className="p-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <DemoStat label="This week" value={formatMoney(demo.thisWeekCents)} accent />
+                <DemoStat label="Ready to cash out" value={formatMoney(demo.availableCents)} />
+                <DemoStat label="Students" value={String(demo.studentCount)} />
+                <DemoStat label="Pass holders" value={String(demo.passHolders)} />
+              </div>
+              <div className="mt-4 card !p-4">
+                <p className="text-xs text-muted">Earned all-time</p>
+                <p className="text-3xl font-semibold [font-family:var(--font-display)] text-brand-dark">
+                  {formatMoney(demo.earnedCents)}
+                </p>
+                <div className="mt-3 flex items-end gap-1 h-10">
+                  {demo.weekly.map((w, i) => {
+                    const max = Math.max(1, ...demo!.weekly.map((x) => x.netCents));
+                    const pct = Math.round((w.netCents / max) * 100);
+                    return (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-t bg-brand/70"
+                        style={{ height: `${Math.max(4, pct)}%` }}
+                      />
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted mt-2">Net earnings, last 8 weeks</p>
+              </div>
+            </div>
           </div>
-          <div className="card card-lift !p-6 border-brand ring-1 ring-[var(--ring)]">
-            <p className="text-sm font-semibold text-brand-dark mb-1">
-              Your studio on Kuleo
-            </p>
-            <p className="text-3xl font-semibold text-brand-dark">
-              $500<span className="text-base font-normal text-muted">/week</span>
-            </p>
-            <ul className="mt-4 space-y-2 text-sm text-muted">
-              <li>The same 2 classes — 10 students each at $25</li>
-              <li>Every student pays <span className="font-medium text-foreground">you</span> — no studio commission</li>
-              <li>Cash out whenever you like</li>
-              <li>No ceiling: your audience grows, your income grows</li>
-            </ul>
+
+          <div className="mt-8 text-center flex flex-wrap items-center justify-center gap-3">
+            <Link href="/demo" className="btn-primary">
+              Explore the full live dashboard →
+            </Link>
+            <Link href={teacher ? "/dashboard" : "/signup"} className="btn-secondary">
+              {teacher ? "Go to your studio" : "Start yours"}
+            </Link>
           </div>
-        </div>
-        <p className="mt-6 text-center text-xs text-muted max-w-xl mx-auto">
-          An illustration — you set your own prices and class sizes. Standard
-          card processing (2.9% + 30¢) applies to student payments; Kuleo takes
-          no commission.
-        </p>
-        <div className="mt-8 text-center">
-          <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
-            {teacher ? "Go to your studio" : "Get booking today"}
-          </Link>
-        </div>
-        <div className="mt-8 mx-auto max-w-xl card !p-4 flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold">📖 Free guide: The Yoga Teacher Economy</p>
-            <p className="text-xs text-muted">
-              The full numbers behind studio pay — and the first-year math of
-              owning your room. No email required.
-            </p>
+
+          {/* Free guide — kept, relocated here */}
+          <div className="mt-10 mx-auto max-w-xl card !p-4 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">📖 Free guide: The Yoga Teacher Economy</p>
+              <p className="text-xs text-muted">
+                The real numbers behind studio pay — and the first-year math of
+                owning your room. No email required.
+              </p>
+            </div>
+            <Link href="/guide" className="btn-secondary text-sm shrink-0">
+              Read it →
+            </Link>
           </div>
-          <Link href="/guide" className="btn-secondary text-sm shrink-0">
-            Read it →
-          </Link>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* Guide fallback when the demo embed is hidden (thin data). */}
+      {!(demo && demo.earnedCents > 0) && (
+        <section className="mx-auto max-w-5xl px-4 py-14">
+          <div className="mx-auto max-w-xl card !p-5 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="font-semibold">📖 Free guide: The Yoga Teacher Economy</p>
+              <p className="text-sm text-muted mt-1">
+                The real numbers behind studio pay — and the first-year math of
+                owning your room. No email required.
+              </p>
+            </div>
+            <Link href="/guide" className="btn-secondary text-sm shrink-0">
+              Read it →
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Pricing — anchored, juxtaposed, one click from checkout */}
       <section id="pricing" className="mx-auto max-w-7xl px-4 py-14 scroll-mt-16">
@@ -430,50 +472,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Why we built Kuleo — founder note */}
-      <section className="mx-auto max-w-2xl px-4 py-14">
-        <div className="text-center mb-8">
-          <span className="pill mb-4">Why we built Kuleo</span>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-            Teachers are the heart of yoga. They should be paid like it.
-          </h2>
-        </div>
-        <div className="space-y-4 text-muted leading-relaxed">
-          <p>
-            I&apos;ve practiced yoga for ten years, and some of the best moments
-            of my life have happened in a class or on a retreat. The teachers who
-            led them became some of the most important people in my world — the
-            ones who helped me deepen my practice and expand how I see everything.
-          </p>
-          <p>
-            So it&apos;s never sat right with me how little they earn. The teacher
-            is the reason anyone shows up — yet the way the industry is built, too
-            much of the money goes to the studio. I spent my career in enterprise
-            tech sales, and I kept landing on the same thought: the people
-            creating all the value deserve tools, and earnings, that match it.
-          </p>
-          <p>
-            Kuleo is my answer. It&apos;s built to help teachers keep more of what
-            they earn, fill their classes, and truly connect with their students —
-            whether they&apos;re across town or across the world. Less time lost to
-            admin, more freedom in your schedule, and a bigger stage for your
-            message.
-          </p>
-          <p>
-            The vision is simple: make great yoga more accessible to everyone, and
-            help the teachers who share it earn far more, with the freedom to reach
-            more people their own way. This one&apos;s inspired by my own teacher,
-            Alex.
-          </p>
-        </div>
-        <p className="mt-6 font-medium text-foreground">— David, founder of Kuleo</p>
-        <div className="mt-8 text-center">
-          <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
-            {teacher ? "Go to your studio" : "Kick off your studio"}
-          </Link>
-        </div>
-      </section>
-
       <SiteFooterBar />
       <footer className="border-t border-border bg-surface/50">
         <div className="mx-auto max-w-7xl px-4 py-12">
@@ -491,7 +489,9 @@ export default async function Home() {
               <p className="font-semibold mb-3">For teachers</p>
               <ul className="space-y-2 text-muted">
                 <li><Link href="/#pricing" className="hover:text-foreground">Pricing</Link></li>
+                <li><Link href="/demo" className="hover:text-foreground">See a live dashboard</Link></li>
                 <li><Link href="/guide" className="hover:text-foreground">Free guide: The Yoga Teacher Economy</Link></li>
+                <li><Link href="/about" className="hover:text-foreground">Our story</Link></li>
                 <li><Link href="/signup" className="hover:text-foreground">Create your studio</Link></li>
                 <li><Link href="/login" className="hover:text-foreground">Log in</Link></li>
                 <li>
@@ -560,6 +560,15 @@ function Included({ children }: { children: React.ReactNode }) {
       <span className="text-brand-dark mt-0.5">✓</span>
       {children}
     </li>
+  );
+}
+
+function DemoStat({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className={`rounded-xl border p-3 text-center ${accent ? "border-brand bg-brand-tint/40" : "border-border"}`}>
+      <p className="text-[11px] text-muted">{label}</p>
+      <p className={`text-lg font-semibold mt-0.5 [font-family:var(--font-display)] ${accent ? "text-brand-dark" : ""}`}>{value}</p>
+    </div>
   );
 }
 
