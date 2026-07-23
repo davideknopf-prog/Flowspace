@@ -221,27 +221,84 @@ export async function sendBookingEmails({
     ${cal ? `<p style="margin-top:16px"><a href="${cal.gcal}" style="display:inline-block;background:#5b7c6f;color:#ffffff;text-decoration:none;padding:9px 16px;border-radius:8px;font-size:14px">📅 Add to calendar</a> <span style="color:#7c736a;font-size:12px">(or open the attached class.ics)</span></p>` : ""}
     ${welcome ? `<div style="margin-top:16px;padding:12px 14px;background:#edf2ef;border-radius:10px;font-size:14px"><span style="color:#47645a;font-weight:600">A note from ${esc(teacher.name.split(" ")[0])}:</span><br>${esc(welcome)}</div>` : ""}`);
 
-  // --- To the teacher -------------------------------------------------------
-  const teacherText = [
-    `New booking from ${booking.clientName} (${booking.clientEmail}).`,
-    ``,
-    `Session: ${sessionType.name}`,
-    `When: ${when} (${teacher.timezone})`,
-    `Price: ${price}`,
-    booking.note ? `Note: ${booking.note}` : ``,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  // --- To the teacher: lead with the money, not the logistics --------------
+  // The dopamine hit is the point. A paid booking celebrates the earnings; a
+  // pass-redeemed booking already earned its money at pass-purchase time, and
+  // a free booking earns nothing now — each gets honest framing.
+  const noteRow = booking.note
+    ? `<tr><td style="color:#7c736a;padding-right:16px;vertical-align:top">Note</td><td>${esc(booking.note)}</td></tr>`
+    : "";
+  const net = formatMoney(booking.priceCents - booking.platformFeeCents);
+  const earningsCta = `<p style="margin-top:18px"><a href="https://kuleo.io/dashboard/earnings" style="background:#4a7c59;color:#fff;text-decoration:none;padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;display:inline-block">See your earnings →</a></p>`;
 
-  const teacherHtml = wrapHtml(`
-    <h1 style="font-size:18px">New booking 🎉</h1>
-    <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
-      <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${esc(booking.clientName)} &lt;${esc(booking.clientEmail)}&gt;</td></tr>
-      <tr><td style="color:#7c736a;padding-right:16px">Session</td><td>${esc(sessionType.name)}</td></tr>
-      <tr><td style="color:#7c736a;padding-right:16px">When</td><td>${when}</td></tr>
-      <tr><td style="color:#7c736a;padding-right:16px">Price</td><td>${price}</td></tr>
-      ${booking.note ? `<tr><td style="color:#7c736a;padding-right:16px;vertical-align:top">Note</td><td>${esc(booking.note)}</td></tr>` : ""}
-    </table>`);
+  let teacherSubject: string;
+  let teacherText: string;
+  let teacherHtml: string;
+
+  if (booking.paymentStatus === "paid") {
+    teacherSubject = `💰 You just earned ${net}! ${booking.clientName} booked ${sessionType.name}`;
+    teacherText = [
+      `Ka-ching! You just earned ${net}. 💰`,
+      ``,
+      `${booking.clientName} (${booking.clientEmail}) booked ${sessionType.name}.`,
+      `When: ${when} (${teacher.timezone})`,
+      `They paid ${price}; after the flat 6% processing fee, ${net} was added to your Kuleo balance — cash out anytime.`,
+      booking.note ? `Note: ${booking.note}` : ``,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    teacherHtml = wrapHtml(`
+      <p style="font-size:15px;color:#4a4b47;margin:0 0 2px">You just earned</p>
+      <p style="font-size:34px;font-weight:700;color:#4a7c59;margin:0 0 10px">${net} 💰</p>
+      <p style="font-size:14px;color:#26211c;margin:0 0 16px"><strong>${esc(booking.clientName)}</strong> booked <strong>${esc(sessionType.name)}</strong>. It&apos;s been added to your Kuleo balance — cash out anytime.</p>
+      <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
+        <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${esc(booking.clientName)} &lt;${esc(booking.clientEmail)}&gt;</td></tr>
+        <tr><td style="color:#7c736a;padding-right:16px">Session</td><td>${esc(sessionType.name)}</td></tr>
+        <tr><td style="color:#7c736a;padding-right:16px">When</td><td>${when}</td></tr>
+        <tr><td style="color:#7c736a;padding-right:16px">They paid</td><td>${price} <span style="color:#7c736a;font-size:12px">— you keep ${net} after the 6% fee</span></td></tr>
+        ${noteRow}
+      </table>
+      ${earningsCta}`);
+  } else if (booking.paymentStatus === "pass") {
+    teacherSubject = `🎟 ${booking.clientName} used a pass — ${sessionType.name}`;
+    teacherText = [
+      `${booking.clientName} (${booking.clientEmail}) booked ${sessionType.name} using a class pass.`,
+      `When: ${when} (${teacher.timezone})`,
+      `You already earned this when they bought the pass — no new charge.`,
+      booking.note ? `Note: ${booking.note}` : ``,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    teacherHtml = wrapHtml(`
+      <h1 style="font-size:18px">Class booked with a pass 🎟</h1>
+      <p style="font-size:14px;color:#26211c;margin:0 0 16px"><strong>${esc(booking.clientName)}</strong> redeemed a pass credit for <strong>${esc(sessionType.name)}</strong>. You earned this money when they bought the pass.</p>
+      <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
+        <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${esc(booking.clientName)} &lt;${esc(booking.clientEmail)}&gt;</td></tr>
+        <tr><td style="color:#7c736a;padding-right:16px">Session</td><td>${esc(sessionType.name)}</td></tr>
+        <tr><td style="color:#7c736a;padding-right:16px">When</td><td>${when}</td></tr>
+        ${noteRow}
+      </table>`);
+  } else {
+    teacherSubject = `New booking: ${booking.clientName} — ${sessionType.name}`;
+    teacherText = [
+      `New booking from ${booking.clientName} (${booking.clientEmail}).`,
+      `Session: ${sessionType.name}`,
+      `When: ${when} (${teacher.timezone})`,
+      `This class is free — no charge.`,
+      booking.note ? `Note: ${booking.note}` : ``,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    teacherHtml = wrapHtml(`
+      <h1 style="font-size:18px">New booking 🎉</h1>
+      <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
+        <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${esc(booking.clientName)} &lt;${esc(booking.clientEmail)}&gt;</td></tr>
+        <tr><td style="color:#7c736a;padding-right:16px">Session</td><td>${esc(sessionType.name)}</td></tr>
+        <tr><td style="color:#7c736a;padding-right:16px">When</td><td>${when}</td></tr>
+        <tr><td style="color:#7c736a;padding-right:16px">Price</td><td>Free</td></tr>
+        ${noteRow}
+      </table>`);
+  }
 
   // allSettled, not all: the two emails are independent, and a bad address on
   // one side (e.g. a test account's fake domain) must never look like it also
@@ -257,7 +314,7 @@ export async function sendBookingEmails({
     }),
     send({
       to: teacher.email,
-      subject: `New booking: ${booking.clientName} — ${sessionType.name}`,
+      subject: teacherSubject,
       html: teacherHtml,
       text: teacherText,
       replyTo: booking.clientEmail,
@@ -309,19 +366,26 @@ export async function sendPassEmails({
     </table>
     <p style="font-size:13px;color:#7c736a;margin-top:16px">To use it, book any class with this same email (${esc(pass.clientEmail)}) — your pass is applied automatically.</p>`);
 
+  const passNet = formatMoney(pass.priceCents - pass.platformFeeCents);
   const teacherText = [
-    `${pass.clientName} (${pass.clientEmail}) bought your ${offer.name} for ${price}.`,
-    `Includes: ${credits} · ${expiry}`,
+    `Cha-ching! You just earned ${passNet}. 💰`,
+    ``,
+    `${pass.clientName} (${pass.clientEmail}) bought your ${offer.name} (${credits}) for ${price}.`,
+    `After the flat 6% processing fee, ${passNet} was added to your Kuleo balance — cash out anytime.`,
+    `Passes are the studio move: recurring money, paid up front.`,
   ].join("\n");
 
   const teacherHtml = wrapHtml(`
-    <h1 style="font-size:18px">Pass sold! 🎉</h1>
+    <p style="font-size:15px;color:#4a4b47;margin:0 0 2px">You just earned</p>
+    <p style="font-size:34px;font-weight:700;color:#4a7c59;margin:0 0 10px">${passNet} 💰</p>
+    <p style="font-size:14px;color:#26211c;margin:0 0 16px"><strong>${esc(pass.clientName)}</strong> bought your <strong>${esc(offer.name)}</strong> (${credits}). It&apos;s in your Kuleo balance — cash out anytime. Passes are the studio move: recurring money, paid up front.</p>
     <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
       <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${esc(pass.clientName)} &lt;${esc(pass.clientEmail)}&gt;</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Pass</td><td>${esc(offer.name)}</td></tr>
-      <tr><td style="color:#7c736a;padding-right:16px">Price</td><td>${price}</td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">They paid</td><td>${price} <span style="color:#7c736a;font-size:12px">— you keep ${passNet} after the 6% fee</span></td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Includes</td><td>${credits} · ${expiry}</td></tr>
-    </table>`);
+    </table>
+    <p style="margin-top:18px"><a href="https://kuleo.io/dashboard/earnings" style="background:#4a7c59;color:#fff;text-decoration:none;padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;display:inline-block">See your earnings →</a></p>`);
 
   const results = await Promise.allSettled([
     send({
@@ -333,7 +397,7 @@ export async function sendPassEmails({
     }),
     send({
       to: teacher.email,
-      subject: `Pass sold: ${pass.clientName} — ${offer.name}`,
+      subject: `💰 You just earned ${passNet}! ${pass.clientName} bought ${offer.name}`,
       html: teacherHtml,
       text: teacherText,
       replyTo: pass.clientEmail,
