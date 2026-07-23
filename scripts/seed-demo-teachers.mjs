@@ -165,11 +165,34 @@ if (removeMode) {
   process.exit(0);
 }
 
-// Flag every demo profile as a demo — including any seeded in an earlier run —
-// so the booking/pass safeguard applies to all of them, not just new inserts.
+// Flag the known demo personas (by SLUG) as demo, so the booking/pass
+// safeguard applies to them — including any seeded in an earlier run.
+//
+// Crucially, we flag by slug, NOT by email pattern: a demo record can be
+// repurposed into a real, bookable teacher under a different slug (e.g. one
+// renamed for a real user, which keeps its old @kuleo.demo email). Those must
+// stay bookable. The second statement below actively un-flags any such record
+// in case an earlier email-pattern flag over-caught it.
+const demoSlugs = DEMO_TEACHERS.map((t) => t.slug);
 try {
-  await sql.query("update teachers set is_demo = true where email like '%@kuleo.demo'");
-  console.log("✓ flagged all @kuleo.demo teachers as demo (bookings disabled)");
+  const flagged = await sql.query(
+    "update teachers set is_demo = true where slug = any($1::text[]) returning slug",
+    [demoSlugs],
+  );
+  const unflagged = await sql.query(
+    "update teachers set is_demo = false where email like '%@kuleo.demo' and slug <> all($1::text[]) returning slug, name",
+    [demoSlugs],
+  );
+  console.log(
+    `✓ demo (bookings disabled): ${flagged.map((r) => r.slug).join(", ") || "none yet"}`,
+  );
+  if (unflagged.length) {
+    console.log(
+      `✓ kept bookable (repurposed demo → real page): ${unflagged
+        .map((r) => `${r.name} (${r.slug})`)
+        .join(", ")}`,
+    );
+  }
 } catch (e) {
   console.error(
     "\n✗ Could not set is_demo — run `npm run db:migrate` first, then re-run this seed.\n",
@@ -179,7 +202,13 @@ try {
 }
 
 for (const t of DEMO_TEACHERS) {
-  const existing = await sql.query("select 1 from teachers where slug = $1", [t.slug]);
+  // Match by slug OR email: a persona may already exist under a renamed slug
+  // (still holding its @kuleo.demo email), and email is uniquely constrained —
+  // so checking slug alone would try to re-insert and hit a duplicate-key crash.
+  const existing = await sql.query(
+    "select 1 from teachers where slug = $1 or email = $2",
+    [t.slug, t.email],
+  );
   if (existing.length > 0) {
     console.log(`✓ ${t.slug} already exists — skipping`);
     continue;
