@@ -186,8 +186,8 @@ create index if not exists reviews_teacher_id_idx on reviews(teacher_id);
 
 -- ---------------------------------------------------------------------------
 -- Event-based scheduling: a class IS an event with a time. Session types in
--- 'events' mode are bookable only at their scheduled occurrences; 'flexible'
--- mode (coaching) is bought first, scheduled together afterward.
+-- 'events' mode are bookable only at their scheduled occurrences ('flexible'
+-- mode is bought first, scheduled together afterward).
 -- ---------------------------------------------------------------------------
 alter table session_types add column if not exists scheduling text not null default 'events';
 alter table session_types add column if not exists capacity integer;
@@ -218,7 +218,7 @@ alter table bookings alter column start_iso drop not null;
 -- Email automations.
 -- Confirmation: teacher-editable welcome note (per class, teacher default).
 -- Follow-up: post-class email (review ask + upcoming + upsell), sent once per
--- booking by the daily cron; followup_sent_at is the idempotency marker.
+-- booking by the daily cron. followup_sent_at is the idempotency marker.
 -- ---------------------------------------------------------------------------
 alter table session_types add column if not exists confirmation_note text not null default '';
 alter table teachers add column if not exists confirmation_note text not null default '';

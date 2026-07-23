@@ -58,12 +58,18 @@ while (queue.length) {
       note = `→ ${loc.replace(BASE, "")}`;
       if (AUTH_GATED.test(p)) note += " (auth-gated, ok)";
     } else if (status === 200) {
-      html = await res.text();
-      const isNextError = html.includes("__next_error__");
-      const marker = ERROR_MARKERS.find((mk) => html.includes(mk));
-      if (isNextError || (marker && status === 200 && html.length < 4000)) {
-        note = `rendered but shows error text (${marker ?? "next_error"})`;
-        status = -1; // treat as broken
+      const ctype = res.headers.get("content-type") ?? "";
+      const body = await res.text();
+      // Only scan actual HTML documents for error markers — minified JS/CSS
+      // assets legitimately contain strings like "500" and would false-positive.
+      if (ctype.includes("text/html")) {
+        html = body;
+        const isNextError = html.includes("__next_error__");
+        const marker = ERROR_MARKERS.find((mk) => html.includes(mk));
+        if (isNextError || (marker && html.length < 4000)) {
+          note = `rendered but shows error text (${marker ?? "next_error"})`;
+          status = -1; // treat as broken
+        }
       }
     }
   } catch (e) {
