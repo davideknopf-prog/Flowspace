@@ -5,7 +5,7 @@ import { getViewerContext } from "@/lib/session";
 import { isSubscribed } from "@/lib/types";
 import { exitViewAsAction } from "./actions";
 import { Avatar } from "@/components/Avatar";
-import { DashboardNav } from "@/components/DashboardNav";
+import { DashboardNav, DashboardNavMobile } from "@/components/DashboardNav";
 
 export default async function DashboardLayout({
   children,
@@ -70,6 +70,9 @@ export default async function DashboardLayout({
         </div>
       </header>
 
+      <div className="mx-auto w-full max-w-5xl px-4 pt-4 md:hidden">
+        <DashboardNavMobile />
+      </div>
       <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 flex gap-8">
         <DashboardNav />
         <main className="flex-1 min-w-0">{children}</main>

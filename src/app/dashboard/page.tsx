@@ -356,6 +356,24 @@ export default async function DashboardHome() {
         </div>
       </div>
 
+      {/* Custom quotes quick card */}
+      <div className="card flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="font-semibold mb-1">
+            Got a private gig? Send a custom quote 💌
+          </h2>
+          <p className="text-sm text-muted max-w-xl">
+            A party, corporate session, or 1:1 series that doesn&apos;t fit your
+            public schedule? Build a one-off quote, send the link, and get paid
+            online — no public class needed. Paid quotes flow straight into your
+            earnings.
+          </p>
+        </div>
+        <Link href="/dashboard/quotes" className="btn-primary text-sm shrink-0">
+          Create a quote →
+        </Link>
+      </div>
+
       {/* Share link */}
       <div className="card" id="share-link">
         <h2 className="font-semibold mb-1">Your booking link</h2>
