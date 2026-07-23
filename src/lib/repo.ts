@@ -70,6 +70,8 @@ function rowToTeacher(row: Record<string, unknown>): Teacher {
     confirmationNote: (row.confirmation_note as string) ?? "",
     followupNote: (row.followup_note as string) ?? "",
     timezone: row.timezone as string,
+    // Deploy-order safe: undefined (column not yet migrated) → false.
+    isDemo: (row.is_demo as boolean) ?? false,
     defaultMeetingUrl: (row.default_meeting_url as string) ?? "",
     payoutMethod: ((row.payout_method as string) ?? "") as Teacher["payoutMethod"],
     payoutHandle: (row.payout_handle as string) ?? "",

@@ -37,12 +37,13 @@ export default async function PublicProfile({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; demo?: string }>;
 }) {
   const { slug } = await params;
-  const { error } = await searchParams;
+  const { error, demo } = await searchParams;
   const teacher = await getTeacherBySlug(slug);
   if (!teacher) notFound();
+  const triedToBookDemo = teacher.isDemo && demo === "1";
 
   const [sessionTypesAll, offersAll, rules, bookings, reviews, reviewStats, events] =
     await Promise.all([
@@ -113,6 +114,25 @@ export default async function PublicProfile({
 
   return (
     <main className="min-h-screen">
+      {/* Demo/showcase profiles: honest, tasteful ribbon. Booking is blocked
+          server-side; this just tells visitors the studio is a sample. */}
+      {teacher.isDemo && (
+        <div className="bg-brand-dark text-white">
+          <div className="mx-auto max-w-3xl px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span>
+              ✨ <span className="font-semibold">Sample studio</span> — a live
+              example of a Kuleo teacher page. Booking is disabled.
+            </span>
+            <Link
+              href="/signup"
+              className="rounded-lg bg-white px-3 py-1 text-xs font-medium text-brand-dark shrink-0"
+            >
+              Start yours →
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Cover photo */}
       {teacher.bannerUrl && (
         <div className="relative">
@@ -172,6 +192,16 @@ export default async function PublicProfile({
       </div>
 
       <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
+        {triedToBookDemo && (
+          <p className="rounded-lg border border-brand bg-brand-tint/50 px-4 py-3 text-sm">
+            ✨ This is a <span className="font-semibold">sample studio</span>, so
+            checkout is turned off — but everything else here is exactly what a
+            real Kuleo teacher page does.{" "}
+            <Link href="/signup" className="text-brand-dark font-medium underline">
+              Start your own →
+            </Link>
+          </p>
+        )}
         {error && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-danger">
             {error}
@@ -309,38 +339,53 @@ export default async function PublicProfile({
                       {formatPrice(o.priceCents)}
                     </p>
                   </div>
-                  <details className="mt-3">
-                    <summary className="cursor-pointer text-sm text-brand-dark font-medium">
-                      Buy this pass →
-                    </summary>
-                    <form
-                      action={buyPassAction}
-                      className="mt-3 grid sm:grid-cols-[1fr_1fr_auto] gap-2"
-                    >
-                      <input type="hidden" name="slug" value={teacher.slug} />
-                      <input type="hidden" name="offerId" value={o.id} />
-                      <input
-                        name="clientName"
-                        placeholder="Your name"
-                        required
-                        className="input"
-                      />
-                      <input
-                        name="clientEmail"
-                        type="email"
-                        placeholder="you@email.com"
-                        required
-                        className="input"
-                      />
-                      <button type="submit" className="btn-primary">
+                  {teacher.isDemo ? (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        disabled
+                        className="btn-primary opacity-60 cursor-not-allowed"
+                      >
                         Buy · {formatPrice(o.priceCents)}
                       </button>
-                    </form>
-                    <p className="hint mt-1">
-                      🔒 Secure checkout via Stripe. Use the same email when
-                      booking classes.
-                    </p>
-                  </details>
+                      <p className="hint mt-1">
+                        ✨ Sample studio — checkout is disabled on demo profiles.
+                      </p>
+                    </div>
+                  ) : (
+                    <details className="mt-3">
+                      <summary className="cursor-pointer text-sm text-brand-dark font-medium">
+                        Buy this pass →
+                      </summary>
+                      <form
+                        action={buyPassAction}
+                        className="mt-3 grid sm:grid-cols-[1fr_1fr_auto] gap-2"
+                      >
+                        <input type="hidden" name="slug" value={teacher.slug} />
+                        <input type="hidden" name="offerId" value={o.id} />
+                        <input
+                          name="clientName"
+                          placeholder="Your name"
+                          required
+                          className="input"
+                        />
+                        <input
+                          name="clientEmail"
+                          type="email"
+                          placeholder="you@email.com"
+                          required
+                          className="input"
+                        />
+                        <button type="submit" className="btn-primary">
+                          Buy · {formatPrice(o.priceCents)}
+                        </button>
+                      </form>
+                      <p className="hint mt-1">
+                        🔒 Secure checkout via Stripe. Use the same email when
+                        booking classes.
+                      </p>
+                    </details>
+                  )}
                 </li>
               ))}
             </ul>

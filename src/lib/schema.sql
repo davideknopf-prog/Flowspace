@@ -29,6 +29,11 @@ alter table teachers add column if not exists subscription_period_end timestampt
 -- without their own meeting link fall back to this at booking time.
 alter table teachers add column if not exists default_meeting_url text not null default '';
 
+-- Demo/showcase profiles (bot teachers used for proof-of-concept). Their
+-- public pages look fully real, but bookings and pass purchases are refused
+-- server-side regardless of Stripe mode, so no one can transact with them.
+alter table teachers add column if not exists is_demo boolean not null default false;
+
 create table if not exists session_types (
   id text primary key,
   teacher_id text not null references teachers(id) on delete cascade,

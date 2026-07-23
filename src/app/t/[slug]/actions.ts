@@ -60,6 +60,13 @@ export async function bookAction(formData: FormData) {
     redirect(`/t/${slug}?error=That+session+is+no+longer+available`);
   }
 
+  // Hard safeguard for demo/showcase profiles. This runs before any booking
+  // row or Stripe Checkout session is created, so it holds regardless of
+  // whether Stripe is in test or live mode — no one can transact with a bot.
+  if (teacher!.isDemo) {
+    redirect(`/t/${slug}?demo=1`);
+  }
+
   // Time validation depends on the scheduling model:
   // - flexible: no time at all — student & teacher schedule together after.
   // - events: the chosen time must be a real occurrence of this class's
@@ -217,6 +224,11 @@ export async function buyPassAction(formData: FormData) {
   const offer = await getOffer(offerId);
   if (!teacher || !offer || offer.teacherId !== teacher.id || !offer.active) {
     redirect(`/t/${slug}?error=That+offer+is+no+longer+available`);
+  }
+
+  // Same demo safeguard as bookAction — refuse before any Stripe session.
+  if (teacher!.isDemo) {
+    redirect(`/t/${slug}?demo=1`);
   }
 
   const pass = await createPendingPass(

@@ -82,6 +82,75 @@ const DEMO_TEACHERS = [
       { weekday: 0, startMinutes: 9 * 60, endMinutes: 12 * 60 },
     ],
   },
+  {
+    slug: "priya-nair",
+    email: "demo-priya@kuleo.demo",
+    name: "Priya Nair",
+    headline: "Hot power yoga & sculpt — sweat, strength, energy",
+    bio: "I teach the class that ruins you for other classes — heated, strong, and set to music that makes you forget how hard you're working. Come for the sweat, stay because you stand taller and sleep better. All levels: I'll always give you the option to push or to breathe.\n\nRYT-500 · Baptiste-trained",
+    location: "Miami, FL · and Online",
+    specialties: ["Power yoga", "Hot yoga", "Sculpt", "Energy"],
+    timezone: "America/New_York",
+    sessions: [
+      { name: "Power Sculpt (Group)", description: "45 heated minutes with light weights — leave buzzing", durationMinutes: 45, priceCents: 2200, locationType: "in_person", meetingUrl: "", locationNote: "South Beach studio" },
+      { name: "Private Power 1:1", description: "Your goals, your pace, dialed in", durationMinutes: 60, priceCents: 9500, locationType: "online", meetingUrl: "", locationNote: "" },
+    ],
+    offers: [
+      { name: "10-Class Pass", description: "Ten classes, three months to burn through them", priceCents: 18000, creditCount: 10, validDays: 90 },
+      { name: "Unlimited Monthly", description: "Come every day if you dare", priceCents: 13500, creditCount: null, validDays: 30 },
+    ],
+    availability: [
+      { weekday: 1, startMinutes: 6 * 60, endMinutes: 9 * 60 },
+      { weekday: 3, startMinutes: 6 * 60, endMinutes: 9 * 60 },
+      { weekday: 5, startMinutes: 17 * 60, endMinutes: 20 * 60 },
+      { weekday: 6, startMinutes: 9 * 60, endMinutes: 12 * 60 },
+    ],
+  },
+  {
+    slug: "daniel-brooks",
+    email: "demo-daniel@kuleo.demo",
+    name: "Daniel Brooks",
+    headline: "Yin, meditation & better sleep",
+    bio: "Most of us are running on empty and calling it normal. My classes are the opposite of hustle — long, quiet holds, guided breath, and meditation that actually settles the mind. Students come for tight hips and stay because they finally sleep through the night.\n\nRYT-300 · Certified meditation teacher (MMI)",
+    location: "Portland, OR · and Online",
+    specialties: ["Yin", "Meditation", "Sleep", "Stress relief"],
+    timezone: "America/Los_Angeles",
+    sessions: [
+      { name: "Yin & Unwind (Group)", description: "60 slow minutes to let the day go", durationMinutes: 60, priceCents: 1600, locationType: "online", meetingUrl: "", locationNote: "" },
+      { name: "1:1 Meditation Coaching", description: "Build a practice that fits your actual life", durationMinutes: 45, priceCents: 6500, locationType: "online", meetingUrl: "", locationNote: "" },
+    ],
+    offers: [
+      { name: "Monthly Calm", description: "Unlimited yin + meditation for 30 days", priceCents: 8500, creditCount: null, validDays: 30 },
+      { name: "5-Class Pass", description: "Five sessions, six months to use", priceCents: 7000, creditCount: 5, validDays: 180 },
+    ],
+    availability: [
+      { weekday: 0, startMinutes: 18 * 60, endMinutes: 21 * 60 },
+      { weekday: 2, startMinutes: 19 * 60, endMinutes: 21 * 60 },
+      { weekday: 4, startMinutes: 19 * 60, endMinutes: 21 * 60 },
+    ],
+  },
+  {
+    slug: "grace-abara",
+    email: "demo-grace@kuleo.demo",
+    name: "Grace Abara",
+    headline: "Chair & accessible yoga — every body, every age",
+    bio: "Yoga isn't just for bendy twenty-somethings on Instagram. I teach chair and gentle standing yoga for people 55+, folks recovering from injury or surgery, and anyone who's been told they 'can't' do yoga. You can — we start exactly where you are.\n\nRYT-500 · Accessible Yoga Association trained",
+    location: "Online only",
+    specialties: ["Chair yoga", "Accessible", "Seniors", "Gentle"],
+    timezone: "America/Chicago",
+    sessions: [
+      { name: "Chair Yoga (Group)", description: "Gentle mobility and breath, all from a chair", durationMinutes: 45, priceCents: 1200, locationType: "online", meetingUrl: "", locationNote: "" },
+      { name: "Gentle 1:1 (Post-injury friendly)", description: "A session built around what your body needs today", durationMinutes: 50, priceCents: 6000, locationType: "online", meetingUrl: "", locationNote: "" },
+    ],
+    offers: [
+      { name: "5-Class Pass", description: "Five gentle classes, no rush — six months to use", priceCents: 5000, creditCount: 5, validDays: 180 },
+    ],
+    availability: [
+      { weekday: 1, startMinutes: 10 * 60, endMinutes: 12 * 60 },
+      { weekday: 3, startMinutes: 10 * 60, endMinutes: 12 * 60 },
+      { weekday: 5, startMinutes: 10 * 60, endMinutes: 12 * 60 },
+    ],
+  },
 ];
 
 const removeMode = process.argv.includes("--remove");
@@ -96,6 +165,19 @@ if (removeMode) {
   process.exit(0);
 }
 
+// Flag every demo profile as a demo — including any seeded in an earlier run —
+// so the booking/pass safeguard applies to all of them, not just new inserts.
+try {
+  await sql.query("update teachers set is_demo = true where email like '%@kuleo.demo'");
+  console.log("✓ flagged all @kuleo.demo teachers as demo (bookings disabled)");
+} catch (e) {
+  console.error(
+    "\n✗ Could not set is_demo — run `npm run db:migrate` first, then re-run this seed.\n",
+    e.message,
+  );
+  process.exit(1);
+}
+
 for (const t of DEMO_TEACHERS) {
   const existing = await sql.query("select 1 from teachers where slug = $1", [t.slug]);
   if (existing.length > 0) {
@@ -104,8 +186,8 @@ for (const t of DEMO_TEACHERS) {
   }
   const teacherId = id("tch");
   await sql.query(
-    `insert into teachers (id, slug, email, name, headline, bio, location, specialties, avatar_url, timezone)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, '', $9)`,
+    `insert into teachers (id, slug, email, name, headline, bio, location, specialties, avatar_url, timezone, is_demo)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, '', $9, true)`,
     [teacherId, t.slug, t.email, t.name, t.headline, t.bio, t.location, JSON.stringify(t.specialties), t.timezone],
   );
   for (const s of t.sessions) {
