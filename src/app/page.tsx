@@ -48,15 +48,16 @@ export default async function Home() {
       {/* Hero */}
       <section className="hero-glow border-b border-border/60">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:py-16 text-center">
-        <span className="pill mb-5">For yoga teachers</span>
-        <h1 className="animate-fade-up text-4xl sm:text-6xl font-semibold tracking-tight max-w-3xl mx-auto leading-tight">
-          Grow your yoga business{" "}
-          <em className="text-brand-dark">without</em> growing your workload.
+        <span className="pill-accent mb-5">Like Mindbody — rebuilt for the solo teacher</span>
+        <h1 className="animate-fade-up text-4xl sm:text-6xl font-semibold tracking-tight max-w-4xl mx-auto leading-tight">
+          The operating system for{" "}
+          <em className="text-brand-dark">independent</em> yoga teachers.
         </h1>
         <p className="animate-fade-up mt-5 text-lg text-muted max-w-2xl mx-auto">
-          Kuleo gives yoga teachers one calm place to run their online yoga
-          business — bookings, payments, scheduling, and student relationships,
-          all from a single link you share. You teach. We&apos;ll handle the rest.
+          Your own studio, run from one link: scheduled classes, bookings,
+          payments, passes, and student follow-ups — all automatic, with{" "}
+          <span className="font-semibold text-foreground">zero commission</span>.
+          You teach. Kuleo runs the business.
         </p>
         <div className="animate-fade-up mt-8 flex items-center justify-center gap-3">
           <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
@@ -128,6 +129,10 @@ export default async function Home() {
             earnings go to teachers
           </p>
         )}
+        <p className="mt-6 text-base text-muted italic [font-family:var(--font-display)]">
+          Our mission is simple: make yoga available to everyone —{" "}
+          <span className="text-brand-dark">by making it pay to teach.</span>
+        </p>
         </div>
       </section>
 

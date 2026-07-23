@@ -18,9 +18,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Kuleo — bookings, payments & scheduling for yoga teachers",
+  title: "Kuleo — the operating system for independent yoga teachers",
   description:
-    "Kuleo helps yoga teachers run their online yoga business from one link — bookings, payments, yoga scheduling, class passes, and student relationships. Teach yoga; we'll handle the rest.",
+    "Kuleo is the all-in-one business platform for solo yoga teachers — like Mindbody, rebuilt for the independent teacher. Scheduled classes, bookings, payments, class passes, and student follow-ups from one link, with zero commission. Make yoga available to everyone by making it pay to teach.",
 };
 
 export default function RootLayout({
