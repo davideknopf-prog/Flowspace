@@ -93,23 +93,32 @@ export default async function Home() {
                 the whole thing from one link. Questions before you start? Text
                 me — or book a quick call.
               </blockquote>
-              <figcaption className="mt-2 text-sm text-muted">
-                <span className="text-base italic text-foreground [font-family:var(--font-display)]">
-                  David
+              <figcaption className="mt-4 flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/founder-david.jpg"
+                  alt="David, founder of Kuleo"
+                  className="size-12 shrink-0 rounded-full object-cover ring-2 ring-accent/30"
+                />
+                <span className="text-sm text-muted">
+                  <span className="text-base italic text-foreground [font-family:var(--font-display)]">
+                    David
+                  </span>
+                  , founder
+                  <br />
+                  <a href={PHONE_HREF} className="font-medium text-brand-dark">
+                    {PHONE_DISPLAY}
+                  </a>{" "}
+                  ·{" "}
+                  <a
+                    href={CALENDLY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-brand-dark underline underline-offset-2"
+                  >
+                    book a call
+                  </a>
                 </span>
-                , founder ·{" "}
-                <a href={PHONE_HREF} className="font-medium text-brand-dark">
-                  {PHONE_DISPLAY}
-                </a>{" "}
-                ·{" "}
-                <a
-                  href={CALENDLY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-brand-dark underline underline-offset-2"
-                >
-                  book a call
-                </a>
               </figcaption>
             </figure>
 
