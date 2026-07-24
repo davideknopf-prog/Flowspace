@@ -58,96 +58,129 @@ export default async function Home() {
 
       {/* Hero */}
       <section className="hero-glow border-b border-border/60">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:py-16 text-center">
-        <span className="pill-accent mb-5">Like Mindbody — rebuilt for the solo teacher</span>
-        <h1 className="animate-fade-up text-4xl sm:text-6xl font-semibold tracking-tight max-w-4xl mx-auto leading-tight">
-          The operating system for{" "}
-          <em className="text-brand-dark">independent</em> yoga teachers.
-        </h1>
-        <p className="animate-fade-up mt-5 text-lg text-muted max-w-2xl mx-auto">
-          Your own studio, run from one link: scheduled classes, bookings,
-          payments, passes, and student follow-ups — all automatic. You teach.
-          Kuleo runs the business.
-        </p>
-        <div className="animate-fade-up mt-8 flex items-center justify-center gap-3">
-          <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
-            {teacher ? "Go to your studio" : "Kick off your studio"}
-          </Link>
-          <Link href="/login" className="btn-secondary">
-            Log in
-          </Link>
-        </div>
-        <p className="mt-4 text-xs text-muted">
-          Nothing to download · cancel anytime.
-        </p>
-        <p className="mt-6 text-sm text-muted">
-          Want a walkthrough first?{" "}
-          <a
-            href={CALENDLY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-brand-dark font-medium underline underline-offset-2"
-          >
-            Book a free demo
-          </a>{" "}
-          or call/text David directly at{" "}
-          <a href={PHONE_HREF} className="text-brand-dark font-medium">
-            {PHONE_DISPLAY}
-          </a>
-          .
-        </p>
-        <p className="mt-3 text-sm">
-          <Link href="/demo" className="text-brand-dark font-medium underline underline-offset-2">
-            👀 Peek inside a live teacher&apos;s dashboard →
-          </Link>
-        </p>
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 pt-16 pb-12 sm:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+          {/* The argument — left column, set editorially */}
+          <div className="animate-fade-up">
+            <p className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.22em] text-muted">
+              <span className="h-px w-8 bg-accent" aria-hidden />
+              For the independent yoga teacher
+            </p>
+            <h1 className="mt-6 text-4xl font-semibold leading-[1.03] tracking-tight sm:text-5xl lg:text-[3.6rem]">
+              The operating system for{" "}
+              <em className="text-brand-dark">independent</em> yoga teachers.
+            </h1>
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-muted">
+              Your own studio, run from one link — scheduled classes, bookings,
+              payments, passes, and student follow-ups, all automatic. You
+              teach; Kuleo runs the business.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
+                {teacher ? "Go to your studio" : "Start your studio"}
+              </Link>
+              <Link
+                href="/demo"
+                className="text-sm font-medium text-brand-dark underline decoration-1 underline-offset-4"
+              >
+                See a real teacher&apos;s dashboard →
+              </Link>
+            </div>
 
-        {/* Two doors in: every marketplace routes both sides on screen one. */}
-        <div className="animate-fade-up-late mt-10 grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
-          <Link
-            href={teacher ? "/dashboard" : "/signup"}
-            className="card card-lift !p-5 hover:border-brand"
-          >
-            <div className="text-2xl mb-2">🧘</div>
-            <p className="font-semibold">I&apos;m here to teach</p>
-            <p className="text-sm text-muted mt-1">
-              Open your studio, share one link, and get paid directly for every class.
+            {/* Founder voice — the human behind the tool */}
+            <figure className="mt-10 max-w-md border-l-2 border-accent/50 pl-4">
+              <blockquote className="text-[15px] leading-relaxed text-foreground/80">
+                I built Kuleo so independent teachers keep what they earn and run
+                the whole thing from one link. Questions before you start? Text
+                me — or book a quick call.
+              </blockquote>
+              <figcaption className="mt-2 text-sm text-muted">
+                <span className="text-base italic text-foreground [font-family:var(--font-display)]">
+                  David
+                </span>
+                , founder ·{" "}
+                <a href={PHONE_HREF} className="font-medium text-brand-dark">
+                  {PHONE_DISPLAY}
+                </a>{" "}
+                ·{" "}
+                <a
+                  href={CALENDLY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-brand-dark underline underline-offset-2"
+                >
+                  book a call
+                </a>
+              </figcaption>
+            </figure>
+
+            <p className="mt-6 text-sm text-muted">
+              Here to take a class instead?{" "}
+              <Link
+                href="/students"
+                className="font-medium text-brand-dark underline underline-offset-2"
+              >
+                Browse teachers →
+              </Link>
             </p>
-            <p className="text-sm text-brand-dark font-medium mt-3">
-              Kick off your studio →
-            </p>
-          </Link>
-          <Link
-            href="/students"
-            className="card card-lift !p-5 hover:border-brand"
-          >
-            <div className="text-2xl mb-2">✨</div>
-            <p className="font-semibold">I&apos;m here to practice</p>
-            <p className="text-sm text-muted mt-1">
-              Book live classes with independent, verified teachers — online or
-              in person.
-            </p>
-            <p className="text-sm text-brand-dark font-medium mt-3">
-              Find your class →
-            </p>
-          </Link>
+          </div>
+
+          {/* The real product, not a promise — right column */}
+          <div className="animate-fade-up-late relative mx-auto w-full max-w-sm lg:mx-0 lg:ml-auto">
+            <div className="rounded-xl border border-border bg-surface p-6 shadow-[0_2px_24px_-10px_rgba(38,33,28,0.16)]">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-[0.18em] text-muted">
+                  Your studio
+                </span>
+                <span className="text-xs font-medium text-brand-dark">Today</span>
+              </div>
+              <div className="mt-5">
+                <p className="text-sm text-muted">You just earned</p>
+                <p className="mt-1 text-5xl font-semibold text-brand-dark [font-family:var(--font-display)]">
+                  $23.50
+                </p>
+                <p className="mt-2 text-sm text-muted">
+                  Jane booked{" "}
+                  <span className="font-medium text-foreground">Morning Vinyasa</span>{" "}
+                  — added to your balance.
+                </p>
+              </div>
+              <div className="mt-5 space-y-3 border-t border-border pt-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Sunrise Flow</span>
+                  <span className="text-muted">Tomorrow · 7:00 AM</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Restorative Evening</span>
+                  <span className="text-muted">Thu · 6:30 PM</span>
+                </div>
+              </div>
+            </div>
+            {/* a small human moment, floating over the surface */}
+            <div className="absolute -bottom-5 -left-4 hidden rounded-lg border border-border bg-surface px-4 py-3 shadow-[0_2px_18px_-6px_rgba(38,33,28,0.2)] sm:block">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-muted">
+                New pass sold
+              </p>
+              <p className="text-sm font-medium">Priya · 5-Class Pass · $80</p>
+            </div>
+          </div>
         </div>
 
-        {/* Honest, live numbers beat borrowed big ones. */}
-        {teacherCount > 0 && (
-          <p className="mt-8 text-sm text-muted">
-            <span className="font-semibold text-foreground">{teacherCount}</span>{" "}
-            verified teacher{teacherCount === 1 ? "" : "s"} ·{" "}
-            <span className="font-semibold text-foreground">{weekClassCount}</span>{" "}
-            bookable class{weekClassCount === 1 ? "" : "es"} this week ·{" "}
-            <span className="font-semibold text-foreground">100%</span> of class
-            earnings go to teachers
+        {/* A slim, honest trust strip — real numbers, quietly stated */}
+        <div className="mx-auto max-w-7xl px-4 pb-14">
+          {teacherCount > 0 && (
+            <p className="text-sm text-muted">
+              <span className="font-semibold text-foreground">{teacherCount}</span>{" "}
+              verified teacher{teacherCount === 1 ? "" : "s"} ·{" "}
+              <span className="font-semibold text-foreground">{weekClassCount}</span>{" "}
+              bookable class{weekClassCount === 1 ? "" : "es"} this week ·{" "}
+              <span className="font-semibold text-foreground">100%</span> of class
+              earnings go to teachers
+            </p>
+          )}
+          <p className="mt-4 max-w-xl text-base italic text-muted [font-family:var(--font-display)]">
+            Our mission is simple: make yoga available to everyone —{" "}
+            <span className="text-brand-dark">by making it pay to teach.</span>
           </p>
-        )}
-        <p className="mt-6 text-base text-muted italic [font-family:var(--font-display)]">
-          Our mission is simple: make yoga available to everyone —{" "}
-          <span className="text-brand-dark">by making it pay to teach.</span>
-        </p>
         </div>
       </section>
 
@@ -192,31 +225,42 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Features */}
-      <section className="mx-auto max-w-7xl px-4 pb-14">
-        <div className="text-center max-w-xl mx-auto mb-10">
-          <h2 className="heading-flourish heading-flourish-center text-2xl sm:text-3xl font-semibold">Less admin. More teaching.</h2>
-          <p className="mt-2 text-muted">
+      {/* Features — an editorial index, not a card grid */}
+      <section className="mx-auto max-w-5xl px-4 py-16 sm:py-20">
+        <div className="mb-10 max-w-xl">
+          <p className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.22em] text-muted">
+            <span className="h-px w-8 bg-accent" aria-hidden />
+            What Kuleo runs for you
+          </p>
+          <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
+            Less admin. More teaching.
+          </h2>
+          <p className="mt-3 leading-relaxed text-muted">
             You didn&apos;t train for years to chase payments and answer booking
             DMs. Kuleo quietly runs the parts of your business that pull you off
             the mat.
           </p>
         </div>
-        <div className="grid sm:grid-cols-3 gap-4">
-          <Feature
-            icon="🪷"
+        <div className="border-t border-border">
+          <IndexRow
+            n="01"
             title="Turn followers into students"
             body="Your classes, story, and prices live on one link built for your Instagram bio. Visitors see your next open times the moment they land — and book on the spot."
           />
-          <Feature
-            icon="📅"
+          <IndexRow
+            n="02"
             title="Scheduling that runs itself"
-            body="Set your weekly hours once. Kuleo turns them into bookable times for your online yoga classes or in-person sessions — no DMs, no double-bookings, no back-and-forth."
+            body="Set your weekly hours once. Kuleo turns them into bookable times for online or in-person sessions — no DMs, no double-bookings, no back-and-forth."
           />
-          <Feature
-            icon="💳"
-            title="Fair, flat pricing"
-            body="Students pay securely when they book, with class passes built in. Just $15/month plus a flat 6% processing fee per sale — that covers card processing and keeps Kuleo running. No surprise commissions."
+          <IndexRow
+            n="03"
+            title="Payments, passes & payouts"
+            body="Students pay the moment they book, with class passes built in for repeat practice. A flat $15/month and 6% per sale — no surprise commissions, ever."
+          />
+          <IndexRow
+            n="04"
+            title="Follow-ups that bring them back"
+            body="After class, Kuleo sends the thank-you, gathers the review, and nudges the rebooking — the quiet retention work that otherwise never gets done."
           />
         </div>
       </section>
@@ -571,12 +615,16 @@ function DemoStat({ label, value, accent = false }: { label: string; value: stri
   );
 }
 
-function Feature({ icon, title, body }: { icon: string; title: string; body: string }) {
+function IndexRow({ n, title, body }: { n: string; title: string; body: string }) {
   return (
-    <div className="card">
-      <div className="text-2xl mb-3">{icon}</div>
-      <h3 className="font-semibold mb-1">{title}</h3>
-      <p className="text-sm text-muted leading-relaxed">{body}</p>
+    <div className="grid gap-x-8 gap-y-2 border-b border-border py-8 sm:grid-cols-[4rem_1fr]">
+      <span className="text-2xl font-semibold text-accent [font-family:var(--font-display)]">
+        {n}
+      </span>
+      <div className="max-w-2xl">
+        <h3 className="text-xl font-semibold [font-family:var(--font-display)]">{title}</h3>
+        <p className="mt-2 leading-relaxed text-muted">{body}</p>
+      </div>
     </div>
   );
 }

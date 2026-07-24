@@ -10,9 +10,9 @@ export function SiteHeader() {
       <div className="mx-auto max-w-7xl px-4 h-16 flex items-center justify-between">
         <Link
           href="/"
-          className="flex items-center gap-2 font-semibold text-lg text-brand-dark [font-family:var(--font-display)]"
+          className="flex items-baseline text-xl font-semibold tracking-tight text-brand-dark [font-family:var(--font-display)]"
         >
-          <span className="text-xl">🧘</span> Kuleo
+          Kuleo<span className="text-accent">.</span>
         </Link>
         <nav className="flex items-center gap-3">
           <Link href="/students" className="btn-ghost text-sm hidden md:inline-flex">
