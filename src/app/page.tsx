@@ -66,9 +66,8 @@ export default async function Home() {
         </h1>
         <p className="animate-fade-up mt-5 text-lg text-muted max-w-2xl mx-auto">
           Your own studio, run from one link: scheduled classes, bookings,
-          payments, passes, and student follow-ups — all automatic, for{" "}
-          <span className="font-semibold text-foreground">$15/month plus a flat 6% fee</span>.
-          You teach. Kuleo runs the business.
+          payments, passes, and student follow-ups — all automatic. You teach.
+          Kuleo runs the business.
         </p>
         <div className="animate-fade-up mt-8 flex items-center justify-center gap-3">
           <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
@@ -79,7 +78,7 @@ export default async function Home() {
           </Link>
         </div>
         <p className="mt-4 text-xs text-muted">
-          $15/month + a flat 6% processing fee · nothing to download · cancel anytime.
+          Nothing to download · cancel anytime.
         </p>
         <p className="mt-6 text-sm text-muted">
           Want a walkthrough first?{" "}
