@@ -447,71 +447,81 @@ export default async function Home() {
 
       {/* Pricing — anchored, juxtaposed, one click from checkout */}
       <section id="pricing" className="mx-auto max-w-7xl px-4 py-14 scroll-mt-16">
-        <div className="mx-auto mb-8 max-w-2xl text-center">
+        <div className="mx-auto mb-10 max-w-2xl text-center">
           <p className="inline-flex items-center gap-3 text-xs font-medium uppercase tracking-[0.22em] text-muted">
             <span className="h-px w-8 bg-accent" aria-hidden />
             Simple, honest pricing
             <span className="h-px w-8 bg-accent" aria-hidden />
           </p>
           <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
-            One plan. Your whole studio.
+            Start free. Go live when you&apos;re ready.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted">
-            Build your studio free. Go live with a{" "}
-            <em className="text-foreground">14-day free trial</em> — no charge
-            until then, and students always pay you directly.
+            Build your whole studio for free. Upgrade to publish, take bookings,
+            and get paid — students always pay you directly.
           </p>
         </div>
 
-        {/* Trial, made obvious */}
-        <div className="mx-auto mb-6 flex max-w-md items-center justify-center gap-2 rounded-full border border-brand bg-brand-tint/60 px-4 py-2 text-center text-sm font-medium text-brand-dark">
-          🌱 Every plan starts with a 14-day free trial — cancel anytime
-        </div>
+        {/* Three tiers: Free to build, then monthly or annual to go live. */}
+        <div className="mx-auto grid max-w-5xl items-stretch gap-4 sm:grid-cols-3">
+          {/* Free — build */}
+          <Link
+            href={teacher ? "/dashboard" : "/signup"}
+            className="card card-lift !p-6 flex flex-col text-center"
+          >
+            <p className="font-semibold text-muted">Free</p>
+            <p className="mt-3 text-4xl font-semibold text-foreground [font-family:var(--font-display)]">
+              $0
+            </p>
+            <p className="mt-2 flex-1 text-sm text-muted">
+              Build &amp; customize your whole studio and preview it. Upgrade any
+              time to go live and take bookings.
+            </p>
+            <span className="btn-secondary mt-5 w-full text-sm">Start free →</span>
+          </Link>
 
-        {/* Two plans, compared monthly-to-monthly. */}
-        <div className="mx-auto grid max-w-3xl items-stretch gap-4 sm:grid-cols-2">
-          {/* Monthly */}
+          {/* Monthly — go live */}
           <Link
             href={`/subscribe/start?plan=${PRICING.monthly.lookupKey}`}
-            className="card card-lift !p-7 flex flex-col text-center"
+            className="card card-lift !p-6 flex flex-col text-center"
           >
             <p className="font-semibold text-muted">Monthly</p>
-            <p className="mt-3 text-5xl font-semibold text-foreground [font-family:var(--font-display)]">
+            <p className="mt-3 text-4xl font-semibold text-foreground [font-family:var(--font-display)]">
               {PRICING.monthly.perMonth}
               <span className="text-base font-normal text-muted [font-family:var(--font-sans)]">
                 /mo
               </span>
             </p>
             <p className="mt-2 flex-1 text-sm text-muted">
-              <span className="font-medium text-brand-dark">14-day free trial</span>
-              , then {PRICING.monthly.perMonth}/mo · cancel anytime
+              Go live and take bookings. Includes a 14-day free trial · cancel
+              anytime.
             </p>
-            <span className="btn-secondary mt-5 w-full text-sm">Start free trial →</span>
+            <span className="btn-secondary mt-5 w-full text-sm">Go live →</span>
           </Link>
+
           {/* Annual — best value */}
           <Link
             href={`/subscribe/start?plan=${PRICING.annual.lookupKey}`}
-            className="card card-lift !p-7 relative flex flex-col text-center border-brand ring-2 ring-[var(--ring)]"
+            className="card card-lift !p-6 relative flex flex-col text-center border-brand ring-2 ring-[var(--ring)]"
           >
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent px-3 py-0.5 text-[11px] font-semibold text-white">
               BEST VALUE · {PRICING.annual.save}
             </span>
             <p className="font-semibold text-muted">Annual</p>
-            <p className="mt-3 text-5xl font-semibold text-brand-dark [font-family:var(--font-display)]">
+            <p className="mt-3 text-4xl font-semibold text-brand-dark [font-family:var(--font-display)]">
               {PRICING.annual.perMonth}
               <span className="text-base font-normal text-muted [font-family:var(--font-sans)]">
                 /mo
               </span>
             </p>
             <p className="mt-2 flex-1 text-sm text-muted">
-              <span className="font-medium text-brand-dark">14-day free trial</span>
-              , then {PRICING.annual.sub}
+              {PRICING.annual.sub}. Includes a 14-day free trial.
             </p>
-            <span className="btn-primary mt-5 w-full text-sm">Start free trial →</span>
+            <span className="btn-primary mt-5 w-full text-sm">Go live →</span>
           </Link>
         </div>
         <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-muted">
-          Both plans include the whole studio · a flat 6% per sale · cancel
+          Free to build · a flat 6% per sale once you&apos;re live · cancel
           anytime · your earnings are always yours to cash out.
         </p>
 
