@@ -21,8 +21,8 @@ export function AuthNavButtons() {
       <Link href="/login" className="btn-ghost text-sm hidden sm:inline-flex">
         Log in
       </Link>
-      <Link href="/signup" className="btn-primary text-sm">
-        Get started
+      <Link href="/signup" className="btn-primary">
+        Start your studio
       </Link>
     </>
   );

@@ -55,7 +55,8 @@ export default async function Home() {
             </p>
             <h1 className="mt-6 text-4xl font-semibold leading-[1.03] tracking-tight sm:text-5xl lg:text-[3.6rem]">
               Fill your classes.<br />
-              <em className="text-brand-dark">Get paid</em> what you&apos;re worth.
+              <em className="text-brand-dark mr-[0.14em]">Get paid</em> what
+              you&apos;re worth.
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-muted">
               More students, more income, and the freedom to just teach. Kuleo
@@ -576,6 +577,29 @@ export default async function Home() {
               . He&apos;ll set up your studio with you.
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Final CTA — big, clear, one action */}
+      <section className="bg-brand-dark">
+        <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:py-20">
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl [font-family:var(--font-display)]">
+            Ready to fill your classes?
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-white/75">
+            Set up your studio in minutes and take your first booking this week.
+          </p>
+          <div className="mt-8">
+            <Link
+              href={teacher ? "/dashboard" : "/signup"}
+              className="inline-flex rounded-lg bg-white px-8 py-4 text-base font-semibold text-brand-dark transition-colors hover:bg-white/90"
+            >
+              {teacher ? "Go to your studio" : "Start your studio →"}
+            </Link>
+          </div>
+          <p className="mt-4 text-sm text-white/60">
+            Free onboarding &amp; training · cancel anytime
+          </p>
         </div>
       </section>
 
