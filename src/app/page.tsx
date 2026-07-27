@@ -457,10 +457,15 @@ export default async function Home() {
             One plan. Your whole studio.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted">
-            Less than one student a month covers it. Students always pay{" "}
-            <em className="text-foreground">you</em> — Kuleo just runs the
-            business behind it.
+            Build your studio free. Go live with a{" "}
+            <em className="text-foreground">14-day free trial</em> — no charge
+            until then, and students always pay you directly.
           </p>
+        </div>
+
+        {/* Trial, made obvious */}
+        <div className="mx-auto mb-6 flex max-w-md items-center justify-center gap-2 rounded-full border border-brand bg-brand-tint/60 px-4 py-2 text-center text-sm font-medium text-brand-dark">
+          🌱 Every plan starts with a 14-day free trial — cancel anytime
         </div>
 
         {/* Two plans, compared monthly-to-monthly. */}
@@ -478,9 +483,10 @@ export default async function Home() {
               </span>
             </p>
             <p className="mt-2 flex-1 text-sm text-muted">
-              {PRICING.monthly.sub} · cancel anytime
+              <span className="font-medium text-brand-dark">14-day free trial</span>
+              , then {PRICING.monthly.perMonth}/mo · cancel anytime
             </p>
-            <span className="btn-secondary mt-5 w-full text-sm">Start monthly →</span>
+            <span className="btn-secondary mt-5 w-full text-sm">Start free trial →</span>
           </Link>
           {/* Annual — best value */}
           <Link
@@ -497,8 +503,11 @@ export default async function Home() {
                 /mo
               </span>
             </p>
-            <p className="mt-2 flex-1 text-sm text-muted">{PRICING.annual.sub}</p>
-            <span className="btn-primary mt-5 w-full text-sm">Start annual →</span>
+            <p className="mt-2 flex-1 text-sm text-muted">
+              <span className="font-medium text-brand-dark">14-day free trial</span>
+              , then {PRICING.annual.sub}
+            </p>
+            <span className="btn-primary mt-5 w-full text-sm">Start free trial →</span>
           </Link>
         </div>
         <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-muted">
@@ -598,7 +607,7 @@ export default async function Home() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-white/60">
-            Free onboarding &amp; training · cancel anytime
+            Build free · go live with a 14-day free trial · cancel anytime
           </p>
         </div>
       </section>
