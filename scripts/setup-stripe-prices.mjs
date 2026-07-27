@@ -17,9 +17,8 @@ if (!process.env.STRIPE_SECRET_KEY) {
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const PLANS = [
-  { lookupKey: "kuleo_weekly", amountCents: 750, interval: "week", label: "Weekly" },
-  { lookupKey: "kuleo_monthly", amountCents: 1500, interval: "month", label: "Monthly" },
-  { lookupKey: "kuleo_annual", amountCents: 9000, interval: "year", label: "Annual" },
+  { lookupKey: "kuleo_monthly", amountCents: 1474, interval: "month", label: "Monthly" },
+  { lookupKey: "kuleo_annual", amountCents: 13266, interval: "year", label: "Annual" },
 ];
 
 const existing = await stripe.prices.list({
@@ -40,20 +39,34 @@ if (existing.data.length > 0) {
   console.log("Created product:", product);
 }
 
+void existingKeys; // (kept for compatibility; matching is done per-plan below)
+
 for (const plan of PLANS) {
-  if (existingKeys.has(plan.lookupKey)) {
-    console.log(`✓ ${plan.label} already exists (${plan.lookupKey})`);
+  // Is there already an active price with this lookup_key AND the exact amount?
+  const forKey = existing.data.filter(
+    (p) => p.lookup_key === plan.lookupKey && p.active,
+  );
+  const match = forKey.find(
+    (p) => p.unit_amount === plan.amountCents && p.recurring?.interval === plan.interval,
+  );
+  if (match) {
+    console.log(`✓ ${plan.label} already correct (${plan.lookupKey}, $${plan.amountCents / 100})`);
     continue;
   }
+  // Create the new price and MOVE the lookup_key onto it. Any old price keeps
+  // working for existing subscribers (grandfathered) but new checkouts use this.
   const price = await stripe.prices.create({
     product: typeof product === "string" ? product : product.id,
     unit_amount: plan.amountCents,
     currency: "usd",
     recurring: { interval: plan.interval },
     lookup_key: plan.lookupKey,
+    transfer_lookup_key: true,
     nickname: `Kuleo ${plan.label}`,
   });
-  console.log(`+ Created ${plan.label}: ${price.id} ($${plan.amountCents / 100}/${plan.interval})`);
+  console.log(
+    `+ Set ${plan.label}: ${price.id} ($${plan.amountCents / 100}/${plan.interval}) — lookup_key transferred`,
+  );
 }
 
 console.log("\nDone. Prices are resolved at runtime by lookup_key — no IDs to copy.");

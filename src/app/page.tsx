@@ -2,7 +2,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooterBar } from "@/components/SiteFooterBar";
 import { getCurrentTeacher } from "@/lib/session";
-import { getPlans, type Plan } from "@/lib/billing";
+import { PRICING } from "@/lib/billing";
 import { getStudioSchedule, type StudioEntry } from "@/lib/studio";
 import { pickDemoTeacher, getDemoSnapshot, type DemoSnapshot } from "@/lib/demo";
 import { Avatar } from "@/components/Avatar";
@@ -14,18 +14,6 @@ const PHONE_HREF = "tel:+15084687829";
 
 export default async function Home() {
   const teacher = await getCurrentTeacher();
-  // Real prices from Stripe; a hiccup there shouldn't take down the landing
-  // page, so fall back to the known amounts.
-  let plans: Plan[] = [];
-  try {
-    plans = await getPlans();
-  } catch {
-    plans = [
-      { lookupKey: "kuleo_weekly", priceId: "", amountCents: 750, interval: "week" },
-      { lookupKey: "kuleo_monthly", priceId: "", amountCents: 1500, interval: "month" },
-      { lookupKey: "kuleo_annual", priceId: "", amountCents: 9000, interval: "year" },
-    ];
-  }
 
   // Live marketplace proof: real upcoming classes and honest platform stats.
   // A database hiccup degrades to hiding these sections, never a broken page.
@@ -66,13 +54,13 @@ export default async function Home() {
               For the independent yoga teacher
             </p>
             <h1 className="mt-6 text-4xl font-semibold leading-[1.03] tracking-tight sm:text-5xl lg:text-[3.6rem]">
-              The operating system for{" "}
-              <em className="text-brand-dark">independent</em> yoga teachers.
+              Fill your classes.<br />
+              <em className="text-brand-dark">Get paid</em> what you&apos;re worth.
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-muted">
-              Your own studio, run from one link — scheduled classes, bookings,
-              payments, passes, and student follow-ups, all automatic. You
-              teach; Kuleo runs the business.
+              More students, more income, and the freedom to just teach. Kuleo
+              runs your bookings, payments, and follow-ups from one link — you
+              focus on the mat.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
               <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
@@ -140,27 +128,37 @@ export default async function Home() {
                 <span className="text-[11px] uppercase tracking-[0.18em] text-muted">
                   Your studio
                 </span>
-                <span className="text-xs font-medium text-brand-dark">Today</span>
+                <span className="text-xs font-medium text-brand-dark">This week</span>
               </div>
               <div className="mt-5">
-                <p className="text-sm text-muted">You just earned</p>
-                <p className="mt-1 text-5xl font-semibold text-brand-dark [font-family:var(--font-display)]">
-                  $23.50
+                <p className="text-sm text-muted">You taught</p>
+                <p className="mt-1">
+                  <span
+                    className="text-5xl font-semibold text-brand-dark [font-family:var(--font-display)]"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, transparent 58%, #f6e59a 58%, #f6e59a 94%, transparent 94%)",
+                      padding: "0 6px",
+                      boxDecorationBreak: "clone",
+                      WebkitBoxDecorationBreak: "clone",
+                    }}
+                  >
+                    47 students
+                  </span>
                 </p>
-                <p className="mt-2 text-sm text-muted">
-                  Jane booked{" "}
-                  <span className="font-medium text-foreground">Morning Vinyasa</span>{" "}
-                  — added to your balance.
+                <p className="mt-3 text-sm text-muted">
+                  <span className="font-medium text-foreground">$1,240 earned</span>{" "}
+                  · 31 came back for more.
                 </p>
               </div>
               <div className="mt-5 space-y-3 border-t border-border pt-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium">Sunrise Flow</span>
-                  <span className="text-muted">Tomorrow · 7:00 AM</span>
+                  <span className="text-muted">Tomorrow · 7:00 AM · 8 booked</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium">Restorative Evening</span>
-                  <span className="text-muted">Thu · 6:30 PM</span>
+                  <span className="text-muted">Thu · 6:30 PM · 11 booked</span>
                 </div>
               </div>
             </div>
@@ -190,6 +188,63 @@ export default async function Home() {
             Our mission is simple: make yoga available to everyone —{" "}
             <span className="text-brand-dark">by making it pay to teach.</span>
           </p>
+        </div>
+      </section>
+
+      {/* The pain, named — and the reframe. The emotional core. */}
+      <section className="border-b border-border bg-brand-tint/40">
+        <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:py-20">
+          <p className="inline-flex items-center gap-3 text-xs font-medium uppercase tracking-[0.22em] text-muted">
+            <span className="h-px w-8 bg-accent" aria-hidden />
+            The honest truth
+            <span className="h-px w-8 bg-accent" aria-hidden />
+          </p>
+          <h2 className="mx-auto mt-5 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
+            The problem was never your teaching.
+          </h2>
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-muted">
+            Empty classes. Chasing Venmo after every session. A day job you
+            don&apos;t love, because teaching doesn&apos;t pay the way it should.
+            You&apos;re a better teacher than your paycheck says — the business
+            around you was just built to take the cut.
+          </p>
+          <p className="mt-5 text-lg font-medium text-foreground">
+            Kuleo hands it back. Three things change:
+          </p>
+          <div className="mt-10 grid gap-8 border-t border-border pt-10 text-left sm:grid-cols-3">
+            <div>
+              <p className="text-xl font-semibold [font-family:var(--font-display)]">
+                Connect with more students
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                One booking link fills the room, and automatic follow-ups bring
+                them back — so your classes stop being empty.
+              </p>
+            </div>
+            <div>
+              <p className="text-xl font-semibold [font-family:var(--font-display)]">
+                Earn what you&apos;re worth
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Every student pays you directly. More students means more
+                income — no flat rate, no ceiling, no middleman.
+              </p>
+            </div>
+            <div>
+              <p className="text-xl font-semibold [font-family:var(--font-display)]">
+                Become a better teacher
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Spend your energy on the mat, not the admin. Watch students
+                return week after week — the truest proof you&apos;re great.
+              </p>
+            </div>
+          </div>
+          <div className="mt-10">
+            <Link href={teacher ? "/dashboard" : "/signup"} className="btn-primary">
+              {teacher ? "Go to your studio" : "Start your studio"}
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -264,7 +319,7 @@ export default async function Home() {
           <IndexRow
             n="03"
             title="Payments, passes & payouts"
-            body="Students pay the moment they book, with class passes built in for repeat practice. A flat $15/month and 6% per sale — no surprise commissions, ever."
+            body="Students pay the moment they book, with class passes built in for repeat practice. From $11.05/month and a flat 6% per sale — no surprise commissions, ever."
           />
           <IndexRow
             n="04"
@@ -391,75 +446,75 @@ export default async function Home() {
 
       {/* Pricing — anchored, juxtaposed, one click from checkout */}
       <section id="pricing" className="mx-auto max-w-7xl px-4 py-14 scroll-mt-16">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <span className="pill-accent mb-4">Pricing — for teachers</span>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-            One booking covers it.<br />The rest is yours.
+        <div className="mx-auto mb-8 max-w-2xl text-center">
+          <p className="inline-flex items-center gap-3 text-xs font-medium uppercase tracking-[0.22em] text-muted">
+            <span className="h-px w-8 bg-accent" aria-hidden />
+            Simple, honest pricing
+            <span className="h-px w-8 bg-accent" aria-hidden />
+          </p>
+          <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
+            One plan. Your whole studio.
           </h2>
-          <p className="mt-4 text-lg text-muted">
-            A single $25 booking more than covers a{" "}
-            <em className="text-foreground">month of Kuleo</em>. It&apos;s $15/month
-            plus a flat 6% processing fee per sale — students always pay{" "}
-            <span className="font-semibold text-foreground">you</span>.
+          <p className="mx-auto mt-4 max-w-xl text-lg text-muted">
+            Less than one student a month covers it. Students always pay{" "}
+            <em className="text-foreground">you</em> — Kuleo just runs the
+            business behind it.
           </p>
         </div>
 
-        {/* Pick a plan → account → checkout. Three clicks, live today. */}
-        <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto items-stretch">
-          {plans.map((p) => {
-            const copy: Record<string, { label: string; anchor: string; cta: string; highlight?: boolean }> = {
-              kuleo_weekly: {
-                label: "Weekly",
-                anchor: "Less than a latte. Zero commitment.",
-                cta: "Start weekly",
-              },
-              kuleo_monthly: {
-                label: "Monthly",
-                anchor: "One $25 student covers it — with change.",
-                cta: "Start monthly",
-                highlight: true,
-              },
-              kuleo_annual: {
-                label: "Annual",
-                anchor: "Two months free. Fully committed.",
-                cta: "Start annual",
-              },
-            };
-            const c = copy[p.lookupKey] ?? { label: p.lookupKey, anchor: "", cta: "Start" };
-            return (
-              <Link
-                key={p.lookupKey}
-                href={`/subscribe/start?plan=${p.lookupKey}`}
-                className={`card card-lift !p-6 flex flex-col text-center relative ${
-                  c.highlight ? "border-brand ring-2 ring-[var(--ring)]" : ""
-                }`}
-              >
-                {c.highlight && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-0.5 text-[11px] font-semibold text-white whitespace-nowrap">
-                    MOST POPULAR
-                  </span>
-                )}
-                <p className="font-semibold text-muted">{c.label}</p>
-                <p className="mt-2 text-4xl font-semibold [font-family:var(--font-display)] text-foreground">
-                  {formatPrice(p.amountCents)}
-                  <span className="text-base font-normal text-muted [font-family:var(--font-sans)]">
-                    /{p.interval}
-                  </span>
-                </p>
-                <p className="mt-2 text-sm text-muted flex-1">{c.anchor}</p>
-                <span
-                  className={`mt-4 ${c.highlight ? "btn-primary" : "btn-secondary"} w-full text-sm`}
-                >
-                  {c.cta} →
-                </span>
-              </Link>
-            );
-          })}
+        {/* Two plans, compared monthly-to-monthly. */}
+        <div className="mx-auto grid max-w-3xl items-stretch gap-4 sm:grid-cols-2">
+          {/* Monthly */}
+          <Link
+            href={`/subscribe/start?plan=${PRICING.monthly.lookupKey}`}
+            className="card card-lift !p-7 flex flex-col text-center"
+          >
+            <p className="font-semibold text-muted">Monthly</p>
+            <p className="mt-3 text-5xl font-semibold text-foreground [font-family:var(--font-display)]">
+              {PRICING.monthly.perMonth}
+              <span className="text-base font-normal text-muted [font-family:var(--font-sans)]">
+                /mo
+              </span>
+            </p>
+            <p className="mt-2 flex-1 text-sm text-muted">
+              {PRICING.monthly.sub} · cancel anytime
+            </p>
+            <span className="btn-secondary mt-5 w-full text-sm">Start monthly →</span>
+          </Link>
+          {/* Annual — best value */}
+          <Link
+            href={`/subscribe/start?plan=${PRICING.annual.lookupKey}`}
+            className="card card-lift !p-7 relative flex flex-col text-center border-brand ring-2 ring-[var(--ring)]"
+          >
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent px-3 py-0.5 text-[11px] font-semibold text-white">
+              BEST VALUE · {PRICING.annual.save}
+            </span>
+            <p className="font-semibold text-muted">Annual</p>
+            <p className="mt-3 text-5xl font-semibold text-brand-dark [font-family:var(--font-display)]">
+              {PRICING.annual.perMonth}
+              <span className="text-base font-normal text-muted [font-family:var(--font-sans)]">
+                /mo
+              </span>
+            </p>
+            <p className="mt-2 flex-1 text-sm text-muted">{PRICING.annual.sub}</p>
+            <span className="btn-primary mt-5 w-full text-sm">Start annual →</span>
+          </Link>
         </div>
-        <p className="mt-4 text-center text-xs text-muted max-w-2xl mx-auto">
-          Set up this afternoon · cancel anytime · $15/month + a flat 6%
-          processing fee per sale · your earnings are always yours to cash out.
+        <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-muted">
+          Both plans include the whole studio · a flat 6% per sale · cancel
+          anytime · your earnings are always yours to cash out.
         </p>
+
+        {/* Free onboarding + training + IG feature — a real value-add */}
+        <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-brand bg-brand-tint/50 p-5 text-center">
+          <p className="text-sm leading-relaxed">
+            <span className="font-semibold text-brand-dark">
+              Every plan includes free 1-on-1 onboarding &amp; training
+            </span>{" "}
+            — and we feature you to our audience with branded Instagram posts,
+            sharing your studio across our network.
+          </p>
+        </div>
 
         {/* The juxtaposition — what $15 actually buys you out of */}
         <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto mt-12">
@@ -529,8 +584,8 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl px-4 py-12">
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 text-sm">
             <div>
-              <p className="flex items-center gap-2 font-semibold text-lg text-brand-dark mb-3 [font-family:var(--font-display)]">
-                <span className="text-xl">🧘</span> Kuleo
+              <p className="flex items-baseline text-xl font-semibold tracking-tight text-brand-dark mb-3 [font-family:var(--font-display)]">
+                Kuleo<span className="text-accent">.</span>
               </p>
               <p className="text-muted leading-relaxed">
                 The online home for your yoga business. Teach yoga; we&apos;ll

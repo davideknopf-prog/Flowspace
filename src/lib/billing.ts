@@ -7,10 +7,23 @@ import { setTeacherSubscription } from "./repo";
 // scripts/setup-stripe-prices.mjs in each mode).
 
 export const PLAN_LOOKUP_KEYS = [
-  "kuleo_weekly",
   "kuleo_monthly",
   "kuleo_annual",
 ] as const;
+
+// Display copy for the two-tier plans. The real charge always comes from the
+// Stripe price resolved by lookupKey; these strings only drive what the
+// marketing/subscribe pages show. Annual is shown as its per-month equivalent
+// ($132.66 / 12 ≈ $11.05) so the two plans compare monthly-to-monthly.
+export const PRICING = {
+  monthly: { lookupKey: "kuleo_monthly", perMonth: "$14.74", sub: "billed monthly" },
+  annual: {
+    lookupKey: "kuleo_annual",
+    perMonth: "$11.05",
+    sub: "$132.66 billed yearly",
+    save: "Save 25%",
+  },
+} as const;
 
 export interface Plan {
   lookupKey: string;
