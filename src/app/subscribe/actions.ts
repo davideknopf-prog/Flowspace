@@ -43,6 +43,12 @@ export async function subscribeAction(formData: FormData) {
     // "Add promotion code" box on Stripe Checkout — codes themselves are
     // created by scripts/setup-promos.mjs (yogafree / yoga10 / yoga25).
     allow_promotion_codes: true,
+    // This is the "go live from your free draft" step — reward it with a
+    // 14-day free trial. Card required (filters freeloaders), auto-charges
+    // after the trial. "trialing" counts as subscribed, so the studio goes
+    // live immediately.
+    subscription_data: { trial_period_days: 14 },
+    payment_method_collection: "always",
     success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/subscribe`,
     metadata: { teacherId: teacher!.id },

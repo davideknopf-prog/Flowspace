@@ -6,6 +6,7 @@ import { isSubscribed } from "@/lib/types";
 import { exitViewAsAction } from "./actions";
 import { Avatar } from "@/components/Avatar";
 import { DashboardNav, DashboardNavMobile } from "@/components/DashboardNav";
+import { ChatIdentify } from "@/components/LiveChat";
 
 export default async function DashboardLayout({
   children,
@@ -23,6 +24,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen flex flex-col">
+      <ChatIdentify email={teacher.email} name={teacher.name} />
       {isDraft && (
         <div className="bg-brand-dark text-white text-sm px-4 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
           <span>

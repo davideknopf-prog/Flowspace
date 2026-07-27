@@ -474,8 +474,9 @@ export default async function Home() {
               $0
             </p>
             <p className="mt-2 flex-1 text-sm text-muted">
-              Build &amp; customize your whole studio and preview it. Upgrade any
-              time to go live and take bookings.
+              Build &amp; customize your whole studio and preview it. When
+              you&apos;re ready, go live with a{" "}
+              <span className="font-medium text-brand-dark">14-day free trial</span>.
             </p>
             <span className="btn-secondary mt-5 w-full text-sm">Start free →</span>
           </Link>
@@ -493,8 +494,7 @@ export default async function Home() {
               </span>
             </p>
             <p className="mt-2 flex-1 text-sm text-muted">
-              Go live and take bookings. Includes a 14-day free trial · cancel
-              anytime.
+              Go live and take bookings today · cancel anytime.
             </p>
             <span className="btn-secondary mt-5 w-full text-sm">Go live →</span>
           </Link>
@@ -515,7 +515,7 @@ export default async function Home() {
               </span>
             </p>
             <p className="mt-2 flex-1 text-sm text-muted">
-              {PRICING.annual.sub}. Includes a 14-day free trial.
+              {PRICING.annual.sub} · go live today.
             </p>
             <span className="btn-primary mt-5 w-full text-sm">Go live →</span>
           </Link>

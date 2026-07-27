@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Fraunces } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
+import { LiveChat } from "@/components/LiveChat";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,6 +38,7 @@ export default function RootLayout({
         <body className="min-h-full flex flex-col">
           {children}
           <AnalyticsProvider />
+          <LiveChat />
         </body>
       </html>
     </ClerkProvider>
