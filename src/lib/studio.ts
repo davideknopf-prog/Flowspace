@@ -8,7 +8,7 @@ import {
 import { computeOccurrences } from "@/lib/events";
 import { computeUpcomingClasses } from "@/lib/slots";
 import { formatDayHeading, formatTimeOnly } from "@/lib/format";
-import type { Teacher } from "@/lib/types";
+import { isSubscribed, type Teacher } from "@/lib/types";
 
 // One "studio front desk" view of the whole platform: every teacher's
 // scheduled classes merged chronologically. Shared by the public schedule
@@ -44,7 +44,11 @@ export async function getStudioSchedule(limit = 40): Promise<{
   entries: StudioEntry[];
   teachers: Teacher[];
 }> {
-  const teachers = await listAllTeachers();
+  // Only live studios (subscribed/trialing) and demo showcases appear in public
+  // listings. Draft studios stay private until their teacher goes live.
+  const teachers = (await listAllTeachers()).filter(
+    (t) => isSubscribed(t) || t.isDemo,
+  );
   const now = new Date();
 
   const nested = await Promise.all(

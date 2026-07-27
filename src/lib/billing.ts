@@ -90,6 +90,12 @@ export async function createSubscribeCheckout(
     customer: customerId,
     line_items: [{ price: plan.priceId, quantity: 1 }],
     allow_promotion_codes: true,
+    // 14-day free trial to go live, but a card is required up front — this
+    // filters freeloaders (only real intent adds a card) and auto-charges when
+    // the trial ends. "trialing" counts as subscribed, so the studio goes live
+    // immediately.
+    subscription_data: { trial_period_days: 14 },
+    payment_method_collection: "always",
     success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/subscribe`,
     metadata: { teacherId: teacher.id },

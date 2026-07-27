@@ -15,14 +15,28 @@ export default async function DashboardLayout({
   const ctx = await getViewerContext();
   if (!ctx) redirect("/login");
   const { teacher, isFounderViewer, impersonating } = ctx;
-  // Pay-at-signup: the dashboard is for subscribed teachers. Public booking
-  // pages stay up regardless — a lapsed teacher's students are never blocked.
-  // Founder viewers (FOUNDER_EMAILS env var) bypass the gate to demo freely,
-  // including while viewing another teacher's dashboard.
-  if (!isSubscribed(teacher) && !isFounderViewer) redirect("/subscribe");
+  // Free draft tier: every teacher can build and customize their studio for
+  // free. Going *live* (a public, bookable page) requires a subscription/trial.
+  // So we no longer gate the dashboard itself — instead we show a draft banner
+  // and gate the public page + bookings elsewhere. Founders bypass all of it.
+  const isDraft = !isSubscribed(teacher) && !isFounderViewer;
 
   return (
     <div className="min-h-screen flex flex-col">
+      {isDraft && (
+        <div className="bg-brand-dark text-white text-sm px-4 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
+          <span>
+            ✨ <span className="font-semibold">Draft mode</span> — build your
+            studio free. Go live to open bookings and get paid.
+          </span>
+          <Link
+            href="/subscribe"
+            className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-brand-dark shrink-0"
+          >
+            Go live — start free →
+          </Link>
+        </div>
+      )}
       {impersonating && (
         <div className="bg-accent text-white text-sm px-4 py-2 flex items-center justify-center gap-3">
           <span>
@@ -43,9 +57,9 @@ export default async function DashboardLayout({
         <div className="mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 font-semibold text-lg text-brand-dark [font-family:var(--font-display)]"
+            className="flex items-baseline text-xl font-semibold tracking-tight text-brand-dark [font-family:var(--font-display)]"
           >
-            <span className="text-xl">🧘</span> Kuleo
+            Kuleo<span className="text-accent">.</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link

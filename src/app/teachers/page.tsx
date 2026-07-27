@@ -11,6 +11,7 @@ import {
 import { Avatar } from "@/components/Avatar";
 import { LegalFooter } from "@/components/LegalFooter";
 import { Stars } from "@/components/Stars";
+import { isSubscribed } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Teachers — Kuleo",
@@ -23,7 +24,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function TeachersDirectory() {
-  const teachers = await listAllTeachers();
+  // Public directory shows live studios and demo showcases only — never a
+  // teacher's not-yet-live draft.
+  const teachers = (await listAllTeachers()).filter(
+    (t) => isSubscribed(t) || t.isDemo,
+  );
 
   // Only show teachers who have something bookable/buyable.
   const cards = (

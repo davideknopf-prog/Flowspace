@@ -19,6 +19,7 @@ import {
   deletePendingPass,
 } from "@/lib/repo";
 import { computeSlots } from "@/lib/slots";
+import { isSubscribed } from "@/lib/types";
 import { createReview } from "@/lib/repo";
 import { computeOccurrences } from "@/lib/events";
 import { listClassEvents } from "@/lib/repo";
@@ -65,6 +66,10 @@ export async function bookAction(formData: FormData) {
   // whether Stripe is in test or live mode — no one can transact with a bot.
   if (teacher!.isDemo) {
     redirect(`/t/${slug}?demo=1`);
+  }
+  // Draft studios (free tier, not yet live) can't take real bookings.
+  if (!isSubscribed(teacher!)) {
+    redirect(`/t/${slug}?draft=1`);
   }
 
   // Time validation depends on the scheduling model:
@@ -229,6 +234,9 @@ export async function buyPassAction(formData: FormData) {
   // Same demo safeguard as bookAction — refuse before any Stripe session.
   if (teacher!.isDemo) {
     redirect(`/t/${slug}?demo=1`);
+  }
+  if (!isSubscribed(teacher!)) {
+    redirect(`/t/${slug}?draft=1`);
   }
 
   const pass = await createPendingPass(

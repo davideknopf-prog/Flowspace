@@ -18,6 +18,7 @@ import {
 } from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
 import { BookingForm } from "@/components/BookingForm";
+import { isSubscribed } from "@/lib/types";
 
 export default async function BookPage({
   params,
@@ -34,9 +35,11 @@ export default async function BookPage({
   const sessionType = await getSessionType(sessionTypeId);
   if (!sessionType || sessionType.teacherId !== teacher.id) notFound();
 
-  // Demo/showcase profile: intercept before the form so no one fills it out
-  // only to be bounced. The public page still looks fully real.
-  if (teacher.isDemo) {
+  // Demo profiles and not-yet-live draft studios can't take bookings —
+  // intercept before the form so no one fills it out only to be bounced.
+  const bookingBlocked = teacher.isDemo || !isSubscribed(teacher);
+  if (bookingBlocked) {
+    const first = teacher.name.split(" ")[0];
     return (
       <main className="min-h-screen">
         <div className="mx-auto max-w-2xl px-4 py-8">
@@ -44,7 +47,7 @@ export default async function BookPage({
             href={`/t/${teacher.slug}`}
             className="text-sm text-muted hover:text-foreground"
           >
-            ← Back to {teacher.name.split(" ")[0]}&apos;s page
+            ← Back to {first}&apos;s page
           </Link>
           <div className="card mt-4 flex items-center gap-4">
             <Avatar name={teacher.name} src={teacher.avatarUrl} size={52} />
@@ -57,12 +60,14 @@ export default async function BookPage({
             </div>
           </div>
           <div className="card mt-6 text-center py-10">
-            <p className="text-3xl mb-3">✨</p>
-            <h2 className="text-lg font-semibold">This is a sample studio</h2>
+            <p className="text-3xl mb-3">{teacher.isDemo ? "✨" : "🌱"}</p>
+            <h2 className="text-lg font-semibold">
+              {teacher.isDemo ? "This is a sample studio" : "Launching soon"}
+            </h2>
             <p className="mt-2 text-sm text-muted max-w-sm mx-auto">
-              {teacher.name.split(" ")[0]} is a demo profile showing what a
-              teacher&apos;s Kuleo page looks like. Booking is turned off here —
-              but this is exactly what your students would see and use.
+              {teacher.isDemo
+                ? `${first} is a demo profile showing what a teacher's Kuleo page looks like. Booking is turned off here — but this is exactly what your students would see and use.`
+                : `${first} is still setting up and isn't taking bookings just yet. This is a preview of what you'll be able to book once the studio is live.`}
             </p>
             <Link href="/signup" className="btn-primary mt-6 inline-flex">
               Start your own studio →

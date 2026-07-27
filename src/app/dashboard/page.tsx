@@ -15,7 +15,7 @@ import {
 import { computeOccurrences } from "@/lib/events";
 import { CopyLink } from "@/components/CopyLink";
 import { formatSlot, formatMoney } from "@/lib/format";
-import { payoutMethodLabel } from "@/lib/types";
+import { payoutMethodLabel, isSubscribed } from "@/lib/types";
 import { headers } from "next/headers";
 import { FOUNDER } from "@/lib/founder";
 import { viewAsAction, markPayoutRequestPaidAction } from "./actions";
@@ -96,6 +96,157 @@ export default async function DashboardHome() {
   const setupDone = steps.slice(0, 3).every((s) => s.done);
   const ready = remaining === 0;
   const firstName = teacher.name.split(" ")[0];
+
+  // --- Draft (free tier): future-cast what going live could look like -------
+  const isDraft = !isSubscribed(teacher) && !isFounderViewer;
+  if (isDraft) {
+    // A clearly-labeled projection from their own setup + a well-filled week.
+    const prices = activeSessions.map((s) => s.priceCents).filter((c) => c > 0);
+    const avgPriceCents = prices.length
+      ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
+      : 2000;
+    const CLASSES_WK = 3;
+    const PER_CLASS = 8;
+    const projMonthlyNet = Math.round(CLASSES_WK * PER_CLASS * avgPriceCents * 4 * 0.94);
+    const projStudentsWk = CLASSES_WK * PER_CLASS;
+    const built = [
+      { done: teacher.bio.trim().length > 0, label: "Complete your profile", href: "/dashboard/profile" },
+      { done: sessionTypes.length > 0, label: "Add a class & price", href: "/dashboard/schedule" },
+      {
+        done:
+          events.length > 0 ||
+          availability.length > 0 ||
+          (sessionTypes.length > 0 && sessionTypes.every((s) => s.scheduling === "flexible")),
+        label: "Set your class times",
+        href: "/dashboard/schedule",
+      },
+    ];
+    const buildDone = built.every((s) => s.done);
+
+    return (
+      <div className="max-w-4xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Welcome, {firstName} 👋</h1>
+          <p className="text-muted text-sm">
+            Your studio is in{" "}
+            <span className="font-medium text-brand-dark">draft</span> — build it,
+            preview it, then go live to start taking bookings.
+          </p>
+        </div>
+
+        {/* What-if: a glimpse of going live */}
+        <div className="card border-brand bg-brand-tint/30">
+          <p className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.2em] text-muted">
+            <span className="h-px w-8 bg-accent" aria-hidden />
+            A glimpse of going live
+          </p>
+          <p className="mt-4 text-sm text-muted">
+            With your classes, a well-filled week could mean
+          </p>
+          <p className="mt-1">
+            <span
+              className="text-5xl font-semibold text-brand-dark [font-family:var(--font-display)]"
+              style={{
+                background:
+                  "linear-gradient(180deg, transparent 58%, #f6e59a 58%, #f6e59a 94%, transparent 94%)",
+                padding: "0 6px",
+                boxDecorationBreak: "clone",
+                WebkitBoxDecorationBreak: "clone",
+              }}
+            >
+              ~{formatMoney(projMonthlyNet)}/mo
+            </span>
+          </p>
+          <p className="mt-3 text-sm text-muted">
+            and about{" "}
+            <span className="font-semibold text-foreground">
+              {projStudentsWk} students a week
+            </span>{" "}
+            on the mat with you.
+          </p>
+          <p className="mt-3 text-xs text-muted">
+            A projection from your setup and a full schedule — not real yet.
+            Going live is how you start making it true.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href="/subscribe" className="btn-primary">
+              Go live — start 14-day free trial →
+            </Link>
+            <a
+              href={publicUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-secondary"
+            >
+              Preview your studio page ↗
+            </a>
+          </div>
+        </div>
+
+        {/* Build checklist */}
+        <div className="card">
+          <h2 className="font-semibold mb-3">
+            {buildDone ? "Your studio is built — ready to go live 🎉" : "Build your studio"}
+          </h2>
+          <ul className="space-y-2">
+            {built.map((s) => (
+              <li key={s.label}>
+                <Link
+                  href={s.href}
+                  className="flex items-center gap-3 text-sm hover:text-brand-dark"
+                >
+                  <span
+                    className={`flex size-5 items-center justify-center rounded-full text-xs ${
+                      s.done ? "bg-brand text-white" : "border border-border text-muted"
+                    }`}
+                  >
+                    {s.done ? "✓" : ""}
+                  </span>
+                  <span className={s.done ? "line-through text-muted" : ""}>
+                    {s.label}
+                  </span>
+                </Link>
+              </li>
+            ))}
+            <li className="flex items-center gap-3 text-sm">
+              <span className="flex size-5 items-center justify-center rounded-full border border-border text-xs text-muted" />
+              <a href={publicUrl} target="_blank" rel="noreferrer" className="hover:text-brand-dark">
+                Preview what your students will see ↗
+              </a>
+            </li>
+            <li className="flex items-center gap-3 text-sm">
+              <span className="flex size-5 items-center justify-center rounded-full border border-brand text-xs text-brand-dark">
+                →
+              </span>
+              <Link href="/subscribe" className="font-medium text-brand-dark hover:underline">
+                Go live to open bookings &amp; get paid
+              </Link>
+            </li>
+          </ul>
+        </div>
+
+        {/* Founder concierge — nurture the draft into a live studio */}
+        <div className="card border-brand ring-1 ring-[var(--ring)]">
+          <h2 className="font-semibold mb-1">
+            Want a hand getting live? I&apos;m right here 👋
+          </h2>
+          <p className="text-sm text-muted mb-3">
+            I&apos;m {FOUNDER.name}, {FOUNDER.title} of Kuleo. Free 1-on-1
+            onboarding comes with every plan — I&apos;ll set your studio up with
+            you and get you booked. Text, call, or book a time.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <a href={FOUNDER.onboardingCallUrl} target="_blank" rel="noreferrer" className="btn-primary text-sm">
+              📅 Book your onboarding call
+            </a>
+            <a href={FOUNDER.smsHref} className="btn-secondary text-sm">
+              💬 Text {FOUNDER.phone}
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl space-y-6">

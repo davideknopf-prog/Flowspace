@@ -16,6 +16,7 @@ import { computeOccurrences } from "@/lib/events";
 import { Avatar } from "@/components/Avatar";
 import { Stars } from "@/components/Stars";
 import { formatPrice, formatDuration, formatSlot } from "@/lib/format";
+import { isSubscribed } from "@/lib/types";
 import { buyPassAction } from "./actions";
 
 export async function generateMetadata({
@@ -37,13 +38,19 @@ export default async function PublicProfile({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ error?: string; demo?: string }>;
+  searchParams: Promise<{ error?: string; demo?: string; draft?: string }>;
 }) {
   const { slug } = await params;
-  const { error, demo } = await searchParams;
+  const { error, demo, draft } = await searchParams;
   const teacher = await getTeacherBySlug(slug);
   if (!teacher) notFound();
+  // Bookability: demo profiles and not-yet-live draft studios both can't take
+  // real bookings. Demo is a public showcase; a draft is a teacher previewing
+  // what students will see before they go live.
+  const isDraft = !teacher.isDemo && !isSubscribed(teacher);
+  const blocked = teacher.isDemo || isDraft;
   const triedToBookDemo = teacher.isDemo && demo === "1";
+  const triedToBookDraft = isDraft && draft === "1";
 
   const [sessionTypesAll, offersAll, rules, bookings, reviews, reviewStats, events] =
     await Promise.all([
@@ -114,8 +121,7 @@ export default async function PublicProfile({
 
   return (
     <main className="min-h-screen">
-      {/* Demo/showcase profiles: honest, tasteful ribbon. Booking is blocked
-          server-side; this just tells visitors the studio is a sample. */}
+      {/* Demo showcase ribbon — booking is blocked server-side. */}
       {teacher.isDemo && (
         <div className="bg-brand-dark text-white">
           <div className="mx-auto max-w-3xl px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
@@ -128,6 +134,26 @@ export default async function PublicProfile({
               className="rounded-lg bg-white px-3 py-1 text-xs font-medium text-brand-dark shrink-0"
             >
               Start yours →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Draft studio ribbon — a preview of what students will see. The owner
+          previews here before going live; the public can't book yet. */}
+      {isDraft && (
+        <div className="bg-brand-dark text-white">
+          <div className="mx-auto max-w-3xl px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span>
+              🌱 <span className="font-semibold">Launching soon</span> — this is
+              a preview. {teacher.name.split(" ")[0]} isn&apos;t taking bookings
+              just yet.
+            </span>
+            <Link
+              href="/dashboard"
+              className="rounded-lg bg-white px-3 py-1 text-xs font-medium text-brand-dark shrink-0"
+            >
+              Go live →
             </Link>
           </div>
         </div>
@@ -192,6 +218,16 @@ export default async function PublicProfile({
       </div>
 
       <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
+        {triedToBookDraft && (
+          <p className="rounded-lg border border-brand bg-brand-tint/50 px-4 py-3 text-sm">
+            🌱 This studio is a <span className="font-semibold">preview</span> and
+            isn&apos;t live yet, so booking is turned off. This is exactly what
+            your students will see once you go live.{" "}
+            <Link href="/dashboard" className="text-brand-dark font-medium underline">
+              Go live →
+            </Link>
+          </p>
+        )}
         {triedToBookDemo && (
           <p className="rounded-lg border border-brand bg-brand-tint/50 px-4 py-3 text-sm">
             ✨ This is a <span className="font-semibold">sample studio</span>, so
@@ -339,7 +375,7 @@ export default async function PublicProfile({
                       {formatPrice(o.priceCents)}
                     </p>
                   </div>
-                  {teacher.isDemo ? (
+                  {blocked ? (
                     <div className="mt-3">
                       <button
                         type="button"
@@ -349,7 +385,9 @@ export default async function PublicProfile({
                         Buy · {formatPrice(o.priceCents)}
                       </button>
                       <p className="hint mt-1">
-                        ✨ Sample studio — checkout is disabled on demo profiles.
+                        {teacher.isDemo
+                          ? "✨ Sample studio — checkout is disabled on demo profiles."
+                          : "🌱 Preview — passes go on sale once this studio is live."}
                       </p>
                     </div>
                   ) : (

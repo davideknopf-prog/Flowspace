@@ -27,13 +27,16 @@ export default async function SubscribePage({
         </Link>
 
         <div className="text-center mb-10">
+          <p className="inline-flex items-center gap-2 rounded-full bg-brand-tint px-3 py-1 text-xs font-semibold text-brand-dark mb-4">
+            🌱 Go live · 14-day free trial
+          </p>
           <h1 className="text-3xl font-semibold mb-2">
-            Pick your plan, {teacher!.name.split(" ")[0]}
+            Open your studio, {teacher!.name.split(" ")[0]}
           </h1>
           <p className="text-muted max-w-md mx-auto">
-            One subscription runs your whole studio — booking link, scheduling,
-            payments, passes, and follow-ups. Cancel anytime. Students always
-            pay you directly.
+            Your studio goes live today and starts taking bookings. Try it free
+            for 14 days — you won&apos;t be charged until then, and you can
+            cancel anytime. Students always pay you directly.
           </p>
         </div>
 
@@ -53,10 +56,10 @@ export default async function SubscribePage({
               <span className="text-sm font-normal text-muted"> /mo</span>
             </p>
             <p className="mt-2 text-sm text-muted flex-1">
-              {PRICING.monthly.sub} · cancel anytime
+              free for 14 days, then {PRICING.monthly.perMonth}/mo · {PRICING.monthly.sub}
             </p>
             <button type="submit" className="btn-secondary w-full mt-5">
-              Choose monthly
+              Start free trial →
             </button>
           </form>
 
@@ -74,9 +77,9 @@ export default async function SubscribePage({
               {PRICING.annual.perMonth}
               <span className="text-sm font-normal text-muted"> /mo</span>
             </p>
-            <p className="mt-2 text-sm text-muted flex-1">{PRICING.annual.sub}</p>
+            <p className="mt-2 text-sm text-muted flex-1">free for 14 days, then {PRICING.annual.perMonth}/mo · {PRICING.annual.sub}</p>
             <button type="submit" className="btn-primary w-full mt-5">
-              Choose annual
+              Start free trial →
             </button>
           </form>
         </div>
