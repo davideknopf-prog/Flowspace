@@ -41,6 +41,10 @@ alter table teachers add column if not exists stripe_account_id text unique;
 alter table teachers add column if not exists stripe_charges_enabled boolean not null default false;
 alter table teachers add column if not exists stripe_details_submitted boolean not null default false;
 
+-- Founding member: one of the first 100 teachers. Locked at a 0% take rate for
+-- life (everyone after pays 5%). Set once at signup, never changes.
+alter table teachers add column if not exists founding_member boolean not null default false;
+
 -- Demo/showcase profiles (bot teachers used for proof-of-concept). Their
 -- public pages look fully real, but bookings and pass purchases are refused
 -- server-side regardless of Stripe mode, so no one can transact with them.

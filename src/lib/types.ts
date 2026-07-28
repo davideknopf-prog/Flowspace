@@ -51,16 +51,28 @@ export interface Teacher {
   stripeAccountId: string | null;
   stripeChargesEnabled: boolean;
   stripeDetailsSubmitted: boolean;
+  // Founding member: one of the first 100 teachers. Locked at 0% take rate for
+  // life. Set once at signup, never changes.
+  foundingMember: boolean;
 }
 
 export function isSubscribed(teacher: Teacher): boolean {
   return ["active", "trialing"].includes(teacher.subscriptionStatus);
 }
 
-// Fully live: subscribed AND their connected account can accept charges. Only
-// then can the public studio take real bookings and pass purchases.
+// Fully live: their connected account can accept charges. Kuleo is free to use
+// (no subscription) — a studio goes live the moment the teacher connects
+// payouts, and Kuleo earns via a small per-booking take rate instead.
 export function canTakePayments(teacher: Teacher): boolean {
-  return isSubscribed(teacher) && teacher.stripeChargesEnabled;
+  return teacher.stripeChargesEnabled;
+}
+
+// Kuleo's cut of a booking, in basis points (100 = 1%). Founding members (the
+// first 100 teachers) are locked at 0% for life; everyone after pays 5%. Set
+// on the teacher row at signup. Applied as a Stripe application fee on the
+// direct charge — so it only ever costs a teacher when they actually get paid.
+export function platformTakeBps(teacher: Teacher): number {
+  return teacher.foundingMember ? 0 : 500;
 }
 
 export type LocationType = "online" | "in_person";

@@ -19,7 +19,7 @@ import {
   deletePendingPass,
 } from "@/lib/repo";
 import { computeSlots } from "@/lib/slots";
-import { canTakePayments } from "@/lib/types";
+import { canTakePayments, platformTakeBps } from "@/lib/types";
 import { createReview } from "@/lib/repo";
 import { computeOccurrences } from "@/lib/events";
 import { listClassEvents } from "@/lib/repo";
@@ -200,7 +200,17 @@ export async function bookAction(formData: FormData) {
           },
         ],
         customer_email: clientEmail,
-        payment_intent_data: { receipt_email: clientEmail },
+        payment_intent_data: {
+          receipt_email: clientEmail,
+          // Kuleo's take rate (0% for founding members). Omitted when 0.
+          ...(platformTakeBps(teacher!) > 0
+            ? {
+                application_fee_amount: Math.round(
+                  (sessionType!.priceCents * platformTakeBps(teacher!)) / 10000,
+                ),
+              }
+            : {}),
+        },
         success_url: `${origin}/t/${slug}/booked/${booking.id}?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/api/stripe/cancel?bookingId=${booking.id}&slug=${slug}&sessionTypeId=${sessionTypeId}`,
         expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30 min, Stripe's minimum
@@ -272,7 +282,16 @@ export async function buyPassAction(formData: FormData) {
           },
         ],
         customer_email: clientEmail,
-        payment_intent_data: { receipt_email: clientEmail },
+        payment_intent_data: {
+          receipt_email: clientEmail,
+          ...(platformTakeBps(teacher!) > 0
+            ? {
+                application_fee_amount: Math.round(
+                  (offer!.priceCents * platformTakeBps(teacher!)) / 10000,
+                ),
+              }
+            : {}),
+        },
         success_url: `${origin}/t/${slug}/pass-success/${pass.id}?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/api/stripe/cancel?passId=${pass.id}&slug=${slug}`,
         expires_at: Math.floor(Date.now() / 1000) + 30 * 60,

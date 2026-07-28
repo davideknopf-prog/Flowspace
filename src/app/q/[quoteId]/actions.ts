@@ -7,7 +7,7 @@ import {
   getTeacherById,
   attachQuoteStripeSession,
 } from "@/lib/repo";
-import { canTakePayments } from "@/lib/types";
+import { canTakePayments, platformTakeBps } from "@/lib/types";
 import { stripe } from "@/lib/stripe";
 
 async function siteOrigin(): Promise<string> {
@@ -48,9 +48,16 @@ export async function payQuoteAction(formData: FormData) {
         },
       ],
       ...(quote!.clientEmail ? { customer_email: quote!.clientEmail } : {}),
-      ...(quote!.clientEmail
-        ? { payment_intent_data: { receipt_email: quote!.clientEmail } }
-        : {}),
+      payment_intent_data: {
+        ...(quote!.clientEmail ? { receipt_email: quote!.clientEmail } : {}),
+        ...(platformTakeBps(teacher!) > 0
+          ? {
+              application_fee_amount: Math.round(
+                (quote!.priceCents * platformTakeBps(teacher!)) / 10000,
+              ),
+            }
+          : {}),
+      },
       success_url: `${origin}/q/${id}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/q/${id}`,
       metadata: { quoteId: id },

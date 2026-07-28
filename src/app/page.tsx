@@ -2,7 +2,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooterBar } from "@/components/SiteFooterBar";
 import { getCurrentTeacher } from "@/lib/session";
-import { PRICING } from "@/lib/billing";
+import { foundingSpotsLeft, FOUNDING_CAP } from "@/lib/repo";
 import { getStudioSchedule, type StudioEntry } from "@/lib/studio";
 import { pickDemoTeacher, getDemoSnapshot, type DemoSnapshot } from "@/lib/demo";
 import { Avatar } from "@/components/Avatar";
@@ -27,6 +27,14 @@ export default async function Home() {
     teacherCount = studio.teachers.length;
   } catch {
     // sections render conditionally below
+  }
+
+  // Founding-member scarcity: the first 100 teachers are locked at 0% for life.
+  let spotsLeft = FOUNDING_CAP;
+  try {
+    spotsLeft = await foundingSpotsLeft();
+  } catch {
+    // fall back to the cap if the count is unavailable
   }
 
   // Live demo snapshot — a real teacher's real numbers, embedded on the home
@@ -320,7 +328,7 @@ export default async function Home() {
           <IndexRow
             n="03"
             title="Payments, passes & payouts"
-            body="Students pay the moment they book, with class passes built in for repeat practice. From $11.05/month — and Kuleo takes 0% of your class revenue. You keep everything you earn."
+            body="Students pay the moment they book, with class passes built in for repeat practice. Free to use — Kuleo takes a small cut of each booking (0% for founding members), and students always pay you directly."
           />
           <IndexRow
             n="04"
@@ -454,75 +462,56 @@ export default async function Home() {
             <span className="h-px w-8 bg-accent" aria-hidden />
           </p>
           <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Start free. Go live when you&apos;re ready.
+            Free to use. We only earn when you do.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted">
-            Build your whole studio for free. Upgrade to publish, take bookings,
-            and get paid — students always pay you directly.
+            No subscription. Build your studio, take bookings, and get paid —
+            students always pay you directly. Kuleo takes a small cut of each
+            booking, and nothing else.
           </p>
         </div>
 
-        {/* Three tiers: Free to build, then monthly or annual to go live. */}
-        <div className="mx-auto grid max-w-5xl items-stretch gap-4 sm:grid-cols-3">
-          {/* Free — build */}
+        {/* Free + founding-member offer. */}
+        <div className="mx-auto max-w-md">
           <Link
             href={teacher ? "/dashboard" : "/signup"}
-            className="card card-lift !p-6 flex flex-col text-center"
+            className="card card-lift !p-8 relative flex flex-col text-center border-brand ring-2 ring-[var(--ring)]"
           >
+            {spotsLeft > 0 && (
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent px-3 py-0.5 text-[11px] font-semibold text-white">
+                FOUNDING MEMBER · {spotsLeft} spot{spotsLeft === 1 ? "" : "s"} left
+              </span>
+            )}
             <p className="font-semibold text-muted">Free</p>
-            <p className="mt-3 text-4xl font-semibold text-foreground [font-family:var(--font-display)]">
+            <p className="mt-3 text-5xl font-semibold text-brand-dark [font-family:var(--font-display)]">
               $0
             </p>
-            <p className="mt-2 flex-1 text-sm text-muted">
-              Build &amp; customize your whole studio and preview it. When
-              you&apos;re ready, go live with a{" "}
-              <span className="font-medium text-brand-dark">14-day free trial</span>.
+            <p className="mt-1 text-sm text-muted">to sign up &amp; go live</p>
+            <p className="mt-4 flex-1 text-sm text-muted">
+              {spotsLeft > 0 ? (
+                <>
+                  Join the first {FOUNDING_CAP} teachers and keep{" "}
+                  <span className="font-semibold text-brand-dark">
+                    100% of every booking — 0% fee, for life
+                  </span>
+                  . After that it&apos;s a flat 5% per booking. Students always
+                  pay you directly.
+                </>
+              ) : (
+                <>
+                  Free to sign up and go live. Kuleo takes a flat 5% per booking —
+                  that&apos;s it. Students always pay you directly.
+                </>
+              )}
             </p>
-            <span className="btn-secondary mt-5 w-full text-sm">Start free →</span>
-          </Link>
-
-          {/* Monthly — go live */}
-          <Link
-            href={`/subscribe/start?plan=${PRICING.monthly.lookupKey}`}
-            className="card card-lift !p-6 flex flex-col text-center"
-          >
-            <p className="font-semibold text-muted">Monthly</p>
-            <p className="mt-3 text-4xl font-semibold text-foreground [font-family:var(--font-display)]">
-              {PRICING.monthly.perMonth}
-              <span className="text-base font-normal text-muted [font-family:var(--font-sans)]">
-                /mo
-              </span>
-            </p>
-            <p className="mt-2 flex-1 text-sm text-muted">
-              Go live and take bookings today · cancel anytime.
-            </p>
-            <span className="btn-secondary mt-5 w-full text-sm">Go live →</span>
-          </Link>
-
-          {/* Annual — best value */}
-          <Link
-            href={`/subscribe/start?plan=${PRICING.annual.lookupKey}`}
-            className="card card-lift !p-6 relative flex flex-col text-center border-brand ring-2 ring-[var(--ring)]"
-          >
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent px-3 py-0.5 text-[11px] font-semibold text-white">
-              BEST VALUE · {PRICING.annual.save}
+            <span className="btn-primary mt-6 w-full text-sm">
+              {spotsLeft > 0 ? "Claim your founding spot →" : "Start free →"}
             </span>
-            <p className="font-semibold text-muted">Annual</p>
-            <p className="mt-3 text-4xl font-semibold text-brand-dark [font-family:var(--font-display)]">
-              {PRICING.annual.perMonth}
-              <span className="text-base font-normal text-muted [font-family:var(--font-sans)]">
-                /mo
-              </span>
-            </p>
-            <p className="mt-2 flex-1 text-sm text-muted">
-              {PRICING.annual.sub} · go live today.
-            </p>
-            <span className="btn-primary mt-5 w-full text-sm">Go live →</span>
           </Link>
         </div>
         <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-muted">
-          Free to build · 0% commission on your classes · cancel anytime ·
-          paid straight to your bank by Stripe.
+          No subscription · no setup fee · paid straight to your bank by Stripe ·
+          plus standard card processing.
         </p>
 
         {/* Free onboarding + training + IG feature — a real value-add */}
@@ -556,7 +545,7 @@ export default async function Home() {
               <li className="flex gap-2"><span className="text-brand-dark">✓</span> Your page, your prices, your audience — live this afternoon</li>
             </ul>
             <Link
-              href="/subscribe/start?plan=kuleo_monthly"
+              href={teacher ? "/dashboard" : "/signup"}
               className="btn-primary w-full text-sm mt-5"
             >
               Get booking today →
@@ -617,7 +606,7 @@ export default async function Home() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-white/60">
-            Build free · go live with a 14-day free trial · cancel anytime
+            Free to sign up · 0% for founding members · no subscription
           </p>
         </div>
       </section>

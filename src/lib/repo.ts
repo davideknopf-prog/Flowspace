@@ -88,6 +88,7 @@ function rowToTeacher(row: Record<string, unknown>): Teacher {
     stripeAccountId: (row.stripe_account_id as string | null) ?? null,
     stripeChargesEnabled: (row.stripe_charges_enabled as boolean) ?? false,
     stripeDetailsSubmitted: (row.stripe_details_submitted as boolean) ?? false,
+    foundingMember: (row.founding_member as boolean) ?? false,
   };
 }
 
@@ -396,6 +397,19 @@ async function uniqueSlug(base: string): Promise<string> {
   }
 }
 
+// The founding-member program: the first FOUNDING_CAP real teachers are locked
+// at a 0% take rate for life.
+export const FOUNDING_CAP = 100;
+
+// How many founding spots remain (never negative). Real (non-demo) teachers
+// count against the cap. Used for the "N spots left" scarcity on the site.
+export async function foundingSpotsLeft(): Promise<number> {
+  const rows =
+    await sql`select count(*)::int as n from teachers where is_demo = false`;
+  const taken = (rows[0]?.n as number) ?? 0;
+  return Math.max(0, FOUNDING_CAP - taken);
+}
+
 export async function createTeacher(
   email: string,
   name: string,
@@ -407,9 +421,12 @@ export async function createTeacher(
   const timezone =
     Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
 
+  // First 100 real teachers become founding members (0% take rate for life).
+  const founding = (await foundingSpotsLeft()) > 0;
+
   const rows = await sql`
-    insert into teachers (id, slug, email, name, headline, bio, location, specialties, avatar_url, timezone, clerk_user_id)
-    values (${id}, ${slug}, ${email}, ${displayName}, 'Yoga teacher', '', '', '[]'::jsonb, '', ${timezone}, ${clerkUserId})
+    insert into teachers (id, slug, email, name, headline, bio, location, specialties, avatar_url, timezone, clerk_user_id, founding_member)
+    values (${id}, ${slug}, ${email}, ${displayName}, 'Yoga teacher', '', '', '[]'::jsonb, '', ${timezone}, ${clerkUserId}, ${founding})
     returning *
   `;
   return rowToTeacher(rows[0]);

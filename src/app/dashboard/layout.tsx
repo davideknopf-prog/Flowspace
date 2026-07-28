@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
 import { getViewerContext } from "@/lib/session";
-import { isSubscribed } from "@/lib/types";
 import { exitViewAsAction } from "./actions";
 import { Avatar } from "@/components/Avatar";
 import { DashboardNav, DashboardNavMobile } from "@/components/DashboardNav";
@@ -20,40 +19,24 @@ export default async function DashboardLayout({
   // free. Going *live* (a public, bookable page) requires a subscription/trial.
   // So we no longer gate the dashboard itself — instead we show a draft banner
   // and gate the public page + bookings elsewhere. Founders bypass all of it.
-  const isDraft = !isSubscribed(teacher) && !isFounderViewer;
-  // Subscribed but hasn't finished connecting a payout account — their studio
-  // can't take bookings until Stripe Connect is set up. One step left.
-  const needsPayouts =
-    isSubscribed(teacher) && !teacher.stripeChargesEnabled && !isFounderViewer;
+  // Kuleo is free — a studio goes live the moment payouts are connected. Until
+  // then, build freely and nudge toward the one step that opens bookings.
+  const notLive = !teacher.stripeChargesEnabled && !isFounderViewer;
 
   return (
     <div className="min-h-screen flex flex-col">
       <ChatIdentify email={teacher.email} name={teacher.name} />
-      {isDraft && (
+      {notLive && (
         <div className="bg-brand-dark text-white text-sm px-4 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
           <span>
-            ✨ <span className="font-semibold">Draft mode</span> — build your
-            studio free. Go live to open bookings and get paid.
-          </span>
-          <Link
-            href="/subscribe"
-            className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-brand-dark shrink-0"
-          >
-            Go live — start free →
-          </Link>
-        </div>
-      )}
-      {needsPayouts && (
-        <div className="bg-accent text-white text-sm px-4 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
-          <span>
-            💳 <span className="font-semibold">One step left</span> — connect
-            your payout account to open bookings and get paid.
+            ✨ <span className="font-semibold">Build mode</span> — your studio is
+            free. Connect payouts to go live and start taking bookings.
           </span>
           <Link
             href="/dashboard/payouts"
-            className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-accent shrink-0"
+            className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-brand-dark shrink-0"
           >
-            Set up payouts →
+            Go live — it&apos;s free →
           </Link>
         </div>
       )}

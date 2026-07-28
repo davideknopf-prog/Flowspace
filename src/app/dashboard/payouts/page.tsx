@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentTeacher } from "@/lib/session";
 import { refreshConnectStatus } from "@/lib/connect";
-import { isSubscribed } from "@/lib/types";
 import {
   startPayoutOnboardingAction,
   openExpressDashboardAction,
@@ -31,7 +30,6 @@ export default async function PayoutsPage({
   }
 
   const started = Boolean(teacher.stripeAccountId);
-  const subscribed = isSubscribed(teacher);
 
   // Three states: not started, submitted-but-pending-review, live.
   const state = chargesEnabled
@@ -111,12 +109,9 @@ export default async function PayoutsPage({
               {started ? "Continue setting up payouts →" : "Set up payouts →"}
             </button>
           </form>
-          {!subscribed && (
-            <p className="text-xs text-muted">
-              You can set up payouts now; your studio opens for bookings once
-              you go live.
-            </p>
-          )}
+          <p className="text-xs text-muted">
+            This is the only step to go live — Kuleo is free to use.
+          </p>
         </section>
       )}
     </div>

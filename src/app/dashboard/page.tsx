@@ -15,7 +15,7 @@ import {
 import { computeOccurrences } from "@/lib/events";
 import { CopyLink } from "@/components/CopyLink";
 import { formatSlot, formatMoney } from "@/lib/format";
-import { payoutMethodLabel, isSubscribed } from "@/lib/types";
+import { payoutMethodLabel } from "@/lib/types";
 import { headers } from "next/headers";
 import { FOUNDER } from "@/lib/founder";
 import { viewAsAction, markPayoutRequestPaidAction } from "./actions";
@@ -97,8 +97,8 @@ export default async function DashboardHome() {
   const ready = remaining === 0;
   const firstName = teacher.name.split(" ")[0];
 
-  // --- Draft (free tier): future-cast what going live could look like -------
-  const isDraft = !isSubscribed(teacher) && !isFounderViewer;
+  // --- Build mode (payouts not yet connected): future-cast going live -------
+  const isDraft = !teacher.stripeChargesEnabled && !isFounderViewer;
   if (isDraft) {
     // A clearly-labeled projection from their own setup + a well-filled week.
     const prices = activeSessions.map((s) => s.priceCents).filter((c) => c > 0);
@@ -173,8 +173,8 @@ export default async function DashboardHome() {
             real.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/subscribe" className="btn-primary">
-              Go live — start 14-day free trial →
+            <Link href="/dashboard/payouts" className="btn-primary">
+              Go live — connect payouts (free) →
             </Link>
             <a
               href={publicUrl}
@@ -222,8 +222,8 @@ export default async function DashboardHome() {
               <span className="flex size-5 items-center justify-center rounded-full border border-brand text-xs text-brand-dark">
                 →
               </span>
-              <Link href="/subscribe" className="font-medium text-brand-dark hover:underline">
-                Go live to open bookings &amp; get paid
+              <Link href="/dashboard/payouts" className="font-medium text-brand-dark hover:underline">
+                Connect payouts to go live &amp; get paid
               </Link>
             </li>
           </ul>
