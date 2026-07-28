@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Service" updated="July 22, 2026">
+    <LegalPage title="Terms of Service" updated="July 28, 2026">
       <p>
         Welcome to Kuleo. These Terms of Service (&quot;Terms&quot;) are an
         agreement between you and Upshift Solutions LLC, operating as Kuleo
@@ -54,9 +54,25 @@ export default function TermsPage() {
           <strong>Your earnings.</strong> A flat 6% processing fee is deducted
           from each class or pass sale before it reaches your balance. This fee
           covers third-party card-processing costs and platform maintenance;
-          there is no additional per-class commission. Your balance (your sale
-          price less this fee) is always yours to cash out, whether or not your
-          subscription is active.
+          there is no additional per-class commission.
+        </li>
+        <li>
+          <strong>When funds become available.</strong> Amounts from a booking
+          become available to cash out only after the class or session it pays
+          for has taken place (and, for class passes, as the underlying classes
+          are attended). This protects both you and your students against
+          cancellations and disputes. Funds that have become available remain
+          yours to cash out whether or not your subscription is active.
+        </li>
+        <li>
+          <strong>Chargebacks, refunds &amp; clawbacks.</strong> If a student
+          initiates a chargeback, dispute, or refund on a payment tied to your
+          classes, the disputed amount (including any processing or dispute fees
+          charged to Kuleo) may be deducted from your available or future
+          balance. If your balance is insufficient — for example because you
+          have already cashed out — you agree to promptly repay that amount, and
+          you authorize Kuleo to offset it against future earnings. Kuleo may
+          place a reasonable hold on payouts while a dispute is pending.
         </li>
         <li>
           <strong>Payouts.</strong> Cash-outs are paid to the payout handle you
@@ -87,11 +103,13 @@ export default function TermsPage() {
         </li>
         <li>
           <strong>Cancellations &amp; refunds.</strong> If a Teacher cancels a
-          class, you are entitled to a refund of that booking. If you need to
-          cancel or reschedule, contact your Teacher — refunds for Student
-          cancellations are at the Teacher&apos;s discretion unless required by
-          law. Kuleo can assist in disputes at
-          upshiftsolutionsllc@gmail.com.
+          class, you are entitled to a full refund of that booking. If you need
+          to cancel, you must do so at least twenty-four (24) hours before the
+          class start time to receive a refund. Cancellations made less than 24
+          hours before the class, and no-shows, are non-refundable. Class passes
+          are non-refundable once purchased except where required by law, and
+          unused class credits may be subject to expiration as disclosed at
+          purchase. Kuleo can assist in disputes at upshiftsolutionsllc@gmail.com.
         </li>
         <li>
           <strong>Physical activity.</strong> Yoga is physical exercise. By

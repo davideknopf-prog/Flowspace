@@ -165,8 +165,10 @@ export default async function DashboardHome() {
             on the mat with you.
           </p>
           <p className="mt-3 text-xs text-muted">
-            A projection from your setup and a full schedule — not real yet.
-            Going live is how you start making it true.
+            Illustration only, based on your own prices and a full schedule —
+            not a guarantee of earnings. Actual results vary by teacher,
+            location, demand, and effort. Going live is how you start making it
+            real.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/subscribe" className="btn-primary">
