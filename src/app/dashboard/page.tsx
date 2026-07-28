@@ -111,19 +111,45 @@ export default async function DashboardHome() {
     // teacher bears via Stripe (~2.9% + 30¢), so the projection stays honest.
     const projMonthlyNet = Math.round(CLASSES_WK * PER_CLASS * avgPriceCents * 4 * 0.97);
     const projStudentsWk = CLASSES_WK * PER_CLASS;
-    const built = [
-      { done: teacher.bio.trim().length > 0, label: "Complete your profile", href: "/dashboard/profile" },
-      { done: sessionTypes.length > 0, label: "Add a class & price", href: "/dashboard/schedule" },
+    // The one guided path to a live studio. Four steps, always the same order,
+    // with the next unfinished one highlighted — so a brand-new teacher never
+    // wonders "what now?".
+    const setupSteps = [
+      {
+        done: teacher.bio.trim().length > 0,
+        label: "Complete your profile",
+        desc: "Add a photo, a short bio, and your specialties.",
+        href: "/dashboard/profile",
+        cta: "Edit profile",
+      },
+      {
+        done: sessionTypes.length > 0,
+        label: "Add a class & set your price",
+        desc: "Name a class, set how long it runs and what it costs.",
+        href: "/dashboard/schedule",
+        cta: "Add a class",
+      },
       {
         done:
           events.length > 0 ||
           availability.length > 0 ||
           (sessionTypes.length > 0 && sessionTypes.every((s) => s.scheduling === "flexible")),
         label: "Set your class times",
+        desc: "Pick when your classes happen so students can book.",
         href: "/dashboard/schedule",
+        cta: "Set times",
+      },
+      {
+        done: false, // in build mode this is the finish line by definition
+        label: "Connect payouts & go live",
+        desc: "Free — students pay you directly, straight to your bank.",
+        href: "/dashboard/payouts",
+        cta: "Go live",
       },
     ];
-    const buildDone = built.every((s) => s.done);
+    const doneCount = setupSteps.filter((s) => s.done).length;
+    const nextIdx = setupSteps.findIndex((s) => !s.done);
+    const buildDone = setupSteps.slice(0, 3).every((s) => s.done);
 
     return (
       <div className="max-w-4xl space-y-6">
@@ -187,46 +213,82 @@ export default async function DashboardHome() {
           </div>
         </div>
 
-        {/* Build checklist */}
+        {/* Guided setup — the one path to a live studio */}
         <div className="card">
-          <h2 className="font-semibold mb-3">
-            {buildDone ? "Your studio is built — ready to go live 🎉" : "Build your studio"}
-          </h2>
-          <ul className="space-y-2">
-            {built.map((s) => (
-              <li key={s.label}>
-                <Link
-                  href={s.href}
-                  className="flex items-center gap-3 text-sm hover:text-brand-dark"
+          <div className="flex items-baseline justify-between mb-1">
+            <h2 className="font-semibold">
+              {buildDone
+                ? "Last step — go live 🎉"
+                : "Set up your studio"}
+            </h2>
+            <span className="text-xs text-muted">{doneCount} of 4 done</span>
+          </div>
+          {/* Progress bar */}
+          <div className="h-1.5 w-full rounded-full bg-brand-tint overflow-hidden mb-5">
+            <div
+              className="h-full rounded-full bg-brand transition-all"
+              style={{ width: `${(doneCount / 4) * 100}%` }}
+            />
+          </div>
+
+          <ol className="space-y-2.5">
+            {setupSteps.map((s, i) => {
+              const isNext = i === nextIdx;
+              return (
+                <li
+                  key={s.label}
+                  className={`flex items-start gap-3 rounded-xl p-3 ${
+                    isNext ? "bg-brand-tint/60 ring-1 ring-[var(--ring)]" : ""
+                  }`}
                 >
                   <span
-                    className={`flex size-5 items-center justify-center rounded-full text-xs ${
-                      s.done ? "bg-brand text-white" : "border border-border text-muted"
+                    className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                      s.done
+                        ? "bg-brand text-white"
+                        : isNext
+                          ? "bg-brand-dark text-white"
+                          : "border border-border text-muted"
                     }`}
                   >
-                    {s.done ? "✓" : ""}
+                    {s.done ? "✓" : i + 1}
                   </span>
-                  <span className={s.done ? "line-through text-muted" : ""}>
-                    {s.label}
-                  </span>
-                </Link>
-              </li>
-            ))}
-            <li className="flex items-center gap-3 text-sm">
-              <span className="flex size-5 items-center justify-center rounded-full border border-border text-xs text-muted" />
-              <a href={publicUrl} target="_blank" rel="noreferrer" className="hover:text-brand-dark">
-                Preview what your students will see ↗
-              </a>
-            </li>
-            <li className="flex items-center gap-3 text-sm">
-              <span className="flex size-5 items-center justify-center rounded-full border border-brand text-xs text-brand-dark">
-                →
-              </span>
-              <Link href="/dashboard/payouts" className="font-medium text-brand-dark hover:underline">
-                Connect payouts to go live &amp; get paid
-              </Link>
-            </li>
-          </ul>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={`text-sm font-medium ${
+                        s.done ? "text-muted line-through" : "text-foreground"
+                      }`}
+                    >
+                      {s.label}
+                    </p>
+                    {!s.done && (
+                      <p className="text-xs text-muted mt-0.5">{s.desc}</p>
+                    )}
+                  </div>
+                  {isNext ? (
+                    <Link href={s.href} className="btn-primary text-xs shrink-0">
+                      {s.cta} →
+                    </Link>
+                  ) : !s.done ? (
+                    <Link
+                      href={s.href}
+                      className="text-xs text-brand-dark hover:underline shrink-0 mt-1"
+                    >
+                      {s.cta}
+                    </Link>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ol>
+
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 inline-block text-xs text-muted hover:text-brand-dark"
+          >
+            👁 Preview what your students will see ↗
+          </a>
         </div>
 
         {/* Founder concierge — nurture the draft into a live studio */}
