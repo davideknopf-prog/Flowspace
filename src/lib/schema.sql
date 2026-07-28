@@ -29,6 +29,18 @@ alter table teachers add column if not exists subscription_period_end timestampt
 -- without their own meeting link fall back to this at booking time.
 alter table teachers add column if not exists default_meeting_url text not null default '';
 
+-- Stripe Connect (Express). Each teacher gets their own connected account so
+-- student payments settle directly to the teacher — Kuleo takes 0% of class
+-- revenue (we monetize on the subscription), and money-transmission + dispute
+-- liability sit with Stripe and the teacher, not the platform.
+--   stripe_account_id       — the acct_... id of their Express account
+--   stripe_charges_enabled  — Stripe has verified them enough to accept charges
+--   stripe_details_submitted — they finished the hosted onboarding form
+-- A studio can take real bookings only once charges_enabled is true.
+alter table teachers add column if not exists stripe_account_id text unique;
+alter table teachers add column if not exists stripe_charges_enabled boolean not null default false;
+alter table teachers add column if not exists stripe_details_submitted boolean not null default false;
+
 -- Demo/showcase profiles (bot teachers used for proof-of-concept). Their
 -- public pages look fully real, but bookings and pass purchases are refused
 -- server-side regardless of Stripe mode, so no one can transact with them.

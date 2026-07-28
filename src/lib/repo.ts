@@ -84,6 +84,10 @@ function rowToTeacher(row: Record<string, unknown>): Teacher {
     subscriptionPeriodEnd: row.subscription_period_end
       ? toISO(row.subscription_period_end)
       : null,
+    // Deploy-order safe: undefined (columns not yet migrated) → null/false.
+    stripeAccountId: (row.stripe_account_id as string | null) ?? null,
+    stripeChargesEnabled: (row.stripe_charges_enabled as boolean) ?? false,
+    stripeDetailsSubmitted: (row.stripe_details_submitted as boolean) ?? false,
   };
 }
 
@@ -320,6 +324,42 @@ export async function setTeacherStripeCustomer(
   await sql`
     update teachers set stripe_customer_id = ${stripeCustomerId}
     where id = ${teacherId} and stripe_customer_id is null
+  `;
+}
+
+// --- Stripe Connect (Express) payout account -----------------------------
+
+export async function getTeacherByStripeAccountId(
+  accountId: string,
+): Promise<Teacher | null> {
+  const rows =
+    await sql`select * from teachers where stripe_account_id = ${accountId}`;
+  return rows[0] ? rowToTeacher(rows[0]) : null;
+}
+
+// Persist the connected-account id, once, when we first create it for a teacher.
+export async function setTeacherStripeAccount(
+  teacherId: string,
+  stripeAccountId: string,
+): Promise<void> {
+  await sql`
+    update teachers set stripe_account_id = ${stripeAccountId}
+    where id = ${teacherId} and stripe_account_id is null
+  `;
+}
+
+// Mirror the connected account's capability flags onto the teacher row.
+// Only ever called with values read from Stripe (onboarding return or the
+// account.updated webhook) — Stripe is the source of truth.
+export async function setTeacherConnectStatus(
+  teacherId: string,
+  data: { chargesEnabled: boolean; detailsSubmitted: boolean },
+): Promise<void> {
+  await sql`
+    update teachers
+    set stripe_charges_enabled = ${data.chargesEnabled},
+        stripe_details_submitted = ${data.detailsSubmitted}
+    where id = ${teacherId}
   `;
 }
 

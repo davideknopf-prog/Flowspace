@@ -19,6 +19,7 @@ import {
   backfillQuoteStripeFee,
 } from "@/lib/repo";
 import { syncSubscriptionToTeacher } from "@/lib/billing";
+import { syncConnectAccountToTeacher } from "@/lib/connect";
 import { sendBookingEmails, sendPassEmails, sendQuotePaidEmails } from "@/lib/email";
 
 // Stripe's source of truth for payment state. Confirms bookings (and sends
@@ -77,6 +78,19 @@ export async function POST(req: NextRequest) {
     if (teacher) {
       await syncSubscriptionToTeacher(teacher.id, subscription);
     }
+  }
+
+  // Connect: a teacher's own Express account changed (finished onboarding,
+  // passed verification, charges enabled/disabled). Mirror the capability
+  // flags so their studio flips live automatically. These events carry
+  // `event.account`; the object is the connected Account itself.
+  if (event.type === "account.updated") {
+    const account = event.data.object as Stripe.Account;
+    await syncConnectAccountToTeacher({
+      id: account.id,
+      charges_enabled: account.charges_enabled,
+      details_submitted: account.details_submitted,
+    });
   }
 
   return NextResponse.json({ received: true });

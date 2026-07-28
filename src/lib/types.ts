@@ -44,10 +44,23 @@ export interface Teacher {
   subscriptionStatus: string;
   subscriptionPlan: string; // price lookup_key, e.g. "kuleo_monthly"
   subscriptionPeriodEnd: string | null;
+  // Stripe Connect (Express) payout account. Student payments settle directly
+  // here — Kuleo takes 0% of class revenue. `chargesEnabled` gates whether the
+  // studio can actually take money; `detailsSubmitted` distinguishes "finished
+  // onboarding, pending Stripe review" from "hasn't started".
+  stripeAccountId: string | null;
+  stripeChargesEnabled: boolean;
+  stripeDetailsSubmitted: boolean;
 }
 
 export function isSubscribed(teacher: Teacher): boolean {
   return ["active", "trialing"].includes(teacher.subscriptionStatus);
+}
+
+// Fully live: subscribed AND their connected account can accept charges. Only
+// then can the public studio take real bookings and pass purchases.
+export function canTakePayments(teacher: Teacher): boolean {
+  return isSubscribed(teacher) && teacher.stripeChargesEnabled;
 }
 
 export type LocationType = "online" | "in_person";
