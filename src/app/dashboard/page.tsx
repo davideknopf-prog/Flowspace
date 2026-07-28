@@ -107,7 +107,9 @@ export default async function DashboardHome() {
       : 2000;
     const CLASSES_WK = 3;
     const PER_CLASS = 8;
-    const projMonthlyNet = Math.round(CLASSES_WK * PER_CLASS * avgPriceCents * 4 * 0.94);
+    // Kuleo takes 0%; the ~0.97 haircut is just the card-processing fee the
+    // teacher bears via Stripe (~2.9% + 30¢), so the projection stays honest.
+    const projMonthlyNet = Math.round(CLASSES_WK * PER_CLASS * avgPriceCents * 4 * 0.97);
     const projStudentsWk = CLASSES_WK * PER_CLASS;
     const built = [
       { done: teacher.bio.trim().length > 0, label: "Complete your profile", href: "/dashboard/profile" },

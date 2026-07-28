@@ -81,7 +81,8 @@ export default async function DemoPage() {
         </h2>
         <p className="mt-3 text-muted">
           Set it up this afternoon — bookings, payments, and a page like this,
-          all from one link. $15/month plus a flat 6% processing fee per sale.
+          all from one link. From $11.05/month, and Kuleo takes 0% of your
+          class revenue.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link href="/signup" className="btn-primary">

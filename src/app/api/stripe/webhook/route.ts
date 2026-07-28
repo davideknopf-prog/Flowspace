@@ -46,11 +46,15 @@ export async function POST(req: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    // A one-time-payment session is either a booking or a pass purchase —
-    // each confirm helper no-ops if the session isn't theirs.
-    await confirmBookingForSession(session.id);
-    await confirmPassForSession(session.id);
-    await confirmQuoteForSession(session.id);
+    // Student payments are DIRECT charges on the teacher's connected account,
+    // so these events arrive with `event.account` set — we must read the
+    // session/charge back through that same account. Teacher-subscription
+    // checkouts happen on the platform (no event.account); the confirm helpers
+    // no-op if the session isn't a booking/pass/quote.
+    const acct = event.account ?? undefined;
+    await confirmBookingForSession(session.id, acct);
+    await confirmPassForSession(session.id, acct);
+    await confirmQuoteForSession(session.id, acct);
   }
 
   if (event.type === "checkout.session.expired") {
@@ -109,9 +113,20 @@ function sleep(ms: number): Promise<void> {
 // back), so retry briefly before giving up. Returns 0 if it truly can't be
 // determined; that's a data-completeness gap, not a reason to block
 // confirming the booking — confirmBookingForSession can top it up later.
-async function fetchStripeFeeCents(stripeSessionId: string): Promise<number> {
+async function fetchStripeFeeCents(
+  stripeSessionId: string,
+  stripeAccount?: string,
+): Promise<number> {
+  // For direct charges everything (session, payment intent, charge, balance
+  // transaction) lives on the connected account, so every read must be scoped
+  // to it. `opts` is undefined for platform charges — a harmless no-op.
+  const opts = stripeAccount ? { stripeAccount } : undefined;
   try {
-    const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
+    const session = await stripe.checkout.sessions.retrieve(
+      stripeSessionId,
+      undefined,
+      opts,
+    );
     const paymentIntentId =
       typeof session.payment_intent === "string"
         ? session.payment_intent
@@ -124,9 +139,11 @@ async function fetchStripeFeeCents(stripeSessionId: string): Promise<number> {
     for (const delayMs of [0, 1500, 3000]) {
       if (delayMs > 0) await sleep(delayMs);
 
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-        expand: ["latest_charge"],
-      });
+      const paymentIntent = await stripe.paymentIntents.retrieve(
+        paymentIntentId,
+        { expand: ["latest_charge"] },
+        opts,
+      );
       const charge = paymentIntent.latest_charge;
       if (!charge || typeof charge === "string") continue;
 
@@ -136,7 +153,11 @@ async function fetchStripeFeeCents(stripeSessionId: string): Promise<number> {
       // Often comes back as a plain ID rather than expanding through two
       // levels of nesting — fetch it directly rather than relying on that.
       if (typeof balanceTransaction === "string") {
-        const txn = await stripe.balanceTransactions.retrieve(balanceTransaction);
+        const txn = await stripe.balanceTransactions.retrieve(
+          balanceTransaction,
+          undefined,
+          opts,
+        );
         return txn.fee;
       }
       return balanceTransaction.fee;
@@ -153,6 +174,7 @@ async function fetchStripeFeeCents(stripeSessionId: string): Promise<number> {
 // Shared by the webhook and the confirmation page's fallback check.
 export async function confirmBookingForSession(
   stripeSessionId: string,
+  stripeAccount?: string,
 ): Promise<void> {
   const existing = await getBookingByStripeSessionId(stripeSessionId);
   if (!existing) return;
@@ -162,14 +184,14 @@ export async function confirmBookingForSession(
     // yet when that happened, top it up now — a narrow, safe exception to
     // "only touch pending bookings".
     if (existing.stripeFeeCents === 0) {
-      const feeCents = await fetchStripeFeeCents(stripeSessionId);
+      const feeCents = await fetchStripeFeeCents(stripeSessionId, stripeAccount);
       if (feeCents > 0) await backfillStripeFee(existing.id, feeCents);
     }
     return;
   }
   if (existing.paymentStatus !== "pending") return;
 
-  const stripeFeeCents = await fetchStripeFeeCents(stripeSessionId);
+  const stripeFeeCents = await fetchStripeFeeCents(stripeSessionId, stripeAccount);
   const justPaid = await markBookingPaid(existing.id, stripeFeeCents);
   if (!justPaid) return; // already paid (other path won the race) or not found
 
@@ -190,19 +212,20 @@ export async function confirmBookingForSession(
 // the pass success page's fallback check. Same idempotency contract.
 export async function confirmPassForSession(
   stripeSessionId: string,
+  stripeAccount?: string,
 ): Promise<void> {
   const existing = await getPassByStripeSessionId(stripeSessionId);
   if (!existing) return;
 
   if (existing.paymentStatus === "paid") {
     if (existing.stripeFeeCents === 0) {
-      const feeCents = await fetchStripeFeeCents(stripeSessionId);
+      const feeCents = await fetchStripeFeeCents(stripeSessionId, stripeAccount);
       if (feeCents > 0) await backfillPassStripeFee(existing.id, feeCents);
     }
     return;
   }
 
-  const stripeFeeCents = await fetchStripeFeeCents(stripeSessionId);
+  const stripeFeeCents = await fetchStripeFeeCents(stripeSessionId, stripeAccount);
   const justPaid = await markPassPaid(existing.id, stripeFeeCents);
   if (!justPaid) return;
 
@@ -222,19 +245,20 @@ export async function confirmPassForSession(
 // Quote twin of the above — same idempotency contract.
 export async function confirmQuoteForSession(
   stripeSessionId: string,
+  stripeAccount?: string,
 ): Promise<void> {
   const existing = await getQuoteByStripeSessionId(stripeSessionId);
   if (!existing) return;
 
   if (existing.status === "paid") {
     if (existing.stripeFeeCents === 0) {
-      const feeCents = await fetchStripeFeeCents(stripeSessionId);
+      const feeCents = await fetchStripeFeeCents(stripeSessionId, stripeAccount);
       if (feeCents > 0) await backfillQuoteStripeFee(existing.id, feeCents);
     }
     return;
   }
 
-  const stripeFeeCents = await fetchStripeFeeCents(stripeSessionId);
+  const stripeFeeCents = await fetchStripeFeeCents(stripeSessionId, stripeAccount);
   const justPaid = await markQuotePaid(existing.id, stripeFeeCents);
   if (!justPaid) return;
 

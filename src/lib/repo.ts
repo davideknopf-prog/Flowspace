@@ -17,14 +17,14 @@ import type {
 } from "./types";
 import { passIsRedeemable } from "./types";
 
-// The flat processing fee taken from each paid sale. This single fee covers
-// third-party card processing (Stripe's ~2.9% + 30¢) AND platform maintenance
-// — Kuleo absorbs the actual Stripe cost out of it, so the teacher only ever
-// sees this one number. A plain env var override is enough; changing it is a
-// deliberate, infrequent act. Defaults to 6%.
+// Kuleo takes 0% of class revenue — we monetize on the teacher subscription.
+// With Stripe Connect, student payments settle directly to the teacher's own
+// connected account and Stripe's processing fee comes out of their sale; the
+// platform never charges an application fee. Kept as a function (defaulting to
+// 0) so a future tier could reintroduce a cut via PLATFORM_FEE_PERCENT.
 export function platformFeePercent(): number {
-  const raw = Number(process.env.PLATFORM_FEE_PERCENT ?? "6");
-  return Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : 6;
+  const raw = Number(process.env.PLATFORM_FEE_PERCENT ?? "0");
+  return Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : 0;
 }
 
 export function computePlatformFeeCents(priceCents: number): number {

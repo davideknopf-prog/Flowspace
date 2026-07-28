@@ -242,7 +242,7 @@ export async function sendBookingEmails({
       ``,
       `${booking.clientName} (${booking.clientEmail}) booked ${sessionType.name}.`,
       `When: ${when} (${teacher.timezone})`,
-      `They paid ${price}; after the flat 6% processing fee, ${net} was added to your Kuleo balance — cash out anytime.`,
+      `They paid ${price} — it's on its way to your bank via Stripe. Kuleo takes 0% of your class revenue.`,
       booking.note ? `Note: ${booking.note}` : ``,
     ]
       .filter(Boolean)
@@ -250,12 +250,12 @@ export async function sendBookingEmails({
     teacherHtml = wrapHtml(`
       <p style="font-size:15px;color:#4a4b47;margin:0 0 2px">You just earned</p>
       <p style="font-size:34px;font-weight:700;color:#4a7c59;margin:0 0 10px">${net} 💰</p>
-      <p style="font-size:14px;color:#26211c;margin:0 0 16px"><strong>${esc(booking.clientName)}</strong> booked <strong>${esc(sessionType.name)}</strong>. It&apos;s been added to your Kuleo balance — cash out anytime.</p>
+      <p style="font-size:14px;color:#26211c;margin:0 0 16px"><strong>${esc(booking.clientName)}</strong> booked <strong>${esc(sessionType.name)}</strong>. It&apos;s on its way to your bank via Stripe — Kuleo takes 0% of your class revenue.</p>
       <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
         <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${esc(booking.clientName)} &lt;${esc(booking.clientEmail)}&gt;</td></tr>
         <tr><td style="color:#7c736a;padding-right:16px">Session</td><td>${esc(sessionType.name)}</td></tr>
         <tr><td style="color:#7c736a;padding-right:16px">When</td><td>${when}</td></tr>
-        <tr><td style="color:#7c736a;padding-right:16px">They paid</td><td>${price} <span style="color:#7c736a;font-size:12px">— you keep ${net} after the 6% fee</span></td></tr>
+        <tr><td style="color:#7c736a;padding-right:16px">They paid</td><td>${price} <span style="color:#7c736a;font-size:12px">— paid directly to you</span></td></tr>
         ${noteRow}
       </table>
       ${earningsCta}`);
@@ -371,18 +371,18 @@ export async function sendPassEmails({
     `Cha-ching! You just earned ${passNet}. 💰`,
     ``,
     `${pass.clientName} (${pass.clientEmail}) bought your ${offer.name} (${credits}) for ${price}.`,
-    `After the flat 6% processing fee, ${passNet} was added to your Kuleo balance — cash out anytime.`,
+    `${price} is on its way to your bank via Stripe — Kuleo takes 0% of your class revenue.`,
     `Passes are the studio move: recurring money, paid up front.`,
   ].join("\n");
 
   const teacherHtml = wrapHtml(`
     <p style="font-size:15px;color:#4a4b47;margin:0 0 2px">You just earned</p>
     <p style="font-size:34px;font-weight:700;color:#4a7c59;margin:0 0 10px">${passNet} 💰</p>
-    <p style="font-size:14px;color:#26211c;margin:0 0 16px"><strong>${esc(pass.clientName)}</strong> bought your <strong>${esc(offer.name)}</strong> (${credits}). It&apos;s in your Kuleo balance — cash out anytime. Passes are the studio move: recurring money, paid up front.</p>
+    <p style="font-size:14px;color:#26211c;margin:0 0 16px"><strong>${esc(pass.clientName)}</strong> bought your <strong>${esc(offer.name)}</strong> (${credits}). It&apos;s on its way to your bank via Stripe — Kuleo takes 0%. Passes are the studio move: recurring money, paid up front.</p>
     <table style="font-size:14px;line-height:1.9;border-collapse:collapse">
       <tr><td style="color:#7c736a;padding-right:16px">Student</td><td>${esc(pass.clientName)} &lt;${esc(pass.clientEmail)}&gt;</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Pass</td><td>${esc(offer.name)}</td></tr>
-      <tr><td style="color:#7c736a;padding-right:16px">They paid</td><td>${price} <span style="color:#7c736a;font-size:12px">— you keep ${passNet} after the 6% fee</span></td></tr>
+      <tr><td style="color:#7c736a;padding-right:16px">They paid</td><td>${price} <span style="color:#7c736a;font-size:12px">— paid directly to you</span></td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Includes</td><td>${credits} · ${expiry}</td></tr>
     </table>
     <p style="margin-top:18px"><a href="https://kuleo.io/dashboard/earnings" style="background:#4a7c59;color:#fff;text-decoration:none;padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;display:inline-block">See your earnings →</a></p>`);
@@ -684,8 +684,8 @@ export async function sendQuotePaidEmails({
       <tr><td style="color:#7c736a;padding-right:16px">Quote</td><td>${esc(quote.title)}</td></tr>
       <tr><td style="color:#7c736a;padding-right:16px">Amount</td><td>${price}</td></tr>
     </table>
-    <p style="font-size:13px;color:#7c736a;margin-top:12px">It's in your Kuleo balance, ready to cash out.</p>`);
-  const teacherText = `Quote paid: ${quote.title} — ${price}. It's in your Kuleo balance.`;
+    <p style="font-size:13px;color:#7c736a;margin-top:12px">It's on its way to your bank via Stripe — Kuleo takes 0%.</p>`);
+  const teacherText = `Quote paid: ${quote.title} — ${price}. It's on its way to your bank via Stripe.`;
 
   const jobs = [];
   if (quote.clientEmail) {
@@ -729,7 +729,7 @@ export async function sendWelcomeEmail(
     ``,
     `Set up here: ${dash}`,
     ``,
-    `How you get paid: students pay you directly at checkout. Kuleo is a flat $15/month plus a 6% processing fee per sale — that covers card processing and keeps the platform running, with no surprise commissions. Cash out your balance anytime to Zelle, Venmo, or PayPal.`,
+    `How you get paid: students pay you directly at checkout, and Stripe deposits the money straight to your bank. Kuleo takes 0% of your class revenue — no commissions, ever. Your only cost is the subscription (from $11.05/month). You'll connect your payout account in a couple of minutes when you go live.`,
     ``,
     `I'm ${FOUNDER.name}, ${FOUNDER.title} of Kuleo — you have a direct line to me. Text or call ${FOUNDER.phone}, or just reply to this email. I highly recommend a quick, free onboarding call: ${FOUNDER.onboardingCallUrl}`,
     ``,
@@ -750,7 +750,7 @@ export async function sendWelcomeEmail(
       <a href="${dash}" style="background:#4a7c59;color:#fff;text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:600;font-size:14px;display:inline-block">Set up your studio →</a>
     </p>
     <div style="margin-top:16px;padding:12px 14px;background:#edf2ef;border-radius:10px;font-size:13px;color:#26211c;line-height:1.6">
-      <strong style="color:#47645a">How you get paid:</strong> students pay you directly at checkout. Kuleo is a flat <strong>$15/month</strong> plus a <strong>6% processing fee</strong> per sale — that covers card processing and keeps the platform running, with no surprise commissions. Cash out anytime to Zelle, Venmo, or PayPal.
+      <strong style="color:#47645a">How you get paid:</strong> students pay you directly at checkout, and Stripe deposits the money straight to your bank. Kuleo takes <strong>0% of your class revenue</strong> — no commissions, ever. Your only cost is the subscription (from <strong>$11.05/month</strong>). You&apos;ll connect your payout account in a couple of minutes when you go live.
     </div>
     <p style="color:#4a4b47;font-size:14px;margin-top:16px;line-height:1.6">
       I'm ${esc(FOUNDER.name)}, ${esc(FOUNDER.title)} of Kuleo — you've got a direct line to me. Text or call <strong>${esc(FOUNDER.phone)}</strong>, or just reply to this email. I highly recommend a quick, free <a href="${FOUNDER.onboardingCallUrl}" style="color:#47645a">onboarding call</a> so we get you earning fast.

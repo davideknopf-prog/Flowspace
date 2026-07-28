@@ -18,7 +18,7 @@ import {
 } from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
 import { BookingForm } from "@/components/BookingForm";
-import { isSubscribed } from "@/lib/types";
+import { canTakePayments } from "@/lib/types";
 
 export default async function BookPage({
   params,
@@ -37,7 +37,7 @@ export default async function BookPage({
 
   // Demo profiles and not-yet-live draft studios can't take bookings —
   // intercept before the form so no one fills it out only to be bounced.
-  const bookingBlocked = teacher.isDemo || !isSubscribed(teacher);
+  const bookingBlocked = teacher.isDemo || !canTakePayments(teacher);
   if (bookingBlocked) {
     const first = teacher.name.split(" ")[0];
     return (

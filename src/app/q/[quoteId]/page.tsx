@@ -18,20 +18,22 @@ export default async function QuotePage({
   const { quoteId } = await params;
   const { session_id } = await searchParams;
 
-  // Returning from Stripe → confirm as a fallback to the webhook.
-  if (session_id) {
-    try {
-      await confirmQuoteForSession(session_id);
-    } catch {
-      // webhook will reconcile; page reflects whatever state it reads
-    }
-  }
-
   let quote = await getQuote(quoteId);
   if (!quote) notFound();
   const teacher = await getTeacherById(quote.teacherId);
   if (!teacher) notFound();
-  if (session_id) quote = (await getQuote(quoteId)) ?? quote;
+
+  // Returning from Stripe → confirm as a fallback to the webhook. The quote was
+  // paid via a direct charge on the teacher's connected account, so the fee
+  // read must be scoped to it.
+  if (session_id) {
+    try {
+      await confirmQuoteForSession(session_id, teacher.stripeAccountId ?? undefined);
+    } catch {
+      // webhook will reconcile; page reflects whatever state it reads
+    }
+    quote = (await getQuote(quoteId)) ?? quote;
+  }
 
   const expired =
     quote.status === "open" &&

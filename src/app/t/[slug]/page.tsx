@@ -16,7 +16,7 @@ import { computeOccurrences } from "@/lib/events";
 import { Avatar } from "@/components/Avatar";
 import { Stars } from "@/components/Stars";
 import { formatPrice, formatDuration, formatSlot } from "@/lib/format";
-import { isSubscribed } from "@/lib/types";
+import { canTakePayments } from "@/lib/types";
 import { buyPassAction } from "./actions";
 
 export async function generateMetadata({
@@ -47,7 +47,7 @@ export default async function PublicProfile({
   // Bookability: demo profiles and not-yet-live draft studios both can't take
   // real bookings. Demo is a public showcase; a draft is a teacher previewing
   // what students will see before they go live.
-  const isDraft = !teacher.isDemo && !isSubscribed(teacher);
+  const isDraft = !teacher.isDemo && !canTakePayments(teacher);
   const blocked = teacher.isDemo || isDraft;
   const triedToBookDemo = teacher.isDemo && demo === "1";
   const triedToBookDraft = isDraft && draft === "1";

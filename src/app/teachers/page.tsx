@@ -11,7 +11,7 @@ import {
 import { Avatar } from "@/components/Avatar";
 import { LegalFooter } from "@/components/LegalFooter";
 import { Stars } from "@/components/Stars";
-import { isSubscribed } from "@/lib/types";
+import { canTakePayments } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Teachers — Kuleo",
@@ -27,7 +27,7 @@ export default async function TeachersDirectory() {
   // Public directory shows live studios and demo showcases only — never a
   // teacher's not-yet-live draft.
   const teachers = (await listAllTeachers()).filter(
-    (t) => isSubscribed(t) || t.isDemo,
+    (t) => canTakePayments(t) || t.isDemo,
   );
 
   // Only show teachers who have something bookable/buyable.

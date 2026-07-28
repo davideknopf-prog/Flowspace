@@ -19,7 +19,7 @@ import {
   deletePendingPass,
 } from "@/lib/repo";
 import { computeSlots } from "@/lib/slots";
-import { isSubscribed } from "@/lib/types";
+import { canTakePayments } from "@/lib/types";
 import { createReview } from "@/lib/repo";
 import { computeOccurrences } from "@/lib/events";
 import { listClassEvents } from "@/lib/repo";
@@ -67,8 +67,9 @@ export async function bookAction(formData: FormData) {
   if (teacher!.isDemo) {
     redirect(`/t/${slug}?demo=1`);
   }
-  // Draft studios (free tier, not yet live) can't take real bookings.
-  if (!isSubscribed(teacher!)) {
+  // Not fully live yet: either no subscription, or payouts (Stripe Connect)
+  // aren't set up. Either way the studio can't take real bookings.
+  if (!canTakePayments(teacher!)) {
     redirect(`/t/${slug}?draft=1`);
   }
 
@@ -181,25 +182,32 @@ export async function bookAction(formData: FormData) {
   // free that held slot. Delete it and surface a real error instead.
   let session;
   try {
-    session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { name: `${sessionType!.name} with ${teacher!.name}` },
-            unit_amount: sessionType!.priceCents,
+    // DIRECT CHARGE on the teacher's connected account: the money settles to
+    // the teacher, Stripe's processing fee comes out of their sale, and Kuleo
+    // takes no application fee. Passing `stripeAccount` is what makes this a
+    // charge *on behalf of the teacher* rather than on the platform.
+    session = await stripe.checkout.sessions.create(
+      {
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: { name: `${sessionType!.name} with ${teacher!.name}` },
+              unit_amount: sessionType!.priceCents,
+            },
+            quantity: 1,
           },
-          quantity: 1,
-        },
-      ],
-      customer_email: clientEmail,
-      payment_intent_data: { receipt_email: clientEmail },
-      success_url: `${origin}/t/${slug}/booked/${booking.id}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/api/stripe/cancel?bookingId=${booking.id}&slug=${slug}&sessionTypeId=${sessionTypeId}`,
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30 min, Stripe's minimum
-      metadata: { bookingId: booking.id },
-    });
+        ],
+        customer_email: clientEmail,
+        payment_intent_data: { receipt_email: clientEmail },
+        success_url: `${origin}/t/${slug}/booked/${booking.id}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/api/stripe/cancel?bookingId=${booking.id}&slug=${slug}&sessionTypeId=${sessionTypeId}`,
+        expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30 min, Stripe's minimum
+        metadata: { bookingId: booking.id },
+      },
+      { stripeAccount: teacher!.stripeAccountId! },
+    );
   } catch (err) {
     console.error("[booking] stripe checkout session creation failed", err);
     await deletePendingBooking(booking.id);
@@ -235,7 +243,7 @@ export async function buyPassAction(formData: FormData) {
   if (teacher!.isDemo) {
     redirect(`/t/${slug}?demo=1`);
   }
-  if (!isSubscribed(teacher!)) {
+  if (!canTakePayments(teacher!)) {
     redirect(`/t/${slug}?draft=1`);
   }
 
@@ -249,25 +257,29 @@ export async function buyPassAction(formData: FormData) {
   const origin = await siteOrigin();
   let session;
   try {
-    session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { name: `${offer!.name} with ${teacher!.name}` },
-            unit_amount: offer!.priceCents,
+    // Direct charge on the teacher's connected account (see bookAction).
+    session = await stripe.checkout.sessions.create(
+      {
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: { name: `${offer!.name} with ${teacher!.name}` },
+              unit_amount: offer!.priceCents,
+            },
+            quantity: 1,
           },
-          quantity: 1,
-        },
-      ],
-      customer_email: clientEmail,
-      payment_intent_data: { receipt_email: clientEmail },
-      success_url: `${origin}/t/${slug}/pass-success/${pass.id}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/api/stripe/cancel?passId=${pass.id}&slug=${slug}`,
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
-      metadata: { passId: pass.id },
-    });
+        ],
+        customer_email: clientEmail,
+        payment_intent_data: { receipt_email: clientEmail },
+        success_url: `${origin}/t/${slug}/pass-success/${pass.id}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/api/stripe/cancel?passId=${pass.id}&slug=${slug}`,
+        expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+        metadata: { passId: pass.id },
+      },
+      { stripeAccount: teacher!.stripeAccountId! },
+    );
   } catch (err) {
     console.error("[pass] stripe checkout session creation failed", err);
     await deletePendingPass(pass.id);

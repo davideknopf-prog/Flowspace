@@ -24,8 +24,10 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Profile information</strong> (Teachers): photo, bio, location,
-          specialties, class details, and payout handle (e.g., a Zelle, Venmo,
-          or PayPal username — never bank account or card numbers).
+          specialties, and class details. Payout and identity details for
+          getting paid are collected and stored by our payment processor
+          (Stripe) during payout setup — Kuleo does not store your bank account
+          or card numbers.
         </li>
         <li>
           <strong>Booking information</strong> (Students): name, email, the

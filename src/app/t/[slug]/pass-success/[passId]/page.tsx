@@ -22,7 +22,7 @@ export default async function PassSuccessPage({
   // Same belt-and-suspenders as bookings: webhook is the source of truth,
   // this fallback covers webhook lag and local dev.
   if (pass.paymentStatus === "pending" && session_id) {
-    await confirmPassForSession(session_id);
+    await confirmPassForSession(session_id, teacher.stripeAccountId ?? undefined);
     pass = (await getPassById(passId)) ?? pass;
   }
 

@@ -1,46 +1,35 @@
 import { getCurrentTeacher } from "@/lib/session";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import {
   getEarningsSummary,
-  listPayouts,
   getWeeklyNetEarnings,
-  getPendingPayoutRequest,
-  platformFeePercent,
 } from "@/lib/repo";
 import { formatMoney } from "@/lib/format";
-import { payoutMethodLabel } from "@/lib/types";
-import { CashOutButton } from "@/components/CashOutButton";
 import { WeeklyEarningsChart } from "@/components/WeeklyEarningsChart";
+import { openExpressDashboardAction } from "../payouts/actions";
 
-// The "money feel" page: one celebratory number, momentum, and a cash-out
-// button. Fees are deliberately NOT itemized here — they live in the
-// collapsible math below and in the cash-out dialog.
+// The "money feel" page. Kuleo takes 0% of class revenue — student payments
+// settle directly to the teacher's own Stripe account, and Stripe deposits to
+// their bank automatically. So this page celebrates the number and hands off
+// to Stripe for the actual balance/payout details, rather than running a
+// manual cash-out.
 
-export default async function EarningsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ requested?: string; error?: string }>;
-}) {
+export default async function EarningsPage() {
   const teacher = await getCurrentTeacher();
   if (!teacher) redirect("/login");
-  const { requested, error } = await searchParams;
 
-  const [summary, payouts, weekly, pendingRequest] = await Promise.all([
+  const [summary, weekly] = await Promise.all([
     getEarningsSummary(teacher.id),
-    listPayouts(teacher.id),
     getWeeklyNetEarnings(teacher.id, 8),
-    getPendingPayoutRequest(teacher.id),
   ]);
 
-  // Teachers pay a single flat processing fee that covers card processing +
-  // platform. Stripe's actual cost is absorbed by Kuleo out of that fee, so it
-  // is NOT deducted separately from the teacher.
-  const feePct = platformFeePercent();
+  // Kuleo takes nothing, so what a teacher earns is simply what students paid.
+  // (totalPlatformFeeCents is 0 going forward; subtracted for legacy safety.)
   const earnedCents = summary.totalPaidCents - summary.totalPlatformFeeCents;
-  const feeCents = summary.totalPlatformFeeCents;
-  const availableCents = Math.max(0, summary.balanceCents);
   const thisWeekCents = weekly[weekly.length - 1]?.netCents ?? 0;
   const hasEarnings = earnedCents > 0;
+  const connected = Boolean(teacher.stripeAccountId && teacher.stripeChargesEnabled);
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -48,34 +37,10 @@ export default async function EarningsPage({
         <h1 className="text-2xl font-semibold mb-1">Earnings</h1>
         <p className="text-muted text-sm">
           {hasEarnings
-            ? "Your money at a glance — cash out whenever you like."
-            : "Your earnings land here — your sale price, less a flat 6% processing fee. Your first booking starts the chart."}
+            ? "Your money at a glance — paid straight to your bank by Stripe."
+            : "Your earnings land here. You keep 100% of your class price (minus the standard card-processing fee) — Kuleo never takes a cut."}
         </p>
       </div>
-
-      {requested && (
-        <div className="card !p-4 border-brand bg-brand-tint/60 text-sm">
-          💸 <span className="font-medium">Your cash-out request is in!</span>{" "}
-          David has been notified and will send your money shortly.
-        </div>
-      )}
-      {error === "empty" && (
-        <div className="card !p-4 text-sm text-muted">
-          Nothing to cash out just yet — your balance updates the moment a
-          student pays.
-        </div>
-      )}
-      {error === "method" && (
-        <div className="card !p-4 border-danger text-sm text-danger">
-          Pick a payout method and enter your handle to cash out.
-        </div>
-      )}
-      {error === "retry" && (
-        <div className="card !p-4 border-danger text-sm text-danger">
-          Something went wrong sending your request — please try again in a
-          moment.
-        </div>
-      )}
 
       {/* Hero: the number the page exists for */}
       <section className="card !p-8 bg-gradient-to-br from-brand-tint to-surface">
@@ -101,45 +66,33 @@ export default async function EarningsPage({
         )}
 
         <div className="mt-6 border-t border-border pt-5">
-          {pendingRequest ? (
-            <div className="flex items-start gap-3 text-sm">
-              <span className="text-xl">💸</span>
-              <div className="min-w-0">
-                <p className="font-medium break-words">
-                  {formatMoney(pendingRequest.amountCents)} is on its way to
-                  your {payoutMethodLabel(pendingRequest.method)} (
-                  {pendingRequest.handle})
-                </p>
-                <p className="text-muted">
-                  Requested{" "}
-                  {new Date(pendingRequest.createdAt).toLocaleDateString()} —
-                  usually arrives within 1–2 business days.
-                </p>
-              </div>
-            </div>
-          ) : availableCents > 0 ? (
+          {connected ? (
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-sm text-muted">Available to cash out</p>
-                <p className="text-xl font-semibold text-brand-dark">
-                  {formatMoney(availableCents)}
+                <p className="text-sm text-muted">Payouts</p>
+                <p className="text-sm text-foreground">
+                  Deposited to your bank automatically, usually within 1–2
+                  business days.
                 </p>
               </div>
-              <CashOutButton
-                balanceCents={availableCents}
-                collectedCents={summary.totalPaidCents}
-                feeCents={feeCents}
-                paidOutCents={summary.totalPayoutCents}
-                savedMethod={teacher.payoutMethod}
-                savedHandle={teacher.payoutHandle}
-              />
+              <form action={openExpressDashboardAction}>
+                <button type="submit" className="btn-secondary text-sm shrink-0">
+                  View balance &amp; payouts ↗
+                </button>
+              </form>
             </div>
           ) : (
-            <p className="text-sm text-muted">
-              {hasEarnings
-                ? "You're all caught up — everything you've earned has been paid out. 🙌"
-                : "Share your booking page and this number starts climbing."}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-muted">Get paid</p>
+                <p className="text-sm text-foreground">
+                  Connect your payout account so students can pay you.
+                </p>
+              </div>
+              <Link href="/dashboard/payouts" className="btn-primary text-sm shrink-0">
+                Set up payouts →
+              </Link>
+            </div>
           )}
         </div>
       </section>
@@ -160,78 +113,27 @@ export default async function EarningsPage({
         </div>
       </div>
 
-      {/* The full math, tucked away by default */}
+      {/* How the money works, tucked away by default */}
       <details className="card !p-0 overflow-hidden">
         <summary className="cursor-pointer list-none px-6 py-4 text-sm font-medium hover:bg-brand-tint/40">
-          See the full math ▾
+          How your money works ▾
         </summary>
         <div className="border-t border-border px-6 py-4 text-sm space-y-2">
           <Row
             label="Collected from students"
             value={formatMoney(summary.totalPaidCents)}
           />
-          <Row
-            label={`Processing fee (${feePct}%)`}
-            value={`− ${formatMoney(feeCents)}`}
-          />
-          <div className="border-t border-border my-2" />
-          <Row label="Your earnings" value={formatMoney(earnedCents)} bold />
-          <Row
-            label="Already paid out"
-            value={`− ${formatMoney(summary.totalPayoutCents)}`}
-          />
-          <Row
-            label="Available to cash out"
-            value={formatMoney(availableCents)}
-            bold
-          />
+          <Row label="Kuleo commission" value="$0.00" />
           <p className="text-xs text-muted pt-2">
-            A flat {feePct}% processing fee is taken from each sale — that
-            covers secure card processing and keeps Kuleo running. There&apos;s
-            no separate per-class commission. This page always reflects your
-            accurate live balance.
+            Kuleo takes <span className="font-medium text-brand-dark">0% of your class revenue</span> —
+            we make our money on your subscription, not your students. Payments
+            go straight to your own Stripe account; Stripe&apos;s standard
+            card-processing fee is deducted from each sale, and Stripe deposits
+            the rest to your bank automatically. Your exact balance and payout
+            history live in your Stripe dashboard.
           </p>
         </div>
       </details>
-
-      <section>
-        <h2 className="text-lg font-semibold mb-3">Cash-out history</h2>
-        {payouts.length === 0 && !pendingRequest ? (
-          <div className="card text-center py-8 text-sm text-muted">
-            No cash-outs yet — your first one is a button-click away.
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {pendingRequest && (
-              <li className="card !p-4 flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="font-medium">
-                    {formatMoney(pendingRequest.amountCents)}
-                  </p>
-                  <p className="text-sm text-muted break-words">
-                    Via {payoutMethodLabel(pendingRequest.method)} (
-                    {pendingRequest.handle})
-                  </p>
-                </div>
-                <span className="pill !bg-accent/15 !text-accent shrink-0">
-                  Pending
-                </span>
-              </li>
-            )}
-            {payouts.map((p) => (
-              <li key={p.id} className="card !p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{formatMoney(p.amountCents)}</p>
-                  {p.note && <p className="text-sm text-muted">{p.note}</p>}
-                </div>
-                <p className="text-xs text-muted">
-                  {new Date(p.createdAt).toLocaleDateString()}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }

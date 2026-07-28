@@ -320,7 +320,7 @@ export default async function Home() {
           <IndexRow
             n="03"
             title="Payments, passes & payouts"
-            body="Students pay the moment they book, with class passes built in for repeat practice. From $11.05/month and a flat 6% per sale — no surprise commissions, ever."
+            body="Students pay the moment they book, with class passes built in for repeat practice. From $11.05/month — and Kuleo takes 0% of your class revenue. You keep everything you earn."
           />
           <IndexRow
             n="04"
@@ -521,8 +521,8 @@ export default async function Home() {
           </Link>
         </div>
         <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-muted">
-          Free to build · a flat 6% per sale once you&apos;re live · cancel
-          anytime · your earnings are always yours to cash out.
+          Free to build · 0% commission on your classes · cancel anytime ·
+          paid straight to your bank by Stripe.
         </p>
 
         {/* Free onboarding + training + IG feature — a real value-add */}

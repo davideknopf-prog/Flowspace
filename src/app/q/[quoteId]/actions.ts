@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import {
   getQuote,
+  getTeacherById,
   attachQuoteStripeSession,
 } from "@/lib/repo";
+import { canTakePayments } from "@/lib/types";
 import { stripe } from "@/lib/stripe";
 
 async function siteOrigin(): Promise<string> {
@@ -26,27 +28,35 @@ export async function payQuoteAction(formData: FormData) {
     redirect(`/q/${id}`);
   }
 
+  // The quote's teacher must be fully live (subscribed + payouts connected)
+  // to collect — the charge settles directly to their connected account.
+  const teacher = await getTeacherById(quote!.teacherId);
+  if (!teacher || !canTakePayments(teacher)) redirect(`/q/${id}?error=unavailable`);
+
   const origin = await siteOrigin();
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items: [
-      {
-        price_data: {
-          currency: "usd",
-          product_data: { name: quote!.title },
-          unit_amount: quote!.priceCents,
+  const session = await stripe.checkout.sessions.create(
+    {
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: quote!.title },
+            unit_amount: quote!.priceCents,
+          },
+          quantity: 1,
         },
-        quantity: 1,
-      },
-    ],
-    ...(quote!.clientEmail ? { customer_email: quote!.clientEmail } : {}),
-    ...(quote!.clientEmail
-      ? { payment_intent_data: { receipt_email: quote!.clientEmail } }
-      : {}),
-    success_url: `${origin}/q/${id}?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/q/${id}`,
-    metadata: { quoteId: id },
-  });
+      ],
+      ...(quote!.clientEmail ? { customer_email: quote!.clientEmail } : {}),
+      ...(quote!.clientEmail
+        ? { payment_intent_data: { receipt_email: quote!.clientEmail } }
+        : {}),
+      success_url: `${origin}/q/${id}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/q/${id}`,
+      metadata: { quoteId: id },
+    },
+    { stripeAccount: teacher!.stripeAccountId! },
+  );
 
   await attachQuoteStripeSession(id, session.id);
   redirect(session.url!);

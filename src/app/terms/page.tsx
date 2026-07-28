@@ -51,33 +51,27 @@ export default function TermsPage() {
           effect at the end of the paid period.
         </li>
         <li>
-          <strong>Your earnings.</strong> A flat 6% processing fee is deducted
-          from each class or pass sale before it reaches your balance. This fee
-          covers third-party card-processing costs and platform maintenance;
-          there is no additional per-class commission.
+          <strong>Your earnings.</strong> Kuleo takes no commission on your
+          class or pass sales — 0% of your class revenue. Students pay you
+          directly through your own connected Stripe account; the payment
+          processor&apos;s standard card-processing fee is deducted from each
+          sale, and the remainder is deposited to your bank. Kuleo&apos;s only
+          charge is your subscription.
         </li>
         <li>
-          <strong>When funds become available.</strong> Amounts from a booking
-          become available to cash out only after the class or session it pays
-          for has taken place (and, for class passes, as the underlying classes
-          are attended). This protects both you and your students against
-          cancellations and disputes. Funds that have become available remain
-          yours to cash out whether or not your subscription is active.
+          <strong>Payouts.</strong> To take payments you connect your own
+          Stripe account. When a student pays, the funds settle to that account
+          and Stripe deposits them to your bank on its standard payout schedule;
+          Kuleo does not hold or route your money. You are responsible for
+          keeping your payout and tax details with Stripe accurate.
         </li>
         <li>
-          <strong>Chargebacks, refunds &amp; clawbacks.</strong> If a student
-          initiates a chargeback, dispute, or refund on a payment tied to your
-          classes, the disputed amount (including any processing or dispute fees
-          charged to Kuleo) may be deducted from your available or future
-          balance. If your balance is insufficient — for example because you
-          have already cashed out — you agree to promptly repay that amount, and
-          you authorize Kuleo to offset it against future earnings. Kuleo may
-          place a reasonable hold on payouts while a dispute is pending.
-        </li>
-        <li>
-          <strong>Payouts.</strong> Cash-outs are paid to the payout handle you
-          provide (e.g., Zelle, Venmo, or PayPal). You are responsible for
-          providing accurate payout details.
+          <strong>Chargebacks &amp; disputes.</strong> Because payments settle
+          directly to your own connected account, you are responsible for
+          chargebacks, refunds, and payment disputes on your sales, including any
+          related fees, in accordance with Stripe&apos;s terms. You agree to
+          handle student refunds fairly and consistent with the cancellation
+          policy in these Terms.
         </li>
         <li>
           <strong>Independent contractor.</strong> You are solely responsible
@@ -98,8 +92,8 @@ export default function TermsPage() {
         <li>
           <strong>Booking &amp; payment.</strong> When you book a class or buy a
           class pass, you pay the Teacher&apos;s listed price via our payment
-          processor. Your payment goes to the Teacher (less a flat 6% processing
-          fee); Kuleo does not add any extra fees on top for Students.
+          processor. Your payment goes directly to the Teacher; Kuleo does not
+          add any fees on top for Students.
         </li>
         <li>
           <strong>Cancellations &amp; refunds.</strong> If a Teacher cancels a

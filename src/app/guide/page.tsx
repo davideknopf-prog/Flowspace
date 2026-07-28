@@ -175,10 +175,11 @@ export default function GuidePage() {
             <strong className="text-foreground">
               Kuleo&apos;s pricing is simple and flat
             </strong>{" "}
-            — a subscription ($14.74/month, or $11.05/month billed annually)
-            plus a flat 6% processing fee per sale that covers card processing
-            and keeps the platform running. No surprise commissions. Free 1-on-1
-            onboarding with the founder is included with every plan.
+            — just a subscription ($14.74/month, or $11.05/month billed
+            annually). Kuleo takes 0% of your class revenue: students pay you
+            directly and you keep everything except the standard card-processing
+            fee. No commissions, ever. Free 1-on-1 onboarding with the founder
+            is included with every plan.
           </p>
           <p className="text-muted leading-relaxed">
             When teachers earn properly, everyone wins: classes get more

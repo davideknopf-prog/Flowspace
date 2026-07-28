@@ -94,8 +94,8 @@ export default async function SubscribePage({
 
         <div className="mt-8 text-center text-sm text-muted space-y-2">
           <p>
-            Secure checkout via Stripe · a flat 6% per sale covers card
-            processing · this is just your tool subscription.
+            Secure checkout via Stripe · Kuleo takes 0% of your class revenue ·
+            this is just your tool subscription.
           </p>
           <SignOutButton redirectUrl="/">
             <button className="underline hover:text-foreground" type="button">

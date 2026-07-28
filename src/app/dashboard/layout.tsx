@@ -21,6 +21,10 @@ export default async function DashboardLayout({
   // So we no longer gate the dashboard itself — instead we show a draft banner
   // and gate the public page + bookings elsewhere. Founders bypass all of it.
   const isDraft = !isSubscribed(teacher) && !isFounderViewer;
+  // Subscribed but hasn't finished connecting a payout account — their studio
+  // can't take bookings until Stripe Connect is set up. One step left.
+  const needsPayouts =
+    isSubscribed(teacher) && !teacher.stripeChargesEnabled && !isFounderViewer;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -36,6 +40,20 @@ export default async function DashboardLayout({
             className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-brand-dark shrink-0"
           >
             Go live — start free →
+          </Link>
+        </div>
+      )}
+      {needsPayouts && (
+        <div className="bg-accent text-white text-sm px-4 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
+          <span>
+            💳 <span className="font-semibold">One step left</span> — connect
+            your payout account to open bookings and get paid.
+          </span>
+          <Link
+            href="/dashboard/payouts"
+            className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-accent shrink-0"
+          >
+            Set up payouts →
           </Link>
         </div>
       )}

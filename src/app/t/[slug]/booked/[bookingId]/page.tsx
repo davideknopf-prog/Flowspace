@@ -26,7 +26,7 @@ export default async function BookedPage({
   // directly with Stripe right here — markBookingPaid() is idempotent, so
   // this safely no-ops if the webhook already won the race.
   if (booking.paymentStatus === "pending" && session_id) {
-    await confirmBookingForSession(session_id);
+    await confirmBookingForSession(session_id, teacher.stripeAccountId ?? undefined);
     booking = (await getBookingById(bookingId)) ?? booking;
   }
 
