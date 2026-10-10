@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FOUNDER } from "@/lib/founder";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooterBar } from "@/components/SiteFooterBar";
 import { getCurrentTeacher } from "@/lib/session";
@@ -8,7 +9,7 @@ import { pickDemoTeacher, getDemoSnapshot, type DemoSnapshot } from "@/lib/demo"
 import { Avatar } from "@/components/Avatar";
 import { formatPrice, formatDuration, formatMoney } from "@/lib/format";
 
-const CALENDLY_URL = "https://calendly.com/david-knopf/onboarding-meeting";
+const CALENDLY_URL = FOUNDER.onboardingCallUrl;
 const PHONE_DISPLAY = "(508) 468-7829";
 const PHONE_HREF = "tel:+15084687829";
 

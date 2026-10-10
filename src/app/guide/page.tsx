@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { FOUNDER } from "@/lib/founder";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooterBar } from "@/components/SiteFooterBar";
 import type { Metadata } from "next";
 import { LegalFooter } from "@/components/LegalFooter";
 
 const PDF_URL = "/guides/kuleo-yoga-teacher-economy.pdf";
-const CALENDLY_URL = "https://calendly.com/david-knopf/onboarding-meeting";
+const CALENDLY_URL = FOUNDER.onboardingCallUrl;
 
 export const metadata: Metadata = {
   title: "The Yoga Teacher Economy — a free guide for yoga teachers | Kuleo",

@@ -9,7 +9,7 @@ export const FOUNDER = {
   phoneHref: "tel:+15084687829",
   smsHref: "sms:+15084687829",
   email: "upshiftsolutionsllc@gmail.com",
-  onboardingCallUrl: "https://calendly.com/david-knopf/onboarding-meeting",
+  onboardingCallUrl: "https://calendar.app.google/Ja44p5j8EGgBA72U9",
 };
 
 export function isFounder(email: string): boolean {

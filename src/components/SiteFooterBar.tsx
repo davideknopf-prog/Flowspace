@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FOUNDER } from "@/lib/founder";
 
 // Slim companion to SiteHeader: pinned to the bottom of the viewport while
 // scrolling (sticky, so it settles naturally above the full footer at page
@@ -45,7 +46,7 @@ export function SiteFooterBar() {
           </a>
         </nav>
         <a
-          href="https://calendly.com/david-knopf/onboarding-meeting"
+          href={FOUNDER.onboardingCallUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="btn-primary !py-1.5 text-xs shrink-0 hidden sm:inline-flex"
